@@ -36,7 +36,7 @@ Treat menus, career, customization, and physics as systems to investigate indivi
 
 ## Repository layout
 
-This folder is an independent Git repository, ignored by the lab hub. The hub registers it in [projects.json](../../projects.json) and [PROJECTS.md](../../PROJECTS.md).
+This folder is an independent Git repository with its own private remote, `https://github.com/nicolas-found42/racer`. The lab hub ignores the checkout and registers it in [projects.json](../../projects.json) and [PROJECTS.md](../../PROJECTS.md).
 
 - `experiments/`: tracked investigation records; generated `output/` trees are ignored.
 - `scripts/`: reusable extraction and conversion tools, created when needed.
