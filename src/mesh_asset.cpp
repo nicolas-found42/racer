@@ -1,4 +1,6 @@
 #include "mesh_asset.h"
+#include "vehicle_look.h"
+#include "source_bump.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include <algorithm>
@@ -186,6 +188,21 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
   if (parsed!=cgltf_result_success) fail("asset_parse");
   if (data->nodes_count>4096 || data->meshes_count>4096 || data->buffers_count>1024)
     fail("asset_structure_budget");
+  std::vector<std::optional<uint32_t>> packedTextures(data->materials_count);
+  for(size_t i=0;i<data->materials_count;++i) {
+    const auto& material=data->materials[i];
+    bool found=false;
+    for(size_t j=0;j<material.extensions_count;++j) {
+      const auto& extension=material.extensions[j];
+      if(!extension.name||std::strcmp(extension.name,"RACER_source_bump_spec")!=0)continue;
+      if(found||!extension.data)fail("asset_source_bump_extension");
+      found=true;
+      const auto texture=sourceBumpTexture(extension.data);
+      if(!texture||*texture>=data->textures_count)fail("asset_source_bump_extension");
+      if(material.normal_texture.texture)fail("asset_source_bump_conflict");
+      packedTextures[i]=*texture;
+    }
+  }
   trace.stage=AssetLoadStage::Buffers;
   // cgltf's normal file loader is deliberately never reached for external URIs.
   size_t decodedBytes=0;
@@ -195,6 +212,18 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
         (b.uri && std::string_view(b.uri).find("data:")!=0))
       fail("asset_external_or_large_buffer");
     decodedBytes+=b.size;
+  }
+  // Classify tangent shape before the generic validator's count checks.
+  for(size_t mi=0;mi<data->meshes_count;++mi) for(size_t pi=0;pi<data->meshes[mi].primitives_count;++pi) {
+    const auto& primitive=data->meshes[mi].primitives[pi];
+    const cgltf_accessor* positions=nullptr;const cgltf_accessor* tangents=nullptr;
+    for(size_t ai=0;ai<primitive.attributes_count;++ai) {
+      const auto& attribute=primitive.attributes[ai];
+      if(attribute.type==cgltf_attribute_type_position)positions=attribute.data;
+      if(attribute.type==cgltf_attribute_type_tangent)tangents=attribute.data;
+    }
+    if(tangents&&(!positions||tangents->type!=cgltf_type_vec4||tangents->component_type!=cgltf_component_type_r_32f||
+       tangents->normalized||tangents->is_sparse||tangents->count!=positions->count))fail("asset_tangent_unsupported");
   }
   preflight(*data);
   if (cgltf_load_buffers(&options,data.get(),nullptr)!=cgltf_result_success)
@@ -215,9 +244,34 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
     for (auto value:binding.pivot) if (!std::isfinite(value)) fail("asset_node_binding");
   }
   std::unordered_set<uint32_t> boundNodes;
-  std::unordered_map<const cgltf_image *,int> imageIndices;
+  std::unordered_map<const cgltf_image *,std::array<int,3>> imageIndices;
   size_t imageBytes=0;
   std::unordered_map<std::string,int> imageContentIndices;
+  auto loadTexture=[&](const cgltf_texture_view& view,const cgltf_accessor* uv,ImageRole role,int& wrapU,int& wrapV) {
+    auto *texture=view.texture;
+    if(!texture||!uv||view.texcoord!=0||view.has_transform||!texture->image)
+      fail("asset_texture_unsupported");
+    if(texture->sampler) {
+      wrapU=int(texture->sampler->wrap_s);wrapV=int(texture->sampler->wrap_t);
+      for(auto mode:{wrapU,wrapV})if(mode!=10497&&mode!=33071&&mode!=33648)fail("asset_sampler_unsupported");
+    }
+    auto [entry,inserted]=imageIndices.try_emplace(texture->image,std::array<int,3>{-1,-1,-1});
+    auto& index=entry->second[size_t(role)];
+    if(index>=0)return index;
+    trace.stage=AssetLoadStage::Images;
+    // The same encoded image can serve three semantic roles, whose mip filters
+    // differ. Keep those GPU images separate while deduplicating within a role.
+    const auto identity=imageIdentity(*texture->image)+char('0'+int(role));
+    if(const auto existing=imageContentIndices.find(identity);existing!=imageContentIndices.end())index=existing->second;
+    else {
+      if(result.images.size()>=128)fail("asset_image_budget");
+      auto image=decodeImage(*texture->image,options);image.role=role;
+      if(imageBytes+image.rgba.size()>32*1024*1024)fail("asset_image_budget");
+      imageBytes+=image.rgba.size();index=int(result.images.size());imageContentIndices[identity]=index;
+      result.images.push_back(std::move(image));
+    }
+    trace.stage=AssetLoadStage::Geometry;return index;
+  };
   result.minimum.fill(std::numeric_limits<float>::infinity());
   result.maximum.fill(-std::numeric_limits<float>::infinity());
   while (!pending.empty()) {
@@ -240,9 +294,13 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
       const auto &primitive=node->mesh->primitives[p];
       if (primitive.type!=cgltf_primitive_type_triangles || primitive.targets_count || primitive.has_draco_mesh_compression)
         fail("asset_primitive_unsupported");
-      const cgltf_accessor *position=nullptr,*uv=nullptr;
+      const cgltf_accessor *position=nullptr,*uv=nullptr,*normal=nullptr,*occlusion=nullptr,*tangent=nullptr;
       for (size_t a=0;a<primitive.attributes_count;++a) {
         if (primitive.attributes[a].type==cgltf_attribute_type_position) position=primitive.attributes[a].data;
+        if (primitive.attributes[a].type==cgltf_attribute_type_normal) normal=primitive.attributes[a].data;
+        if (primitive.attributes[a].type==cgltf_attribute_type_tangent) tangent=primitive.attributes[a].data;
+        if(primitive.attributes[a].type==cgltf_attribute_type_custom && primitive.attributes[a].name &&
+           std::strcmp(primitive.attributes[a].name,"_RACER_OCCLUSION")==0) occlusion=primitive.attributes[a].data;
         if (primitive.attributes[a].type==cgltf_attribute_type_texcoord && primitive.attributes[a].index==0)
           uv=primitive.attributes[a].data;
       }
@@ -250,57 +308,110 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
         fail("asset_positions_unsupported");
       if (primitive.indices && primitive.indices->is_sparse) fail("asset_indices_unsupported");
       if (uv && (uv->type!=cgltf_type_vec2 || uv->count!=position->count)) fail("asset_uv_unsupported");
+      if (normal && (normal->type!=cgltf_type_vec3 || normal->count!=position->count || normal->is_sparse)) fail("asset_normal_unsupported");
+      if(occlusion && (occlusion->type!=cgltf_type_scalar || occlusion->count!=position->count || occlusion->is_sparse))
+        fail("asset_occlusion_unsupported");
       size_t count=primitive.indices ? primitive.indices->count : position->count;
       if (count%3 || count>maxVertices-result.triangles.size()) fail("asset_triangle_budget");
-      float rgba[4]={.7f,.7f,.7f,1};
+      float rgba[4]={1,1,1,1};
       AssetSection section{uint32_t(result.triangles.size()),uint32_t(count)};
+      if(primitive.material) {
+        const auto packed=packedTextures[size_t(primitive.material-data->materials)];
+        if(packed) {
+          if(!uv||!normal||!tangent)fail("asset_source_bump_frame");
+          // The recovered gradient kernel uses source basis magnitudes. Only
+          // rigid node transforms preserve them, including mirrored frames.
+          if(std::abs(matrix[3])>1e-6||std::abs(matrix[7])>1e-6||std::abs(matrix[11])>1e-6||std::abs(matrix[15]-1)>1e-6)
+            fail("asset_source_bump_transform");
+          for(unsigned a=0;a<3;++a)for(unsigned b=0;b<3;++b) {
+            double dot=0;for(unsigned k=0;k<3;++k)dot+=double(matrix[a*4+k])*matrix[b*4+k];
+            if(std::abs(dot-(a==b?1.:0.))>1e-5)fail("asset_source_bump_transform");
+          }
+          section.sourceBump=true;
+          cgltf_texture_view detail{};detail.texture=&data->textures[*packed];
+          section.normalImage=loadTexture(detail,uv,ImageRole::PackedHeightSpec,section.normalWrapU,section.normalWrapV);
+          result.texturesPresent=true;
+        }
+      }
+      section.metallic=1;
       if (binding!=nodeBindings.end()) {
         section.wheel=binding->second.wheel;section.rolling=binding->second.rolling;
       }
-      if (primitive.material && primitive.material->has_pbr_metallic_roughness) {
+      if(primitive.material && primitive.material->has_clearcoat) {
+        section.clearcoat=primitive.material->clearcoat.clearcoat_factor;
+        section.coatRoughness=primitive.material->clearcoat.clearcoat_roughness_factor;
+        for(float factor:{section.clearcoat,section.coatRoughness})
+          if(!std::isfinite(factor) || factor<0 || factor>1) fail("asset_material_factor");
+      }
+      if (primitive.material) {
         section.mask=primitive.material->alpha_mode==cgltf_alpha_mode_mask;
+        section.blend=primitive.material->alpha_mode==cgltf_alpha_mode_blend;
         section.alphaCutoff=primitive.material->alpha_cutoff;
         if (!std::isfinite(section.alphaCutoff) || section.alphaCutoff<0 || section.alphaCutoff>1) fail("asset_alpha_cutoff");
+        const auto& detail=primitive.material->normal_texture;
+        if(detail.texture) {
+          if(!std::isfinite(detail.scale)||std::abs(detail.scale)>8)fail("asset_normal_scale");
+          section.normalScale=detail.scale;
+          section.normalImage=loadTexture(detail,uv,ImageRole::Normal,section.normalWrapU,section.normalWrapV);
+          result.texturesPresent=true;
+        }
+      }
+      if (primitive.material && primitive.material->has_pbr_metallic_roughness) {
         const auto &material=primitive.material->pbr_metallic_roughness;
+        section.roughness=material.roughness_factor; section.metallic=material.metallic_factor;
+        for(float factor:{section.roughness,section.metallic})
+          if(!std::isfinite(factor) || factor<0 || factor>1) fail("asset_material_factor");
         std::copy_n(material.base_color_factor,4,rgba);
         result.texturesPresent |= material.base_color_texture.texture!=nullptr;
-        section.blend=primitive.material->alpha_mode==cgltf_alpha_mode_blend;
-        if (auto *texture=material.base_color_texture.texture) {
-          if (!uv || material.base_color_texture.texcoord!=0 || material.base_color_texture.has_transform || !texture->image)
-            fail("asset_texture_unsupported");
-          if (texture->sampler) {
-            section.wrapU=int(texture->sampler->wrap_s);section.wrapV=int(texture->sampler->wrap_t);
-            for (auto mode:{section.wrapU,section.wrapV})
-              if (mode!=10497 && mode!=33071 && mode!=33648) fail("asset_sampler_unsupported");
-          }
-          auto found=imageIndices.find(texture->image);
-          if (found!=imageIndices.end()) section.image=found->second;
-          else {
-            trace.stage=AssetLoadStage::Images;
-            const auto identity=imageIdentity(*texture->image);
-            const auto existing=imageContentIndices.find(identity);
-            if (existing!=imageContentIndices.end()) {
-              section.image=existing->second;imageIndices[texture->image]=section.image;
-            } else {
-            if (result.images.size()>=128) fail("asset_image_budget");
-            auto image=decodeImage(*texture->image,options);
-            if (imageBytes+image.rgba.size()>32*1024*1024) fail("asset_image_budget");
-            imageBytes+=image.rgba.size();
-            section.image=int(result.images.size());imageIndices[texture->image]=section.image;
-            imageContentIndices[identity]=section.image;
-            result.images.push_back(std::move(image));
-            }
-            trace.stage=AssetLoadStage::Geometry;
-          }
+        if(material.base_color_texture.texture)
+          section.image=loadTexture(material.base_color_texture,uv,ImageRole::Color,section.wrapU,section.wrapV);
+      }
+      if(!std::isfinite(rgba[3]) || rgba[3]<0 || rgba[3]>1) fail("asset_material_factor");
+      const float opacity=rgba[3];rgba[3]=1;
+      if(primitive.material && primitive.material->name) {
+        if(const auto look=vehicleLook(trace.actualMeshSHA256.data(),primitive.material->name,section.wheel)) {
+          section.roughness=look->roughness;section.metallic=look->metallic;section.clearcoat=look->clearcoat;
         }
       }
       result.sections.push_back(section);
       for (size_t index=0;index<count;index+=3) {
-        float point[3][3],texcoord[3][2]{};
+        float point[3][3],texcoord[3][2]{},ambient[3]={1,1,1}; double normals[3][3]{},tangents[3][4]{};
         for (int corner=0;corner<3;++corner) {
           auto vertex=primitive.indices ? cgltf_accessor_read_index(primitive.indices,index+corner) : index+corner;
           float value[3];
           if (vertex>=position->count || !cgltf_accessor_read_float(position,vertex,value,3)) fail("asset_vertex_index");
+          if(occlusion && (!cgltf_accessor_read_float(occlusion,vertex,&ambient[corner],1) ||
+             !std::isfinite(ambient[corner]) || ambient[corner]<0 || ambient[corner]>1)) fail("asset_occlusion_invalid");
+          if(tangent) {
+            float local[4];
+            if(!cgltf_accessor_read_float(tangent,vertex,local,4))fail("asset_tangent_invalid");
+            for(float component:local)if(!std::isfinite(component))fail("asset_tangent_invalid");
+            if(local[3]!=1&&local[3]!=-1)fail("asset_tangent_invalid");
+            // Without NORMAL glTF requires ignoring the supplied frame.
+            if(normal) {
+              double m[16];std::copy_n(matrix,16,m);
+              const double det=m[0]*(m[5]*m[10]-m[9]*m[6])-m[4]*(m[1]*m[10]-m[9]*m[2])+m[8]*(m[1]*m[6]-m[5]*m[2]);
+              if(!std::isfinite(det)||std::abs(det)<=1e-20)fail("asset_tangent_transform");
+              for(unsigned axis=0;axis<3;++axis)
+                tangents[corner][axis]=m[axis]*local[0]+m[4+axis]*local[1]+m[8+axis]*local[2];
+              tangents[corner][3]=local[3]*(det<0?-1:1);
+            }
+          }
+          if(normal) {
+            float local[3];
+            if(!cgltf_accessor_read_float(normal,vertex,local,3)) fail("asset_normal_invalid");
+            for(float component:local) if(!std::isfinite(component)) fail("asset_normal_invalid");
+            // Inverse transpose, expressed as cofactors so nonuniform node
+            // scale preserves the surface direction. Normalize below.
+            double transform[16];std::copy_n(matrix,16,transform);
+            const double det=transform[0]*(transform[5]*transform[10]-transform[9]*transform[6])-
+              transform[4]*(transform[1]*transform[10]-transform[9]*transform[2])+transform[8]*(transform[1]*transform[6]-transform[5]*transform[2]);
+            if(std::abs(det)>1e-20) {
+              normals[corner][0]=((transform[5]*transform[10]-transform[9]*transform[6])*local[0]+(transform[9]*transform[2]-transform[1]*transform[10])*local[1]+(transform[1]*transform[6]-transform[5]*transform[2])*local[2])/det;
+              normals[corner][1]=((transform[8]*transform[6]-transform[4]*transform[10])*local[0]+(transform[0]*transform[10]-transform[8]*transform[2])*local[1]+(transform[4]*transform[2]-transform[0]*transform[6])*local[2])/det;
+              normals[corner][2]=((transform[4]*transform[9]-transform[8]*transform[5])*local[0]+(transform[8]*transform[1]-transform[0]*transform[9])*local[1]+(transform[0]*transform[5]-transform[4]*transform[1])*local[2])/det;
+            }
+          }
           if (uv && (!cgltf_accessor_read_float(uv,vertex,texcoord[corner],2) ||
                      !std::isfinite(texcoord[corner][0]) || !std::isfinite(texcoord[corner][1])))
             fail("asset_uv_invalid");
@@ -317,9 +428,34 @@ MeshAsset loadMeshAsset(const std::filesystem::path &path,const std::vector<Mesh
         double bx=point[2][0]-point[0][0],by=point[2][1]-point[0][1],bz=point[2][2]-point[0][2];
         double nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;
         double length=std::sqrt(nx*nx+ny*ny+nz*nz);
-        auto shade=.45+.55*(length>1e-12 ? std::abs(ny)/length : 0.);
-        for (unsigned corner=0;corner<3;++corner) result.triangles.push_back({point[corner][0],point[corner][1],point[corner][2],
-          color(rgba,shade),texcoord[corner][0],texcoord[corner][1]});
+        for (unsigned corner=0;corner<3;++corner) {
+          double magnitude=std::hypot(normals[corner][0],normals[corner][1],normals[corner][2]);
+          if(section.sourceBump) {
+            const double tangentLength=std::hypot(tangents[corner][0],tangents[corner][1],tangents[corner][2]);
+            double dot=0;for(unsigned a=0;a<3;++a)dot+=normals[corner][a]*tangents[corner][a];
+            if(!std::isfinite(magnitude)||!std::isfinite(tangentLength)||magnitude<.98||magnitude>1.02||
+               tangentLength<.98||tangentLength>1.02||std::abs(dot)>.05*magnitude*tangentLength)
+              fail("asset_source_bump_frame");
+          } else {
+            if(magnitude<1e-12) {
+              normals[corner][0]=length>1e-12?float(nx/length):0;
+              normals[corner][1]=length>1e-12?float(ny/length):1;
+              normals[corner][2]=length>1e-12?float(nz/length):0;
+            } else for(double &component:normals[corner]) component/=magnitude;
+            if(tangent&&normal) {
+              const double originalLength=std::hypot(tangents[corner][0],tangents[corner][1],tangents[corner][2]);
+              double projection=0;
+              for(unsigned axis=0;axis<3;++axis)projection+=normals[corner][axis]*tangents[corner][axis];
+              for(unsigned axis=0;axis<3;++axis)tangents[corner][axis]-=projection*normals[corner][axis];
+              const double tangentLength=std::hypot(tangents[corner][0],tangents[corner][1],tangents[corner][2]);
+              if(!std::isfinite(tangentLength)||!std::isfinite(originalLength)||originalLength==0||tangentLength<=originalLength*1e-12)fail("asset_tangent_invalid");
+              for(unsigned axis=0;axis<3;++axis)tangents[corner][axis]/=tangentLength;
+            }
+          }
+          result.triangles.push_back({point[corner][0],point[corner][1],point[corner][2],
+            color(rgba,1),texcoord[corner][0],texcoord[corner][1],float(normals[corner][0]),float(normals[corner][1]),float(normals[corner][2]),ambient[corner],opacity,
+            float(tangents[corner][0]),float(tangents[corner][1]),float(tangents[corner][2]),float(tangents[corner][3])});
+        }
       }
     }
   }

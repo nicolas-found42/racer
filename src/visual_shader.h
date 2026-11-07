@@ -1,0 +1,321 @@
+#pragma once
+#include <bgfx/bgfx.h>
+#include <cstdint>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
+
+namespace racer {
+// Metal source packaged for the pinned bgfx v12 container. Layout follows
+// shaderc_metal.cpp writeUniformArray and renderer_mtl.cpp ShaderMtl::create.
+// This is authored Racer shading, not a recovered donor shader.
+inline std::vector<uint8_t> visualShader(bool fragment, bool shadow=false) {
+  constexpr std::string_view vertex=R"MSL(#include <metal_stdlib>
+using namespace metal;
+struct Globals { float4x4 u_modelViewProj; float4x4 u_model; };
+struct Input {
+ float3 a_position [[attribute(0)]]; float4 a_color0 [[attribute(1)]];
+ float2 a_texcoord0 [[attribute(2)]]; float3 a_normal [[attribute(3)]];
+ float2 a_texcoord1 [[attribute(4)]];
+ float4 a_tangent [[attribute(5)]];
+};
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]];
+ float3 normal [[user(locn3)]];
+ float occlusion [[user(locn4)]];
+ float4 tangent [[user(locn5)]];
+ float3 bitangent [[user(locn6)]];
+};
+vertex Varying xlatMtlMain(Input in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]]) {
+ Varying o; o.position=_mtl_u.u_modelViewProj*float4(in.a_position,1);
+ o.world=(_mtl_u.u_model*float4(in.a_position,1)).xyz;
+ o.normal=(_mtl_u.u_model*float4(in.a_normal,0)).xyz;
+ o.color=in.a_color0; o.color.a*=in.a_texcoord1.y;
+ o.uv=in.a_texcoord0; o.occlusion=in.a_texcoord1.x;
+ float handed=determinant(float3x3(_mtl_u.u_model[0].xyz,_mtl_u.u_model[1].xyz,_mtl_u.u_model[2].xyz))<0?-1.0:1.0;
+ o.tangent=float4((_mtl_u.u_model*float4(in.a_tangent.xyz,0)).xyz,in.a_tangent.w*handed);
+ o.bitangent=cross(o.tangent.xyz,o.normal)*o.tangent.w;return o;
+}
+)MSL";
+  constexpr std::string_view pixel=R"MSL(#include <metal_stdlib>
+using namespace metal;
+constant uint bgfx_sampleMask [[function_constant(0)]];
+constant bool bgfx_sampleMaskEnabled=is_function_constant_defined(bgfx_sampleMask);
+struct Globals { float4 u_visualCamera; float4 u_visualMaterial; float4x4 u_shadowMatrix; float4 u_reflectionState; float4 u_visualCoat; };
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]];
+ float3 normal [[user(locn3)]];
+ float occlusion [[user(locn4)]];
+ float4 tangent [[user(locn5)]];
+ float3 bitangent [[user(locn6)]];
+};
+struct Output {
+ uint mask [[sample_mask, function_constant(bgfx_sampleMaskEnabled)]];
+ float4 color [[color(0)]];
+};
+float displayToLinear(float channel) { return pow(max(channel,0.0),2.2); }
+float3 linearDisplay(float3 rgb) { return float3(displayToLinear(rgb.r),displayToLinear(rgb.g),displayToLinear(rgb.b)); }
+float hash(float2 p) { return fract(sin(dot(p,float2(127.1,311.7)))*43758.5453); }
+float noise(float2 p) {
+ float2 i=floor(p),f=fract(p); f=f*f*(3-2*f);
+ return mix(mix(hash(i),hash(i+float2(1,0)),f.x),mix(hash(i+float2(0,1)),hash(i+1),f.x),f.y);
+}
+float3 sky(float3 ray) {
+ float h=max(ray.y,0.0); float3 c=mix(float3(.72,.77,.78),float3(.18,.36,.57),pow(h,.42));
+ float3 sun=normalize(float3(-.55,.34,.70)); float d=max(dot(ray,sun),0.0);
+ c+=float3(1,.77,.44)*(pow(d,350.0)*2.0+pow(d,14.0)*.12);
+ float2 p=ray.xz/max(.16,ray.y+.26)*2.3;
+ float cloud=noise(p)*.55+noise(p*2.1)*.28+noise(p*4.3)*.17;
+ c=mix(c,float3(.90,.87,.81),smoothstep(.54,.76,cloud)*smoothstep(0.0,.15,ray.y)*.60);
+ // Authored display-RGB sky convention converted to linear radiance.
+ return linearDisplay(c)*2.0;
+}
+float filteredShadow(texture2d<float> depth, sampler smp, float2 uv, float reference, float2 gradient) {
+ float2 p=uv*2048.0-.5,base=floor(p),f=fract(p);
+ float2 aUV=(base+float2(.5,.5))/2048.0,bUV=(base+float2(1.5,.5))/2048.0;
+ float2 cUV=(base+float2(.5,1.5))/2048.0,dUV=(base+float2(1.5,1.5))/2048.0;
+ float a=reference+dot(aUV-uv,gradient)<=depth.sample(smp,aUV).r?1.0:0.0;
+ float b=reference+dot(bUV-uv,gradient)<=depth.sample(smp,bUV).r?1.0:0.0;
+ float c=reference+dot(cUV-uv,gradient)<=depth.sample(smp,cUV).r?1.0:0.0;
+ float d=reference+dot(dUV-uv,gradient)<=depth.sample(smp,dUV).r?1.0:0.0;
+ return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+}
+// Authored lighting weights, not a recovered donor BRDF. Keep the direct
+// lobe colored by the same interface reflectance as the environment lobe.
+float fresnelWeight(float cosine) { return pow(1-clamp(cosine,0.0,1.0),5.0); }
+float directLobe(float rough,float nDotH,float nDotL) {
+ return pow(clamp(nDotH,0.0,1.0),mix(180.0,6.0,rough))*mix(3.6,.10,rough)*max(nDotL,0.0);
+}
+float diffuseWeight(float metal) { return 1-clamp(metal,0.0,1.0); }
+// 256px cube has levels0..8. This box-mip roughness curve is authored,
+// not a GGX convolution or native material formula.
+float reflectionLod(float rough) {
+ float r=clamp(rough,0.0,1.0);return r*(1.7-.7*r)*8.0;
+}
+// Projection spans399m along the light axis. Receiver-plane PCF already
+// compensates sampled depth gradients; keep the remaining safety offset at
+// about8..24mm rather than the former200..400mm that erased low shadows.
+float shadowBias(float nDotL) {
+ return max(.00002,.00006*(1-clamp(nDotL,0.0,1.0)));
+}
+float hazeAmount(float distance) {
+ // Preserve near-field material contrast; distant silhouettes still converge.
+ return 1-exp(-max(distance-40.0,0.0)*.00065);
+}
+// Selected CityBumpSpec VS/PS kernel, normal channel only. Packed G/B stay
+// unmodified in the texture; original specular composition is not implemented.
+float3 sourceBumpNormal(float3 N,float3 T,float3 B,float R,float A) {
+ float3 result=N-(2*A-1)*B-(2*R-1)*T;
+ float squared=dot(result,result),baseSquared=dot(N,N);
+ // Racer robustness for degenerate interpolation; native zero-RSQ is unknown.
+ return isfinite(squared)&&squared>1e-20?result*rsqrt(squared):
+   isfinite(baseSquared)&&baseSquared>1e-20?N*rsqrt(baseSquared):float3(0,1,0);
+}
+float3 detailNormal(float3 world,float2 uv,float3 normal,float4 authored,float3 encoded,float scale) {
+ float3 tangent,bitangent;
+ if(abs(authored.w)>.5) {
+  tangent=authored.xyz-normal*dot(normal,authored.xyz);float squared=dot(tangent,tangent);
+  if(!isfinite(squared)||squared<1e-20)return normal;
+  tangent*=rsqrt(squared);bitangent=cross(normal,tangent)*(authored.w<0?-1.0:1.0);
+ }else {
+ float3 px=dfdx(world),py=dfdy(world);float2 tx=dfdx(uv),ty=dfdy(uv);
+ float uvScale=max(max(abs(tx.x),abs(tx.y)),max(abs(ty.x),abs(ty.y)));
+ float worldScale=max(max(max(abs(px.x),abs(px.y)),abs(px.z)),max(max(abs(py.x),abs(py.y)),abs(py.z)));
+ if(!isfinite(uvScale)||!isfinite(worldScale)||uvScale<1e-30||worldScale<1e-30)return normal;
+ tx/=uvScale;ty/=uvScale;px/=worldScale;py/=worldScale;
+ float determinant=tx.x*ty.y-tx.y*ty.x;
+ if(!isfinite(determinant)||abs(determinant)<1e-8)return normal;
+ tangent=(px*ty.y-py*tx.y)/determinant;
+ bitangent=(py*tx.x-px*ty.x)/determinant;
+ tangent-=normal*dot(normal,tangent);float squared=dot(tangent,tangent);
+ if(!isfinite(squared)||squared<1e-12||!all(isfinite(bitangent)))return normal;
+ tangent*=rsqrt(squared);
+ float3 crossAxis=cross(normal,tangent);
+ bitangent=crossAxis*(dot(crossAxis,bitangent)<0?-1.0:1.0);
+ }
+ float3 mapped=encoded*2-1;mapped.xy*=scale;
+ float3 result=tangent*mapped.x+bitangent*mapped.y+normal*mapped.z;
+ float lengthSquared=dot(result,result);
+ return isfinite(lengthSquared)&&lengthSquared>1e-12?result*rsqrt(lengthSquared):normal;
+}
+fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
+ texture2d<float> s_texColor [[texture(0)]], sampler smp [[sampler(0)]],
+ texture2d<float> s_shadow [[texture(1)]], sampler shadowSampler [[sampler(1)]],
+ texture2d<float> s_surfaces [[texture(2)]], sampler surfaceSampler [[sampler(2)]],
+ texturecube<float> s_environment [[texture(3)]], sampler environmentSampler [[sampler(3)]],
+ texture2d<float> s_normal [[texture(4)]], sampler normalSampler [[sampler(4)]]) {
+ Output o={}; if(bgfx_sampleMaskEnabled) o.mask=bgfx_sampleMask;
+ float mode=_mtl_u.u_visualMaterial.w;
+ if(mode>4.5) {
+  float4 overlay=s_texColor.sample(smp,in.uv)*in.color;
+  o.color=float4(linearDisplay(overlay.rgb),overlay.a);return o;
+ }
+ // The photographic sky has the same authored decode/exposure as procedural sky.
+ if(mode>3.5) { o.color=float4(linearDisplay(s_texColor.sample(smp,in.uv).rgb)*2.0,1); return o; }
+ if(mode>1.5 && mode<2.5) { o.color=float4(sky(normalize(in.world-_mtl_u.u_visualCamera.xyz)),1); return o; }
+ if(mode>2.5) { o.color=float4(linearDisplay(in.color.rgb),in.color.a); return o; }
+ float4 sampled=_mtl_u.u_visualMaterial.z>.5?s_texColor.sample(smp,in.uv):float4(1);
+ float4 base=in.color*sampled;
+ bool foliage=mode>.5 && in.uv.y>5.5;
+ if(foliage) {
+  float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
+    .75+(clamp(in.uv.y-6,0.0,1.0)*254+1)/1024);
+  base=in.color*s_surfaces.sample(surfaceSampler,uv);
+  if(base.a<.4) discard_fragment();
+ }
+ if(base.a<_mtl_u.u_visualCamera.w) discard_fragment();
+ float3 n=normalize(in.normal); float3 v=normalize(_mtl_u.u_visualCamera.xyz-in.world);
+ bool reverseNormal=dot(n,v)<0;
+ if(mode<.5 && _mtl_u.u_visualCoat.z>1.5) {
+  float4 packed=s_normal.sample(normalSampler,in.uv);
+  n=sourceBumpNormal(in.normal,in.tangent.xyz,in.bitangent,packed.r,packed.a);
+ } else if(mode<.5 && _mtl_u.u_visualCoat.z>.5)
+  n=detailNormal(in.world,in.uv,n,in.tangent,s_normal.sample(normalSampler,in.uv).rgb,_mtl_u.u_visualCoat.w);
+ if(reverseNormal) n=-n;
+ float3 l=normalize(float3(-.55,.34,.70)); float3 h=normalize(l+v);
+ float rough=clamp(_mtl_u.u_visualMaterial.x,.08,1.0),metal=clamp(_mtl_u.u_visualMaterial.y,0.0,1.0);
+ if(mode>.5) { rough=in.uv.x>.01?clamp(in.uv.x,.08,1.0):.95; metal=in.uv.y>4.5?.18:0.0; }
+ if(foliage) { rough=1;metal=0; }
+ // glTF factors are linear; decoded base-color texture bytes are sRGB.
+ // Authored world vertex colors use the usual display RGB convention.
+ float3 albedo=mode<.5?in.color.rgb*linearDisplay(sampled.rgb):
+   linearDisplay(base.rgb);
+ if(mode>.5) {
+  float surface=round(in.uv.y);
+  if(surface>0 && surface<4.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface-1,scale=surface<1.5?2.0:3.0;
+   float2 uv=abs(n.y)>.5?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   // Keep the atlas selection inside its tile while retaining correct mip
+   // gradients across wrap seams. These are authored mappings, not donor UVs.
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/1024);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/1024),dy=dfdy(uv)*float2(254.0/256,254.0/1024);
+   float3 tex=s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb;
+   float3 textured=linearDisplay(tex);
+   albedo=surface<1.5?textured*.24:mix(albedo,textured,.68);
+  }
+  float2 p=in.world.xz*38.0,q=in.world.xy*29.0;
+  float fade=1-smoothstep(.25,1.0,max(length(dfdx(p)),length(dfdy(p))));
+  float grain=mix(.5,noise(p)*.5+noise(q)*.5,fade);
+  albedo*=.87+.26*grain;
+  if(n.y>.85 && in.world.y<.08) {
+   float wear=noise(in.world.xz*.35);
+   albedo*=.82+.35*wear;
+  }
+ }
+ float ndl=max(dot(n,l),0.0),ndv=max(dot(n,v),0.0);
+ float3 f0=mix(float3(.04),albedo,metal);
+ float3 fresnel=f0+(1-f0)*fresnelWeight(ndv);
+ float3 directFresnel=f0+(1-f0)*fresnelWeight(max(dot(v,h),0.0));
+ float3 reflected=sky(reflect(-v,n));
+ if(_mtl_u.u_reflectionState.x>.5 && (mode<.5 || rough<.3)) {
+  float3 local=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(rough))).rgb,float3(0));
+  reflected=local;
+ }
+ // Diffuse skylight, warm sun, Fresnel environment and a broad clearcoat lobe.
+ float3 ambient=mix(float3(.045,.055,.070),float3(.14,.19,.27),n.y*.5+.5);
+ float4 light=_mtl_u.u_shadowMatrix*float4(in.world,1);
+ float3 coord=light.xyz/light.w;
+ float2 shadowUV=float2(coord.x*.5+.5,.5-coord.y*.5);
+ // Compare against the receiver plane at each sampled texel, not the depth
+ // at the pixel center. Constant-depth PCF self-shadows sloping streets.
+ float2 dx=dfdx(shadowUV),dy=dfdy(shadowUV);
+ float zx=dfdx(coord.z),zy=dfdy(coord.z),det=dx.x*dy.y-dx.y*dy.x;
+ float2 gradient=float2(0);
+ if(abs(det)>1e-12) {
+  float2 candidate=float2(zx*dy.y-zy*dx.y,zy*dx.x-zx*dy.x)/det;
+  if(all(isfinite(candidate))) gradient=clamp(candidate,float2(-16),float2(16));
+ }
+ float visibility=1.0;
+ if(all(shadowUV>float2(0)) && all(shadowUV<float2(1)) && coord.z>0 && coord.z<1) {
+  float bias=shadowBias(ndl),sum=0;
+  for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x) {
+   float2 offset=float2(x,y)*1.5/2048.0;
+   sum+=filteredShadow(s_shadow,shadowSampler,shadowUV+offset,coord.z+dot(offset,gradient)-bias,gradient);
+  }
+  float edge=min(min(shadowUV.x,shadowUV.y),min(1-shadowUV.x,1-shadowUV.y));
+  visibility=mix(1.0,sum/9.0,smoothstep(0.0,.06,edge));
+ }
+ float3 lit=albedo*(ambient*clamp(in.occlusion,0.0,1.0)+float3(1,.86,.66)*ndl*2.2*visibility)*diffuseWeight(metal);
+ float spec=directLobe(rough,dot(n,h),ndl);
+ lit+=fresnel*reflected*mix(1.1,.20,rough)+directFresnel*spec*float3(1,.87,.69)*visibility;
+ if(mode<.5 && _mtl_u.u_visualCoat.x>0) {
+  float coat=_mtl_u.u_visualCoat.x,coatRough=clamp(_mtl_u.u_visualCoat.y,.05,1.0);
+  float coatF=.04+.96*fresnelWeight(ndv);
+  float coatDirectF=.04+.96*fresnelWeight(max(dot(v,h),0.0));
+  float3 coatEnvironment=sky(reflect(-v,n));
+  if(_mtl_u.u_reflectionState.x>.5)
+   coatEnvironment=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(coatRough))).rgb,float3(0));
+  float coatHighlight=pow(max(dot(n,h),0.0),mix(500.0,8.0,coatRough))*2.0*ndl*visibility;
+  lit=lit*(1-coat*coatF)+coat*(coatF*coatEnvironment+coatDirectF*coatHighlight*float3(1,.87,.69));
+ }
+ if(foliage) lit+=albedo*.12;
+ float distance=length(_mtl_u.u_visualCamera.xyz-in.world);
+ float fog=hazeAmount(distance);
+ lit=mix(lit,linearDisplay(float3(.67,.73,.77)),fog);
+ // Preserve linear HDR through blending, capture and bloom; display mapping is final-only.
+ o.color=float4(max(lit,float3(0)),base.a); return o;
+}
+)MSL";
+  constexpr std::string_view shadowPixel=R"MSL(#include <metal_stdlib>
+using namespace metal;
+struct Globals { float4 u_visualCamera; float4 u_visualMaterial; };
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]]; float3 normal [[user(locn3)]];
+ float3 bitangent [[user(locn6)]];
+};
+fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
+ texture2d<float> s_texColor [[texture(0)]], sampler smp [[sampler(0)]],
+ texture2d<float> s_surfaces [[texture(2)]], sampler surfaceSampler [[sampler(2)]]) {
+ float alpha=in.color.a;
+ if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y>5.5) {
+  float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
+    .75+(clamp(in.uv.y-6,0.0,1.0)*254+1)/1024);
+  alpha*=s_surfaces.sample(surfaceSampler,uv).a;
+  if(alpha<.4) discard_fragment();
+ } else if(_mtl_u.u_visualMaterial.z>.5 && _mtl_u.u_visualMaterial.w<.5) alpha*=s_texColor.sample(smp,in.uv).a;
+ if(alpha<_mtl_u.u_visualCamera.w) discard_fragment();
+ return float4(in.position.z,0,0,1);
+}
+)MSL";
+  std::vector<uint8_t> b;
+  auto u8=[&](uint8_t n){b.push_back(n);};
+  auto u16=[&](uint16_t n){u8(uint8_t(n));u8(uint8_t(n>>8));};
+  auto u32=[&](uint32_t n){u16(uint16_t(n));u16(uint16_t(n>>16));};
+  auto uniform=[&](std::string_view name,uint8_t type,uint16_t offset,uint16_t registers){
+    u8(uint8_t(name.size()));b.insert(b.end(),name.begin(),name.end());
+    u8(type|(fragment?0x10:0));u8(1);u16(offset);u16(registers);u16(0);u16(0);
+  };
+  u8(fragment?'F':'V');u8('S');u8('H');u8(12);
+  constexpr uint32_t interface=0x52414345;
+  u32(fragment?interface:0);u32(fragment?0:interface);u32(0);u32(0);
+  u16(fragment?(shadow?4:10):2);
+  if(fragment) {
+    uniform("u_visualCamera",bgfx::UniformType::Vec4,0,1);
+    uniform("u_visualMaterial",bgfx::UniformType::Vec4,16,1);
+    uniform("s_texColor",bgfx::UniformType::Sampler|0x20,0,1);
+    if(shadow) uniform("s_surfaces",bgfx::UniformType::Sampler|0x20,2,1);
+    if(!shadow) {
+      uniform("u_shadowMatrix",bgfx::UniformType::Mat4,32,4);
+      uniform("s_shadow",bgfx::UniformType::Sampler|0x20,1,1);
+      uniform("s_surfaces",bgfx::UniformType::Sampler|0x20,2,1);
+      uniform("u_reflectionState",bgfx::UniformType::Vec4,96,1);
+      uniform("u_visualCoat",bgfx::UniformType::Vec4,112,1);
+      uniform("s_environment",bgfx::UniformType::Sampler|0x20,3,1);
+      uniform("s_normal",bgfx::UniformType::Sampler|0x20,4,1);
+    }
+  } else {
+    uniform("u_modelViewProj",bgfx::UniformType::Mat4,0,4);
+    uniform("u_model",bgfx::UniformType::Mat4,64,4);
+  }
+  const auto source=fragment?(shadow?shadowPixel:pixel):vertex;u32(uint32_t(source.size()));
+  b.insert(b.end(),source.begin(),source.end());u8(0);
+  u8(fragment?0:6);
+  if(!fragment){u16(0x0001);u16(0x0005);u16(0x0010);u16(0x0002);u16(0x0011);u16(0x0003);}
+  u16(fragment?(shadow?48:128):128);
+  return b;
+}
+}

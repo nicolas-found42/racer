@@ -1,5 +1,18 @@
 # Experiments
 
+Active source-backed material continuation: [native materials](2026-11-07-native-materials/README.md). Selected signed R/A normal kernel and actual curb comparisons; visual goal remains unmet.
+
+- [Source streets, HDR and graded placement, active resume](2026-11-07-source-street/README.md): three qualified source blocks, exact façade restoration, shared texture admission, linear HDR and four-wheel visual placement. Fresh actual MCLA comparisons still show substantial visual gaps.
+
+- [Rough reflection and streetscape, current resume](2026-11-07-reflection-street/README.md): source-qualified four-house city, static signals, filtered reflections, guarded paint/trim and actual reference comparisons. Console visual target remains unmet.
+
+- [City art, current resume](2026-11-07-city-art/README.md): source-derived residential props, renderer slope correction and actual assembled-town comparisons; console visual target remains unmet.
+
+- [Visual calibration, current resume](2026-11-07-visual-calibration/README.md): source-bound sky, exact alpha/material fixes, isolated native shadow regression, lighting/filtering review. Console visual parity remains unmet.
+- [Native world visual fidelity](2026-11-07-world-visual-fidelity/README.md): shared MCLA textures and source road-marking overlays; opt-in tile-boundary pilot with missing adjacent world.
+
+- [Visual fidelity, active](2026-11-07-visual-fidelity/README.md): all six raw inputs inspected with REA; actual source-game screenshot comparisons, authored city/material/lighting/HUD changes, local source surfaces, native fix-and-compare evidence. Console visual parity remains unresolved; review ledger stays active.
+
 ## 2026-11-06 follow-up
 
 - [Car source coverage](2026-11-06-car-coverage/README.md): active corpus inventory, held geometry defects and eleven installed players.
@@ -16,6 +29,9 @@
 - [Observability coverage delta](2026-11-06-observability-delta/README.md): career/parts/livery save-state identities, failure/retry/restart reconstruction and explicit coverage limits.
 
 Every investigation, including a small one-off probe, starts at `<id>/README.md`. Use the hub's templates/experiment/README.md; name IDs YYYY-MM-DD-short-question, adding a suffix when repeated. Keep commands, observations, evidence, retention, and next action together. Larger outputs may stay at established tool-required paths, linked from this record and counted in the same resource budget.
+
+- [Current lighting/material finish](2026-11-07-lighting-finish/README.md): actual lamp-cover failure/fix, source-qualified rim finish, bounded authored LDR postprocessing and continuous terrain. Six-reference screenshot comparisons still show substantial unresolved quality gaps; no completion gate.
+- [Current responsive HUD and surface detail](2026-11-07-hud-surface/README.md): actual small/wide window failure/fix, source secondary-map qualification, authored packed-normal preview, supplied tangents and native orientation fixtures; visual goal remains unmet.
 
 - [2026-11-05-car-models](2026-11-05-car-models/README.md): active car extraction/import/runtime/physics checklist; real default cars and native integration verification.
 - [2026-11-05-city-scale](2026-11-05-city-scale/README.md): city-driving reference images, canonical manufacturer/source dimensions, shared metric fixtures and seven-car native review.

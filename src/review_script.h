@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <fstream>
 #include <cmath>
+#include <array>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -18,6 +19,7 @@ struct ReviewScript {
   std::string capture;
   bool driveCourse = false;
   std::optional<racer::Input> vehicleInput;
+  std::optional<std::array<int,2>> windowSize;
   static SDL_Keycode keyCode(const std::string &arg) {
     if (arg == "accept") return SDLK_RETURN;
     if (arg == "back") return SDLK_ESCAPE;
@@ -115,6 +117,11 @@ struct ReviewScript {
       std::cout << "CAPTURE " << arg << '\n';
       for (const auto &line : f.lines())
         std::cout << line << '\n';
+    } else if (op == "resize") {
+      const int width=std::stoi(arg);int height;std::string trailing;
+      if(!(in>>height)||in>>trailing||width<320||height<240||width>4096||height>2160)
+        throw std::runtime_error("Invalid review window size");
+      windowSize=std::array{width,height};
     } else if (op == "wait") {
       ready = t + std::stod(arg);
       ++cursor;

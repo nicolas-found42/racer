@@ -2,8 +2,11 @@ inputs/
 analysis/
 experiments/*/output/
 assets/local/
+/assets/local
+assets/visual-local/
 .DS_Store
 __pycache__/
 *.pyc
 .deps/
+/.deps
 build/
