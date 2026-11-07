@@ -89,7 +89,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double shotDelay = 2;
   bool shotDelayExplicit = false;
   bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true;
-  float nightAmount = 0;
+  float nightAmount = 0, paintHue = 0, paintStrength = 0;
   std::string shot, profilePath, scene, garageMode, captureLoop, reviewPath, previewMesh,skyMesh,sceneryMesh;
   std::vector<std::string> worldMeshes;
   std::string vehicleLibrary=RACER_VEHICLE_LIBRARY,requestedVehicle;
@@ -116,12 +116,24 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--no-skid-marks") skidMarks = false;
     else if (a == "--no-speed-fov") speedFov = false;
     else if (a == "--no-tyre-smoke") tyreSmoke = false;
+    else if (a == "--paint" && i + 1 < argc) {
+      const std::string value = argv[++i];
+      struct Entry {const char* name; float hue;};
+      const Entry table[] = {{"red",0.f},{"orange",.07f},{"yellow",.15f},{"green",.35f},{"teal",.5f},{"blue",.62f},{"purple",.78f},{"black",-1.f}};
+      bool found = false;
+      for (const auto& e : table) if (value == e.name) {paintHue = e.hue; paintStrength = value == "black" ? .85f : .9f; found = true;}
+      if (!found) {
+        std::cerr << "--paint must be red, orange, yellow, green, teal, blue, purple or black\n";
+        return 1;
+      }
+    }
     else if (a == "--time" && i + 1 < argc) {
       const std::string value = argv[++i];
       if (value == "day") nightAmount = 0;
       else if (value == "night") nightAmount = 1;
+      else if (value == "dusk") nightAmount = .45f;
       else {
-        std::cerr << "--time must be day or night\n";
+        std::cerr << "--time must be day, dusk or night\n";
         return 1;
       }
     }
@@ -1146,7 +1158,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::setViewTransform(1, view, projection);
     bgfx::touch(1);
     const float eyeUniform[4]={float(cameraX),float(cameraY),float(cameraZ),0};
-    const float reflectionState[4]={sceneReflection.ready()?1.f:0.f,0,0,0};
+    const float reflectionState[4]={sceneReflection.ready()?1.f:0.f,0,paintHue,paintStrength};
     const float noCoat[4]={0,.1f,0,0};
     const float skyMaterial[4]={1,0,0,2},worldMaterial[4]={.95f,0,sourceSurfaces?2.f:0.f,1};
     // Scene attachments are linear HDR. Unlit source colors and livery still

@@ -28,7 +28,8 @@ def main():
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--reference-label", required=True)
     parser.add_argument("--vehicle", type=int, default=0, help="Index in the current local catalog")
-    parser.add_argument("--time", choices=["day","night"], default="day", help="Time of day passed to the game")
+    parser.add_argument("--time", choices=["day","dusk","night"], default="day", help="Time of day passed to the game")
+    parser.add_argument("--paint", choices=["red","orange","yellow","green","teal","blue","purple","black"], help="Saturated paint for clear-coated exterior sections")
     parser.add_argument("--traffic-vehicle", type=int, action="append", default=[], help="Extra catalog index frozen as parked traffic; repeat up to four")
     parser.add_argument("--vehicle-library", type=Path, help="Optional isolated preview catalog; the selected model is frozen before native runs")
     parser.add_argument("--world-mesh", type=Path, action="append", default=[], help="Optional local static world GLB; repeat up to four")
@@ -172,6 +173,8 @@ def main():
             argv.append("--post-neutral")
         if args.time != "day":
             argv.extend(["--time", args.time])
+        if args.paint:
+            argv.extend(["--paint", args.paint])
         if frozen_sky:
             argv.extend(["--sky-mesh", str(frozen_sky)])
         if frozen_scenery:

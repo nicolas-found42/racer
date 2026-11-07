@@ -46,6 +46,11 @@ Names only: no shader code, constants or parameter values were recovered. Sessio
 - `output/night-v3` (standard views), `output/night-brake/{rear,left}.png` (braking at night with smoke, marks, headlights, lamps), `output/day-v3` (day regression; mean abs diff vs pre-night day frame 1.5/255 from lamp posts and grain).
 - `capture_visual_review.py` gains `--time day|night`.
 
+## Dusk and saturated paint (follow-up)
+- **Dusk** (`--time dusk`, night amount .45): the sky function blends day and night continuously; a warm horizon glow and warmer, dimmer sun peak at dusk (`night*(1-night)*4`), lamps and windows scale with the night amount. Authored. Local sheet `before-after/dusk.png` (day vs dusk, same camera, `--paint red`): warmer, dimmer scene; weaker than the reference dusk frames (no sun disc at horizon, no long-shadow change because the shadow light direction is fixed).
+- **Paint** (`--paint red|orange|yellow|green|teal|blue|purple|black`): clear-coated exterior sections keep their texture luminance and take the chosen hue (`u_reflectionState.zw`). Applies only to sections with a clear-coat entry in `vehicle_look.h` (the six NSX exterior families and the Roadster paint set); other cars are unchanged. `before-after/paint-red.png` (default silver vs red, same state) and `console-compare/mcla-paint-vs-racer.png` (MCLA red RX-8 vs Racer red NSX): paint hue now matches the reference's saturated body colour, but reference reflections, flake and body detail are far richer.
+- Capture script gains `--paint` and `--time dusk`.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 
@@ -61,7 +66,7 @@ Observed: Racer's lighting, road finish, motion cues and post pipeline are now c
 1. ~~No vegetation along streets~~ street trees added (this pass); still no shrubs/hedges, grass, or terrain-scale forest (GT4, MCLA).
 2. ~~No time of day~~ `--time night` added; no dusk/dawn transition, no in-game toggle, no signage/neon (Juiced 2, MC3, MCLA).
 3. ~~No tyre smoke~~ added for skid events; no dust, burnout or exhaust smoke.
-4. Car paint close-ups remain flat (MCLA RX-8/Saleen); no saturated paint, flake or strong clearcoat reflections on the default car.
+4. Car paint: saturated hue now available via `--paint` (default stays silver); flake, orange-peel and rich clearcoat reflections still missing (MCLA RX-8/Saleen).
 5. Terrain relief/horizon silhouette missing (hills, mountains).
 6. Depth of field: bgfx `examples/45-bokeh` (BSD-2) shows a linear-depth CoC pipeline in bgfx itself; blocked here by Racer's write-only MSAA depth attachment.
 7. Side props (barriers, crowds, kerbs, billboards).

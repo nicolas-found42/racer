@@ -70,11 +70,7 @@ float3 nightSkyExtras(float3 ray) {
  float moon=smoothstep(.99955,.99985,d)*7.0+pow(max(d,0.0),500.0)*.5+pow(max(d,0.0),30.0)*.03;
  return float3(.8,.85,1.0)*star*3.0+float3(.78,.84,1.0)*moon;
 }
-float3 sky(float3 ray,float night) {
- if(night>.5) {
-  float h=max(ray.y,0.0);
-  return mix(float3(.012,.018,.036),float3(.003,.006,.020),pow(h,.5))+nightSkyExtras(ray);
- }
+float3 daySky(float3 ray) {
  float h=max(ray.y,0.0); float3 c=mix(float3(.72,.77,.78),float3(.18,.36,.57),pow(h,.42));
  float3 sun=normalize(float3(-.55,.34,.70)); float d=max(dot(ray,sun),0.0);
  float2 p=ray.xz/max(.16,ray.y+.26)*2.3;
@@ -85,6 +81,16 @@ float3 sky(float3 ray,float night) {
  c+=float3(1,.77,.44)*(pow(d,350.0)*2.0+pow(d,14.0)*.12)*(1-.7*cover);
  // Authored display-RGB sky convention converted to linear radiance.
  return linearDisplay(c)*2.0;
+}
+// night in [0,1]: 0 day, ~.45 dusk (warm horizon, dimmer sky), 1 night (stars and moon). Authored.
+float3 sky(float3 ray,float night) {
+ float3 day=daySky(ray);
+ if(night<.01) return day;
+ float h=max(ray.y,0.0);
+ float t=smoothstep(.3,.9,night),dusk=night*(1-night)*4.0;
+ float3 ns=mix(float3(.012,.018,.036),float3(.003,.006,.020),pow(h,.5))+nightSkyExtras(ray);
+ float3 horizon=float3(1.0,.42,.16)*dusk*pow(1-h,5.0)*1.6;
+ return mix(day*mix(1.0,.35,night)*mix(float3(1),float3(1.0,.78,.62),dusk),ns,t)+horizon;
 }
 float filteredShadow(texture2d<float> depth, sampler smp, float2 uv, float reference, float2 gradient) {
  float2 p=uv*2048.0-.5,base=floor(p),f=fract(p);
@@ -212,9 +218,12 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   float d=max(dot(ray,normalize(float3(-.55,.34,.70))),0.0);
   float3 sun=float3(1,.77,.44)*(pow(d,700.0)*2.4+pow(d,60.0)*.10+pow(d,10.0)*.04);
   float3 dayColor=linearDisplay(s_texColor.sample(smp,in.uv).rgb)*2.0+linearDisplay(sun)*2.0;
-  if(_mtl_u.u_headlight.w>.5) {
-   float3 night=linearDisplay(s_texColor.sample(smp,in.uv).rgb)*float3(.010,.016,.040)+nightSkyExtras(ray);
-   o.color=float4(night,1); return o;
+  if(_mtl_u.u_headlight.w>.01) {
+   float nt=_mtl_u.u_headlight.w,t=smoothstep(.3,.9,nt),dusk=nt*(1-nt)*4.0;
+   float3 nightCol=linearDisplay(s_texColor.sample(smp,in.uv).rgb)*float3(.010,.016,.040)+nightSkyExtras(ray);
+   float3 dim=dayColor*mix(1.0,.35,nt)*mix(float3(1),float3(1.0,.78,.62),dusk);
+   float3 horizon=float3(1.0,.42,.16)*dusk*pow(1-max(ray.y,0.0),5.0)*1.6;
+   o.color=float4(mix(dim,nightCol,t)+horizon,1); return o;
   }
   o.color=float4(dayColor,1); return o;
  }
@@ -304,6 +313,15 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    rough=mix(rough,.06,puddle);
   }
  }
+ // Optional saturated paint for clear-coated exterior sections: keeps the texture's luminance
+ // (panel gaps, shading) and replaces its hue. u_reflectionState.z = hue (<0 black), .w = strength.
+ if(mode<.5 && _mtl_u.u_visualCoat.x>0 && _mtl_u.u_reflectionState.w>.01) {
+  float lum=dot(albedo,float3(.2126,.7152,.0722));
+  float hue=_mtl_u.u_reflectionState.z;
+  float3 rgb=clamp(abs(fract(hue+float3(0,2.0/3.0,1.0/3.0))*6.0-3.0)-1.0,0.0,1.0);
+  float3 painted=hue<0?float3(lum*.22):rgb*rgb*(lum*3.0+.03);
+  albedo=mix(albedo,painted,_mtl_u.u_reflectionState.w);
+ }
  float ndl=max(dot(n,l),0.0),ndv=max(dot(n,v),0.0);
  float3 f0=mix(float3(.04),albedo,metal);
  float3 fresnel=f0+(1-f0)*fresnelWeight(ndv);
@@ -321,7 +339,9 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(mode>.5 || mode<-.5) ambient+=float3(.080,.072,.066)*(1-abs(n.y));
  // Night: moonlight replaces the sun, ambient collapses to a deep blue floor.
  ambient=mix(ambient,mix(float3(.004,.006,.012),float3(.010,.016,.036),n.y*.5+.5),night);
- sunColor=mix(sunColor,float3(.28,.38,.80)*.85,night);specColor=mix(specColor,float3(.10,.13,.24),night);
+ float dusk=night*(1-night)*4.0;
+ sunColor=mix(sunColor,float3(1.0,.50,.26)*1.6,dusk*.85);
+ sunColor=mix(sunColor,float3(.28,.38,.80)*.85,smoothstep(.3,.9,night));specColor=mix(specColor,float3(.10,.13,.24),night);
  float4 light=_mtl_u.u_shadowMatrix*float4(in.world,1);
  float3 coord=light.xyz/light.w;
  float2 shadowUV=float2(coord.x*.5+.5,.5-coord.y*.5);
