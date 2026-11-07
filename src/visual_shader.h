@@ -187,6 +187,20 @@ void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread
   }
  }
 }
+// Light cast by the corner neon pylons (world_scene.h neonPylon): same intersection table
+// (25 corners, +-10 m from the crossing, colour palette by (ix*5+iz*3) mod 3). Unshadowed; authored.
+void neonLight(float3 p,float3 n,thread float3& diff) {
+ float2 cell=round(p.xz/100.0);
+ if(abs(cell.x)>2.0||abs(cell.y)>2.0) return;
+ float v=(cell.x+3.0)*5.0+(cell.y+3.0)*3.0;
+ for(int i=0;i<2;++i) {
+  float s=i==0?1.0:-1.0,vv=v+float(i),pal=vv-3.0*floor(vv/3.0);
+  float3 col=pal<.5?float3(1.0,.16,.67):(pal<1.5?float3(1.0,.59,.12):float3(.24,1.0,.63));
+  float3 L=float3(cell.x*100.0+s*10.0,5.0,cell.y*100.0+s*10.0)-p;
+  float d2=dot(L,L);
+  diff+=col*(3.4*max(dot(n,L*rsqrt(d2)),0.0)/(1.0+d2/60.0))*(1-smoothstep(900.0,1600.0,d2));
+ }
+}
 // Player headlights: a forward cone from the car's nose, lighting road, kerbs and facades ahead.
 void headLight(float3 p,float3 n,float4 hl,thread float3& diff) {
  float2 rel=p.xz-hl.xy;float2 fwd=float2(sin(hl.z),cos(hl.z)),right=float2(cos(hl.z),-sin(hl.z));
@@ -370,6 +384,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(night>.01) {
   float3 lampDiffuse=float3(0),lampSpec=float3(0);
   lampLight(in.world,n,v,rough,lampDiffuse,lampSpec);
+  neonLight(in.world,n,lampDiffuse);
   headLight(in.world,n,_mtl_u.u_headlight,lampDiffuse);
   lit+=night*(albedo*lampDiffuse*diffuseWeight(metal)+fresnel*lampSpec);
   // Lit windows on the authored skyline (surface 5): hashed per window cell.

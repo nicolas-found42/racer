@@ -57,6 +57,11 @@ Names only: no shader code, constants or parameter values were recovered. Sessio
 - **Launch smoke** (`src/main.cpp`): hard throttle from near standstill (speed < 8 m/s) emits thinner, smaller puffs (authored trigger; wheelspin is not simulated). `before-after/launch-smoke.png` vs `--no-tyre-smoke`. A first attempt (same density as braking smoke) produced a grey ball that hid the car and was reduced.
 - Still no dust or exhaust-pipe smoke, no coloured light cast by signs, no facade detail, no terrain relief, no depth of field.
 
+## Neon light and exhaust (follow-up 3)
+- **Neon casts coloured light** (`src/visual_shader.h` `neonLight`): the same 25-intersection table that places the pylons lights nearby surfaces with their palette colour (unshadowed, radius ~40 m, strength 3.4 after a first 6.0 turned a whole façade saturated pink). `before-after/neon-cast-light.png`: emit-only night frame vs lit; a pink wash on the right façade and orange on the left.
+- **Exhaust wisps** (`src/main.cpp`): pale, thin puffs behind the body centre line while on the throttle. The pipe position is not recovered; the emitter is authored. `before-after/exhaust.png` vs `--no-tyre-smoke` at cruise: faint and subtle. The first version used a sine-pattern puff texture that left a visible lattice at low alpha; replaced by a plain radial falloff for all smoke.
+- **Tests:** new `tests/cli_option_checks.py` (invalid `--time` / `--paint`, missing value) joins `screenshot_delay_checks`; 95 ctest targets pass (10 skipped). Still no automated test of shading output.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 

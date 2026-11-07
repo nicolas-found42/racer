@@ -628,15 +628,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   // references (Juiced 2, MCLA, MC3, SLRR) all show smoke but no formula was recovered.
   struct Puff{float x,y,z,vx,vy,vz,age,life,size,seed;};
   std::vector<Puff> puffs;
-  double puffCarry[2]={0,0};
+  double puffCarry[2]={0,0},exhaustCarry=0;
   uint32_t puffCounter=0;
   bgfx::TextureHandle puffTexture=BGFX_INVALID_HANDLE;
   {
     constexpr int n=64;std::vector<uint8_t> pixels(n*n*4);
     for(int y=0;y<n;++y)for(int x=0;x<n;++x){
       const float dx=(float(x)+.5f)/n*2-1,dy=(float(y)+.5f)/n*2-1,r=std::sqrt(dx*dx+dy*dy);
-      float h=std::sin(float(x)*.91f+float(y)*.37f)*std::sin(float(y)*.83f-float(x)*.29f);
-      const float a=std::clamp(1-r,0.f,1.f);const float soft=a*a*(3-2*a)*(.8f+.2f*h);
+      const float a=std::clamp(1-r,0.f,1.f);const float soft=a*a*(3-2*a); // clean radial falloff, no lattice
       const uint8_t v=uint8_t(std::clamp(soft,0.f,1.f)*255);
       pixels[size_t(y*n+x)*4+0]=255;pixels[size_t(y*n+x)*4+1]=255;pixels[size_t(y*n+x)*4+2]=255;pixels[size_t(y*n+x)*4+3]=v;
     }
@@ -1001,6 +1000,18 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
             puffs.push_back({float(wx),.15f,float(wz),
               float(sn)*back*.6f+rnd(1)*.9f,.5f+rnd(2)*.4f,float(c)*back*.6f+rnd(3)*.9f,0,1.6f+rnd(4)*.6f,(launching?.45f:.75f)+rnd(5)*.2f,rnd(6)+(launching?2.f:0.f)});
           }
+        }
+      }
+      // Exhaust: thin pale wisps from the rear centre while on the throttle (authored; the model's
+      // pipe position is not recovered, so the emitter sits just behind the body at the centre line).
+      if(tyreSmoke && selectedInput.throttle>.15 && speedNow>.5 && puffs.size()<900) {
+        exhaustCarry+=dt*30.0;
+        while(exhaustCarry>=1.0) {
+          exhaustCarry-=1.0;++puffCounter;
+          auto rnd=[&](unsigned salt){uint32_t h=(puffCounter*2654435761u)^(salt*40503u);h^=h>>13;h*=1274126177u;h^=h>>16;return float(h&0xffff)/65535.f-.5f;};
+          const double rz=geometry.body.minimum.z-.1;
+          puffs.push_back({float(shown.x+sn*rz+c*.35),.32f,float(shown.z+c*rz-sn*.35),
+            float(sn)*-.9f+rnd(11)*.25f,.12f+rnd(12)*.1f,float(c)*-.9f+rnd(13)*.25f,0,.9f+rnd(14)*.3f,.2f+rnd(15)*.08f,4.f+rnd(16)});
         }
       }
       for(auto& puff:puffs){puff.age+=float(dt);puff.x+=puff.vx*float(dt);puff.y+=puff.vy*float(dt);puff.z+=puff.vz*float(dt);
@@ -1492,7 +1503,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float t=p->age/p->life;
         const float size=p->size*(1+3.2f*t);
         const float fade=std::min(1.f,t*8.f)*(1-t)*(1-t);
-        const uint32_t a=uint32_t(255*std::clamp((p->seed>1.f?.42f:.95f)*fade,0.f,1.f)); // launch puffs (seed>1) are thinner
+        const uint32_t a=uint32_t(255*std::clamp((p->seed>3.f?.26f:p->seed>1.f?.42f:.95f)*fade,0.f,1.f)); // seed>1 launch, seed>3 exhaust: thinner
         // Start-to-end colour ramp (MCLA exposes smokeStartColor/smokeEndColor; values authored).
         const float ramp=std::clamp(t*1.6f,0.f,1.f);
         auto lerp8=[&](float from,float to){return uint32_t(from+(to-from)*ramp);};
