@@ -1,0 +1,9 @@
+# All remaining milestones — 2026-11-05
+
+User expanded the goal to ALL remaining milestones, exhaustive needed-data extraction from all five families, using reverse-engineer-anything, Jev and TypeSafe throughout decisions. User reports corrected steering looked right; this supports visual steering acceptance, not an unreported lap/time or other human cases. Preserve earlier acceptance evidence/unknowns without using that single item to halt independent new work.
+
+Target: existing native C++20/SDL3/bgfx/Metal Racer, executable35fad0a547534630eb37e0e67d00b4031d2129b5a953777b3ecc5c212594d4d4. Preserve staged/dirty work, independentGitroot, normalplayerprofile, oldexperiments and canonicalgames. Tools: sharedREA installation, Jev1.14 OpenRouter, TypeSafe judgments. Live docs index https://docs.typesafe.ai/llms.txt consulted; older/go/how-to-build.md URL inaccessible, currentindex provides concepts/how-to-build-with-system-one.md. No APIcredential changes.
+
+Bounds: each command<=300s; generatedoutput<=256MiB per investigation, initial selectedextraction<=16MiB/member32MiBtotal; free>=20GiB. No bulk disc duplication. Headless/hidden runtime only unless userexplicitlyrequestsplaying. All required source questions remain in coverage ledger until answered, with actual evidence/unknowns. Exhaustive means accounting for needed data and residual branches, never pretending unsupported data was recovered.
+
+Work allocation per REA broad-investigation workflow: root SLRR source/parts/vehicleformat and integration; independent Juiced2 livery/classes, MC LA map/events/career, GT4/MC3 setup/route data workers use target-free tools. Root exclusively owns active native REA target to prevent session races. Eachworker has its own experiment and limits. Implementation continues after dependency evidence is collected; no all-milestones completion claim yet.

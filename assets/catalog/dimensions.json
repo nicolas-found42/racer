@@ -1,0 +1,503 @@
+{
+  "schema": 1,
+  "units": "metres",
+  "world_units_per_metre": 1,
+  "axes": {
+    "right": "+X",
+    "up": "+Y",
+    "forward": "+Z"
+  },
+  "measurement_rules": {
+    "length": "Published nominal overall length; compare with prepared visible body bounds, preserving accessories and source variants.",
+    "height": "Overall height is measured from ground, not body bounding-box span.",
+    "width": "Published overall width and maximum visible mesh width have different possible mirror/accessory conventions; no automatic width fit.",
+    "source_units": "Record native unit authority and chosen conversion separately; exporter conventions and factory-size agreement do not prove native runtime units.",
+    "screenshots": "Perspective reference for road/car/people/building context; no absolute dimension inference from uncalibrated pixels."
+  },
+  "sources": {
+    "acura_n26": {
+      "authority": "manufacturer",
+      "title": "2004 Acura NSX Specifications",
+      "url": "https://acuranews.com/en-US/releases/release-3a09a5a1994177788b07aa004c34c503-2004-acura-nsx-specifications",
+      "published": "2003-09-03",
+      "retrieved": "2026-11-05",
+      "retained_record_sha256": "016186b673fba4b0760daa6a5fd3e2e8aba413bc79ae96a00d90c48017083f6c"
+    },
+    "nissan_z33": {
+      "authority": "manufacturer",
+      "title": "Nissan Fairlady Z Version ST (2002: Z33)",
+      "url": "https://www.nissan-global.com/EN/HERITAGE_COLLECTION/284_fairlady_z_version_st.html",
+      "retrieved": "2026-11-05",
+      "retained_record_sha256": "c8860487a1a27eecec547834245b057eed9460c345cb7e5dbda68d65ab9cc023"
+    },
+    "ford_1973": {
+      "url": "https://autocatalogarchive.com/wp-content/uploads/2016/09/Ford-Mustang-1973-USA.pdf",
+      "title": "1973 Ford Mustang brochure, Ford Division",
+      "authority": "Contemporary manufacturer brochure reproduced by third-party archive; not hosted on Ford domain.",
+      "locator": "SPECIFICATIONS: MUSTANG MACH 1",
+      "retrieval": "Firecrawl scrape HTTP200,8/8pages, scrapeId01a1ae46-93aa-74c9-b90c-d14f6ad0e023",
+      "retained": "ford-brochure-firecrawl.json",
+      "direct_pdf_download": "urllib direct request HTTP403; original PDF bytes and visual page verification unavailable in this bounded attempt.",
+      "extraction_limits": "OCR contains visible mistakes elsewhere; dimension table matches search extraction and Jev audit passed, but scan pixels not independently inspected.",
+      "retrieved": "2026-11-05"
+    },
+    "gm_2003": {
+      "authority": "manufacturer",
+      "url": "https://www.gm.com/content/dam/company/no_search/heritage-archive-docs/vehicle-information-kits/chevrolet/2003-Chevrolet-Corvette.pdf",
+      "title": "2003 Chevrolet Corvette vehicle information kit",
+      "retrieved": "2026-11-05",
+      "retained_record_sha256": "c207b20d1a40a88a6f5a97cc6b4a60fb1dcb90eba5b998c214d290efa0cd574c",
+      "precision": "Use printed inch measurements because printed mm rounded inconsistently.",
+      "locator": "Specifications table: Coupe / Convertible / Z06, Z06 column, body width explicitly without mirrors"
+    },
+    "nissan_2006_owner_roadster": {
+      "authority": "manufacturer owner guide, mirrored by third party",
+      "url": "https://www.carmans.net/wp-content/uploads/pdf/2006-nissan-350z.pdf",
+      "title": "2006 Nissan Z Owner Guide",
+      "locator": "printed9-9 DIMENSIONS AND WEIGHTS, Roadster column",
+      "retrieved": "2026-11-06",
+      "retained_record_sha256": "99412f3733c9e9313adde61559292e6b016ad4bafe9f555ac2261b46d5269211",
+      "retrieval_limits": "Firecrawl297/297page text extraction; directPDF andwebPDFfetchHTTP403 so pagepixelverificationunavailable. Whole manual retained but only dimension table used.",
+      "precision": "Printedmillimetres retained asnominal; printedinchmeasurementsroundedseparately (104.3in vs2650mm differ0.78mm)."
+    },
+    "ford_svt_2002": {
+      "authority": "Manufacturer brochure printed 8/01; third-party scan host, Firecrawl 9/9-page text extraction; pixels not independently checked.",
+      "title": "2002 Ford Focus SVT brochure",
+      "url": "https://xr793.com/wp-content/uploads/2024/01/2002-Ford-Focus-SVT.pdf",
+      "retrieved": "2026-11-06",
+      "locator": "Dimensions, Capacities",
+      "retained_record": "experiments/2026-11-06-ford-expansion/output/focus-manufacturer-firecrawl.json",
+      "retained_record_sha256": "92d9a82057d7d2b87b5dfb12eb470d1e638784935996e3c8641cf602829641f4",
+      "precision": "Printed inches converted exactly with 0.0254; printed rounded millimetres are retained separately."
+    },
+    "gt4_eu2560": {
+      "authority": "Source-game decoded SpecDB declarations, NOT manufacturer specification or observed native consumer.",
+      "title": "GT4 EU2560 SCES_517.19 GenericCar/CarVariation/DefaultParts/CHASSIS/tyre joins",
+      "retained_record": "experiments/2026-11-06-gt4-coverage/output/coverage-audit-v1.json",
+      "retained_record_sha256": "ca79e64b13d8e7d42d08e58455f3010ead1cc90491d92c07e7700f46e665d608",
+      "units": "CHASSIS length/height/wheelbase interpreted as millimetres; track inferred from raw tread minus 5 times tyre-width byte, then divided by1000.",
+      "limits": "Wheelbase/tracks in GLB were built using these same exporter conventions, so agreement is not independent unit proof. CHASSIS width encoding not interpreted."
+    },
+    "ford_svt_lightning_2002": {
+      "authority": "Original Ford/SVT manufacturer brochure, third-party archive; technical dimension scan visually inspected.",
+      "title": "2002 Ford SVT F-150 Lightning brochure",
+      "url": "https://www.auto-brochures.com/makes/Ford/F-150/Ford_US%20F-150_2002-SVT.pdf",
+      "retrieved": "2026-11-06",
+      "locator": "TECHNICAL DATA, Dimensions & Capacities center column, physical PDF page13",
+      "retained_record": "experiments/2026-11-06-cohort-acceptance/output/dimension-research/lightning-proposal-v2.json",
+      "retained_record_sha256": "4e819f73b93d478f060187837cf3c33dd7ec302b5e54fbece035047d2c2fdf95",
+      "retained_pdf": "experiments/2026-11-06-cohort-acceptance/output/dimension-research/lightning-2002.pdf",
+      "retained_pdf_sha256": "f4eb6d7bf83748ba61d130363a0dd7c3fa2ba743379f7b14b1a063864204e514",
+      "precision": "Exact inch conversion x0.0254; no hidden mixture with printed mm. Printed 65.3in track converts1658.62mm, while brochure prints1661mm; both retained.",
+      "variant_limit": "Platform-qualified factory dimension comparison for a source-labelled SVT Lightning. Exact source year/trim/handling is not certified. UI omits uncertain year.",
+      "primary_measurement_field": "source_values_inches; separately printed mm retained as alternate publication values, not conversion inputs"
+    },
+    "ford_gt_2005_table": {
+      "authority": "Manufacturer brochure rehosted by third-party archive; originalPDFpixels reviewed, not an authenticated manufacturer-hosted original.",
+      "title": "Ford GT brochure, filename2006, internal2005 specifications",
+      "url": "https://www.auto-brochures.com/makes/Ford/GT/Ford_US%20GT_2006.pdf",
+      "retrieved": "2026-11-06",
+      "retained_pdf": "experiments/2026-11-06-ford-gt-reference/output/ford-gt-filename-2006.pdf",
+      "retained_pdf_sha256": "fe2a47b0b043920ddeb84a69669aa633253a57e4a9f878ddbae424ac0c6b0074",
+      "locator": "Physicalpage2, exterior dimensions table; printedinches.",
+      "retained_table": "experiments/2026-11-06-ford-gt-reference/output/specifications-physical-page-2.jpg",
+      "retained_table_sha256": "189401c5bb75c5eb821b98eb514891b1c53824d1b67ebcf3050d7c5c5cebfdc5",
+      "qualification": "Filename/printed/nativeyear differs; widthmirror convention andtyreprofiles unspecified. No powerorhandlingvalues applied."
+    }
+  },
+  "vehicles": [
+    {
+      "canonical_id": "acura-nsx-2004",
+      "manufacturer": "Acura",
+      "model": "NSX",
+      "model_year": 2004,
+      "source": "acura_n26",
+      "applicability": "exact published model year; exterior dimensions shared by manual/automatic on cited table",
+      "nominal": {
+        "length": 4.425,
+        "width": 1.81,
+        "height": 1.17,
+        "wheelbase": 2.53,
+        "front_track": 1.51,
+        "rear_track": 1.54
+      },
+      "source_values_mm": {
+        "length": 4425,
+        "width": 1810,
+        "height": 1170,
+        "wheelbase": 2530,
+        "front_track": 1510,
+        "rear_track": 1540
+      },
+      "game_model_ids": [
+        "gran-turismo-4/acra0014"
+      ],
+      "source_model_sha256": {
+        "gran-turismo-4/acra0014": "c16888299ebd40494d5bb86c9d0e8df635dbbaacd679e29c26a0406690882009"
+      }
+    },
+    {
+      "canonical_id": "nissan-z33-2002-platform",
+      "manufacturer": "Nissan",
+      "model": "Fairlady Z Version ST / Z33",
+      "model_year": 2002,
+      "source": "nissan_z33",
+      "applicability": "Platform comparison for GT4 2003, MC3 source-code2004 and Juiced2 350Z assemblies. Retained MCLA va_350z_04 is traffic-only metadata. Market/year/trim and body-envelope differences remain explicit; not identical retail variant or native-unit proof.",
+      "nominal": {
+        "length": 4.31,
+        "width": 1.815,
+        "height": 1.315,
+        "wheelbase": 2.65,
+        "front_track": 1.535,
+        "rear_track": 1.545
+      },
+      "source_values_mm": {
+        "length": 4310,
+        "width": 1815,
+        "height": 1315,
+        "wheelbase": 2650,
+        "front_track": 1535,
+        "rear_track": 1545
+      },
+      "game_model_ids": [
+        "gran-turismo-4/niss0004",
+        "midnight-club-los-angeles/va_350z_04",
+        "juiced-2/350Z",
+        "midnight-club-3-remix/vp_350z_04"
+      ],
+      "source_model_sha256": {
+        "gran-turismo-4/niss0004": "332d62a5f832ac20f669bc8a4cde2b71adbeefd8ce6544353719a0b70957562d",
+        "midnight-club-los-angeles/va_350z_04": "0c65c56fe42205054e251b1569da22343fa314f69151fd798c0857e94fc83703",
+        "juiced-2/350Z": "878a07afd724d8dd4769362e2cc366d0cf635412d5ac9c972b2266ef1565ba97",
+        "midnight-club-3-remix/vp_350z_04": "8a1b7ba44d38815c6c491d3caf9e3b139dbf51c9d74d4c9546b2ee3164d48383"
+      }
+    },
+    {
+      "canonical_id": "ford-mustang-mach1-1973",
+      "manufacturer": "Ford",
+      "model": "Mustang Mach1",
+      "model_year": 1973,
+      "source": "ford_1973",
+      "applicability": "Source year and Mustang identity established by source config; Mach1 body-name/appearance correspondence supports comparison, not an independently recovered trim/VIN.",
+      "nominal": {
+        "wheelbase": 2.7685999999999997,
+        "length": 4.9225200000000005,
+        "width": 1.8821399999999997,
+        "height": 1.27
+      },
+      "source_values_inches": {
+        "wheelbase": 109.0,
+        "length": 193.8,
+        "width": 74.1,
+        "height": 50.0
+      },
+      "game_model_ids": [
+        "ford-racing-2/MACH1_SIXTY"
+      ],
+      "source_model_sha256": {
+        "ford-racing-2/MACH1_SIXTY": "0f1ae9c4ed637eac967e00377afe4989eff21c55ddfabdfc2f0804c552a9d85f"
+      }
+    },
+    {
+      "canonical_id": "chevrolet-corvette-2003",
+      "manufacturer": "Chevrolet",
+      "model": "Corvette Z06",
+      "model_year": 2003,
+      "source": "gm_2003",
+      "applicability": "2003 Corvette Z06 column; MC3 vp_corvettez06_03 identity from source. Source proportions conflict remains unresolved.",
+      "nominal": {
+        "length": 4.56438,
+        "width": 1.86944,
+        "height": 1.21158,
+        "wheelbase": 2.6543,
+        "front_track": 1.58496,
+        "rear_track": 1.59004
+      },
+      "source_values_inches": {
+        "length": 179.7,
+        "width": 73.6,
+        "height": 47.7,
+        "wheelbase": 104.5,
+        "front_track": 62.4,
+        "rear_track": 62.6
+      },
+      "game_model_ids": [
+        "midnight-club-3-remix/vp_corvettez06_03"
+      ],
+      "source_model_sha256": {
+        "midnight-club-3-remix/vp_corvettez06_03": "d02bcb3fa7238ff664914135881d03dbc56756b321517b38a7948178c62866de"
+      }
+    },
+    {
+      "canonical_id": "nissan-350z-roadster-2006-us",
+      "manufacturer": "Nissan",
+      "model": "350Z Roadster",
+      "model_year": 2006,
+      "source": "nissan_2006_owner_roadster",
+      "applicability": "Exact model/year/body-style label from catalog and convertible source parts; precise trim and original-game dynamic geometry remain unproven.",
+      "nominal": {
+        "length": 4.314,
+        "width": 1.815,
+        "height": 1.333,
+        "wheelbase": 2.65,
+        "front_track": 1.536,
+        "rear_track": 1.54
+      },
+      "source_values_mm": {
+        "length": 4314,
+        "width": 1815,
+        "height": 1333,
+        "wheelbase": 2650,
+        "front_track": 1536,
+        "rear_track": 1540
+      },
+      "source_values_inches_rounded": {
+        "length": 169.8,
+        "width": 71.5,
+        "height": 52.5,
+        "wheelbase": 104.3,
+        "front_track": 60.5,
+        "rear_track": 60.6
+      },
+      "game_model_ids": [
+        "midnight-club-los-angeles/vp_nsn_350z_06"
+      ],
+      "source_model_sha256": {
+        "midnight-club-los-angeles/vp_nsn_350z_06": "7f4818ad423f9db6802e70a65b6de4c4cb0e38dab4b335f98318a7d8360bd56a"
+      }
+    },
+    {
+      "canonical_id": "ford-focus-svt-2002",
+      "manufacturer": "Ford",
+      "model": "Focus SVT",
+      "model_year": 2002,
+      "source": "ford_svt_2002",
+      "applicability": "Native CARDATA model year/display identity and manufacturer SVT brochure; original donor dynamics unproven. Tracks are an explicit Racer adaptation; body length/height/wheelbase retained.",
+      "nominal": {
+        "wheelbase": 2.6162,
+        "length": 4.26974,
+        "height": 1.4300199999999998,
+        "width": 1.69926,
+        "front_track": 1.49352,
+        "rear_track": 1.4859
+      },
+      "source_values_inches": {
+        "wheelbase": 103.0,
+        "length": 168.1,
+        "height": 56.3,
+        "width": 66.9,
+        "front_track": 58.8,
+        "rear_track": 58.5
+      },
+      "printed_values_mm_rounded": {
+        "wheelbase": 2615,
+        "length": 4270,
+        "height": 1430,
+        "width": 1699,
+        "front_track": 1494,
+        "rear_track": 1486
+      },
+      "game_model_ids": [
+        "ford-racing-2/FOCUS_SVT"
+      ],
+      "source_model_sha256": {
+        "ford-racing-2/FOCUS_SVT": "b694708fefefa9cb85b9c8125ade226a973e9f0a87d1b05298eae3d49ffbc844"
+      }
+    },
+    {
+      "canonical_id": "gt4-eu2560/dodg0009",
+      "model": "Dodge RAM 1500 LARAMIE Hemi Quad Cab `04",
+      "model_year": 2004,
+      "source": "gt4_eu2560",
+      "applicability": "Exact source game decoded table; raw unit/placement convention remains an interpretation, not a manufacturer measurement or native consumer trace.",
+      "nominal": {
+        "length": 5.784,
+        "height": 1.961,
+        "wheelbase": 3.569,
+        "front_track": 1.747,
+        "rear_track": 1.764
+      },
+      "source_values_mm": {
+        "length": 5784,
+        "height": 1961,
+        "wheelbase": 3569,
+        "front_track": 1747,
+        "rear_track": 1764
+      },
+      "raw_chassis_fields": {
+        "length": 5784,
+        "height": 1961,
+        "wheelbase": 3569,
+        "mass": 2390,
+        "dlength": 5784,
+        "dheight": 1961,
+        "dmass": 2390,
+        "performanceF": 1000,
+        "performanceR": 1000,
+        "treadF": 2012,
+        "treadR": 2029,
+        "width": 805,
+        "dwidth": 805
+      },
+      "raw_tyre_fields": {
+        "front": {
+          "tire_row_id": 40369,
+          "size_row_id": 998,
+          "flatness_raw": 14,
+          "category_raw": 0,
+          "diameter_raw": 170,
+          "width_raw": 53
+        },
+        "rear": {
+          "tire_row_id": 40363,
+          "size_row_id": 998,
+          "flatness_raw": 14,
+          "category_raw": 0,
+          "diameter_raw": 170,
+          "width_raw": 53
+        }
+      },
+      "game_model_ids": [
+        "gran-turismo-4/dodg0009"
+      ],
+      "source_model_sha256": {
+        "gran-turismo-4/dodg0009": "4c8365f577326d50b0248203b48b1a3f3c9652f7454cbf60a233cd6ba3a6a442"
+      }
+    },
+    {
+      "canonical_id": "gt4-eu2560/daih0005",
+      "model": "Daihatsu Midget II D-type `98",
+      "model_year": 1998,
+      "source": "gt4_eu2560",
+      "applicability": "Exact source game decoded table; raw unit/placement convention remains an interpretation, not a manufacturer measurement or native consumer trace.",
+      "nominal": {
+        "length": 2.79,
+        "height": 1.65,
+        "wheelbase": 1.84,
+        "front_track": 1.134,
+        "rear_track": 1.1
+      },
+      "source_values_mm": {
+        "length": 2790,
+        "height": 1650,
+        "wheelbase": 1840,
+        "front_track": 1134,
+        "rear_track": 1100
+      },
+      "raw_chassis_fields": {
+        "length": 2790,
+        "height": 1650,
+        "wheelbase": 1840,
+        "mass": 570,
+        "dlength": 2790,
+        "dheight": 1650,
+        "dmass": 570,
+        "performanceF": 950,
+        "performanceR": 950,
+        "treadF": 1279,
+        "treadR": 1245,
+        "width": 490,
+        "dwidth": 490
+      },
+      "raw_tyre_fields": {
+        "front": {
+          "tire_row_id": 40055,
+          "size_row_id": 750,
+          "flatness_raw": 19,
+          "category_raw": 0,
+          "diameter_raw": 100,
+          "width_raw": 29
+        },
+        "rear": {
+          "tire_row_id": 40049,
+          "size_row_id": 750,
+          "flatness_raw": 19,
+          "category_raw": 0,
+          "diameter_raw": 100,
+          "width_raw": 29
+        }
+      },
+      "game_model_ids": [
+        "gran-turismo-4/daih0005"
+      ],
+      "source_model_sha256": {
+        "gran-turismo-4/daih0005": "9306726b0112a4316b9a1be129d3fe1dea42289ab4034081d82b92b978d465d5"
+      }
+    },
+    {
+      "canonical_id": "ford-svt-lightning-platform",
+      "manufacturer": "Ford",
+      "model": "SVT F-150 Lightning",
+      "model_year": 2002,
+      "source": "ford_svt_lightning_2002",
+      "applicability": "Platform-qualified factory dimension comparison for a source-labelled SVT Lightning. Exact source year/trim/handling is not certified. UI omits uncertain year. SourceYEAR2002/BHP360 disagrees with brochure380hp; dimensions used as platform-qualified reference, not exact trim/native handling certification.",
+      "nominal": {
+        "wheelbase": 3.0429199999999996,
+        "length": 5.2832,
+        "height": 1.8008600000000001,
+        "width": 2.00914,
+        "front_track": 1.6586199999999998,
+        "rear_track": 1.6586199999999998
+      },
+      "source_values_inches": {
+        "wheelbase": 119.8,
+        "length": 208.0,
+        "height": 70.9,
+        "width": 79.1,
+        "front_track": 65.3,
+        "rear_track": 65.3
+      },
+      "game_model_ids": [
+        "ford-racing-2/LIGHTNING_SVT"
+      ],
+      "source_model_sha256": {
+        "ford-racing-2/LIGHTNING_SVT": "f342376a86f13bbc24e3dd7d9d477d735d867850eb155a719b0f82737a02eb04"
+      },
+      "printed_millimetres_as_published": {
+        "wheelbase": 3043,
+        "length": 5283,
+        "height": 1801,
+        "width": 2009,
+        "front_track": 1661,
+        "rear_track": 1661
+      }
+    },
+    {
+      "canonical_id": "ford-gt-platform",
+      "manufacturer": "Ford",
+      "model": "GT",
+      "model_year": 2005,
+      "source": "ford_gt_2005_table",
+      "applicability": "Platform-qualified dimensions from Ford brochure printed2005specifications (file named2006). Native sourceYEAR2004/BHP500 differs brochure550hp; exact year/trim/nativehandling not certified. Year-free display.",
+      "nominal": {
+        "wheelbase": 2.71018,
+        "length": 4.64312,
+        "height": 1.1252199999999999,
+        "width": 1.95326,
+        "front_track": 1.6001999999999998,
+        "rear_track": 1.61798
+      },
+      "source_values_inches": {
+        "wheelbase": 106.7,
+        "length": 182.8,
+        "height": 44.3,
+        "width": 76.9,
+        "front_track": 63.0,
+        "rear_track": 63.7
+      },
+      "game_model_ids": [
+        "ford-racing-2/FORD_GT"
+      ],
+      "source_model_sha256": {
+        "ford-racing-2/FORD_GT": "0d68eb6c70ce4da8678c6da9e2ffb343f688ddcfc7e77685b10062a3c0a7553e"
+      }
+    }
+  ],
+  "coverage": {
+    "manufacturer_dimension_records": 8,
+    "catalog_models": 965,
+    "unmapped_models": "Unknown until source variant and dimension evidence are recorded; no copied default sizes.",
+    "policy": "Gran Turismo 1 and Redline excluded by user. MCLA ambient assets retained for traffic only. Catalog dimension coverage does not imply player eligibility.",
+    "source_game_dimension_records": 2
+  }
+}

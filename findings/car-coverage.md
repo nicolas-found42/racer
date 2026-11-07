@@ -1,0 +1,73 @@
+# Car source coverage and evidence
+
+The pinned carmodels catalog (ce047799fc550cdf92e4f7b62d97ef5c603e53ad; SHA256 fcd6eb5badd4cc120da3daaae315e83b71fb2b9400062b371b73c9f42a442e6c) has 965 in-scope entries. GT1 and Redline are excluded from active inventory/acquisition/publication. The 41 MCLA `va_` entries are retained traffic assets and cannot be player cars. A public row, adapter dispatch match or decoded configuration is not a playable-car acceptance.
+
+## Inspected coverage
+
+| Source | Inspected and retained | Remaining boundary |
+|---|---|---|
+| GT4 EU2560 / SCES_517.19 | All730 exact code→GenericCar/variation/default-parts/chassis/tyre joins; independent decoder checks28,430 rows across9 tables. Source dimensions and placement hypotheses retained. | Native physical units, callback rest poses and procedural wheels unobserved. US722-row source is a different build; no row-index substitution. |
+| Ford Racing2 | All 35 native configs and public GLBs/native PS2 witnesses retained: 21 unique `APPROVED1`, 13 unique `APPROVED0`, one conflicting `1,0`. Thirty-three ordinary preparations plus optional EX static-rest candidate investigated. | `APPROVED` is a declaration, not proven player eligibility. All 35 source inputs inspected at selected geometry/config boundaries; INDIGO fails carrier containment. F150 contact/pivot semantics and exact factory variant remain unresolved. |
+| MCLA |106 public entries:41 deferred traffic,65 player-body namespace entries. Exact ISO body hashes/bones inspected for65;61 have four `axl` bones,4 have two. Three player preparations investigated. | Body/axle metadata is not complete wheel/material/config assembly. Mustang roof/envelope/antenna interpretation and Golf tyre sizing remain held; native game not run. |
+| MC3 Remix PS2 catalog |94 package/main-PCK/index and preview-record hash joins;79 four-bone assemblies,15 two-bone assemblies. Corvette/350Z plus Fleetline, Saleen, Viper and Esprit body/skeleton/shared-wheel witnesses retained. | Public PS2 sources do not establish equivalence to the retained Xbox original DUB ISO. Four-bone metadata does not imply adapter/runtime acceptance or source wheel units. Duplicate config precedence unknown. |
+| Juiced2 Xbox360 ISO | All94 BeginCar configs freshly checked against current ISO packed/decoded fields;92 exact casefold bank/header pairs;350Z, MX5, Z4, MINI, Charger RT and Koenigsegg actual assemblies extracted. | Noble bank alias and NONE/BLANK placeholders unresolved;94 configs are not94 playable complete cars. Stock procedural TYRE_PROFILE/rim-scaling consumer unresolved. |
+| SLRR2.3.1 | All70 native car CFG/class/Java links inspected; each parent models class derives from Chassis. Furrano native resource graph, visible assembly/rest-fit/material experiments inspected. | No SLRR row exists in the pinned public catalog. A separate native audit found70 car declarations across25packages;45 classes contain banned=1. Source candidates are not a runtime roster. Other assemblies remain unreviewed. |
+
+Per-entry artifacts: [GT4](../experiments/2026-11-06-gt4-coverage/output/coverage-audit-v1.json), [Ford](../experiments/2026-11-06-ford-expansion/output/coverage-inventory.json), [MCLA](../experiments/2026-11-06-mcla-expansion/output/standardized-coverage.json), [MC3](../experiments/2026-11-06-mc3-coverage/output/coverage-audit.json), [Juiced2](../experiments/2026-11-06-juiced2-expansion/output/configuration-archive-coverage.json), [SLRR](../experiments/2026-11-06-slrr-coverage/README.md). These local generated artifacts have explicit input pins/limits in their experiment records; they are not guaranteed present on a clean checkout.
+
+## Reconstructing source/import history
+
+Retained evidence has separate layers: pinned public/native sources; preparation descriptors/receipts with exact input/output SHA; reviewed dimensions and role inventory; immutable installed catalog ownership/history; runtime JSONL and pixel captures at an exact executable/mesh SHA. `scripts/car_coverage.py` joins actual installed bytes to review/source rows and labels absent review records. It does not run the game, resolve a different preparation input's derivation, or certify gameplay. MC3 Corvette's repaired preparation input legitimately differs from the pinned public preview: inspect its repair receipt instead of calling them identical.
+
+```sh
+cd /Users/nicolas/Documents/github/reverse-engineering/games/racer
+python3 scripts/car_coverage.py \
+  --gt4-audit experiments/2026-11-06-gt4-coverage/output/coverage-audit-v1.json \
+  --output /tmp/racer-coverage-new.json
+python3 -m json.tool /tmp/racer-coverage-new.json
+python3 scripts/diagnostics.py --help
+```
+
+Choose an unused output filename; reports deliberately refuse overwrite. Inspect `installation.state`, both installed/reviewed hashes, `source_relationship`, raw source metadata and per-model limitations. Do not infer original units from the same wheelbase values used to construct the export. [The diagnostic runbook](diagnostic-runbook.md) supplies time/run/operation queries, retained capture bundles and cross-process save/retry/reload reconstruction.
+
+Important historical limits: native user failure before recording cannot be recovered; bounded history can stop admission or be unavailable. New source/geometry tools cannot recover unretained prior meshes/captures. Frozen executable/source copies bind retained files and working-tree observations, not an atomic compiler or OS-image attestation. Human course usability, physical controller behavior, original donor execution/dynamics/shaders and exact trim equivalence remain separate checks.
+
+Latest joined report: [eleven-car v6](../experiments/2026-11-06-car-coverage/output/car-coverage-eleven-v6.json), using the explicitly supplied GT4 audit, records 730 decoded metadata joins, eleven reviewed and installed byte-verified players, and 41 deferred traffic entries. The earlier v5 report omitted the optional metadata audit and therefore records zero metadata joins; it remains retained as that narrower query, not evidence that decoding disappeared. Neither report reruns the game.
+
+## Priority source defects and acceptance
+
+| Priority | Known gap and evidence | Concrete acceptance check |
+|---|---|---|
+| P1 | GT4 ModelT floating body components; Tank body/native wheel ownership; Benz/Midget63 non-four-wheel layouts; Daimler degenerate exporter front track. | Recover rest callbacks/layout and source wheel ownership; independent full-vertex proof, native loader, four-angle/full-lock/moving appearance and geometry-based physics. A degree-only ModelT replay is insufficient and retained as rejected. |
+| P1, partial closure | Juiced 2 shared Toyo “tyre” mesh includes OZ rim/disc/BLACK2 decorations. The exact filter is implemented and active 350Z passes native checks; MX5 hub-rest fit still does not establish stock rim sizing. | Exact material/structure filter preserves source BIN and non-template geometry, rejects hidden mesh aliases; independent diff plus native render/motion/carrier checks. Resolve or explicitly retain native rim/procedural-tyre scale limits; MX5 stays research-only. |
+| P2, implemented for reviewed entries | The former MC3 alias whitelist rejected most four-wheel entries. Pose/bone-owned wheel contract now supports the new reviewed 350Z; the remaining corpus is not runtime-accepted. | Native DAT/PCK/preview joins and pose-based wheel ownership independent of alias spelling; preserved legacy Corvette bytes, malformed/bone/frame tests and actual candidate render/physics checks. |
+| P2, implemented | Coverage/report and capture identity defects were reproduced and closed: installed-only origins and MCLA traffic remain explicit; capture source/inventory bytes are bound. | Eight coverage and six mocked-native preflight tests, independent before/after repro closure, exact frozen inventory hash and descriptor source binding. Actual GPU results remain a separate evidence layer. |
+| P2 | Ford F150 hub pivot is inboard of actual tyre contact; MCLA Golf oversized tyre/variant unresolved. | Establish contact/steering contract and attributable source/factory dimensions; do not arbitrarily recenter, shrink body or relax tolerance to pass. |
+
+Current source requirements are keyed by source SHA, so changing an inventory ID cannot bypass them. A curated explicit resolution must bind to the exact repaired prepared hash and supporting evidence. These are review controls in a cooperative local store, not authentication against coordinated tampering.
+
+## Latest acceptance checkpoint
+
+[The twelve-car report](../experiments/2026-11-06-cohort-acceptance/output/car-coverage-twelve-v7.json) verifies twelve installed/reviewed players, 730 supplied GT4 metadata joins and 41 deferred traffic entries. Lightning is appended at index 11; all prior entries and order are unchanged. Its exact year/trim, visible-width convention and original dynamics remain unverified.
+
+[Root cohort acceptance](../experiments/2026-11-06-cohort-acceptance/README.md) retains 184 reviewed static captures, four new Juiced 2 and four new MC3 preparations, and optional EX body-fixed source-rest suspension. INDIGO remains rejected; EX has no carrier binding, so the mistakenly requested mandatory-carrier motion check is retained as failed rather than relabeled successful. MC3 glass is an authored tint; source units/default activation/shared exhaust are separate limits. Juiced 2 v3 static selection covers 78 supported declarations, 7 unsupported contracts, 5 unsupported hierarchies, 2 deferred special declarations and 2 missing aliases; these 94 declarations are not a runtime roster.
+
+Latest MC3 attachment review preserves all 24,096 original position instances and adds 272 positions/208 triangles at source-informed Saleen/Esprit rest anchors. Both preparations are now explicit ineligible inventory rows, instead of invisible to the joined coverage report. The [v8 report](../experiments/2026-11-06-mc3-attachment-acceptance/output/car-coverage-v8.json) still verifies twelve players and 41 deferred traffic rows. Viper has decoded shared geometry but no proven attachment frame; a developer-attributed GTS/R roster and closed coupe pixels reject production SRT10 convertible dimension substitution. No canonical dimensions or source handling were certified.
+
+## Retained registry and thirteen-player checkpoint
+
+The [registry experiment](../experiments/2026-11-06-preparation-registry/README.md) joins forty already-retained candidates (34 Ford, four actual-ISO Juiced 2, two additional MC3) to exact source/mesh/descriptor/evidence hashes. All forty passed the actual CPU loader. The dry tool added 37 research-only rows and preserved three conflicting active Ford revisions; all fifteen previous rows stayed unchanged. The central inventory now has 52 rows. Subsequent separate review promotes only Ford GT: 13 players, one traffic preparation, 38 research candidates. Re-registering the actual selection after promotion is byte-identical, adding zero rows and preserving all four conflicts, including GT's later year-free descriptor.
+
+[GT acceptance](../experiments/2026-11-06-ford-gt-native/README.md) retains thirteen reviewed images, exact motion/carrier/full-lock and keyboard checks, then production-library selection/save/new-process reload. Catalog SHA `3da5f93bb8a18355877d4614c7ecb4c6fb79273d67c286aa9eee602719e7327c` preserves the previous twelve entries/order and appends GT at index 12. Source2004/BHP500 versus brochure filename2006/internal2005/550hp remains explicit; display is year-free. Width convention, conservative tyre width/front5.1mm clearance, partial materials and native dynamics are not certified. The compact actual join in `ford-gt-native/output/coverage-summary-v9.json` records current installed hashes/counts without duplicating the full 965-row report.
+
+At the GT checkpoint the245,114-byte curated inventory was near its former256KiB reader limit. The later shared capacity change below removes that bottleneck; this checkpoint does not establish that all 965 public rows are prepared or playable. GT1/Redline stay excluded and all 41 MCLA ambient entries stay deferred traffic.
+
+## Bounded metadata capacity
+
+[Capacity verification](../experiments/2026-11-06-inventory-capacity/README.md) gives registration/publication/coverage/scale-capture the same strict16MiB/3000-record metadata interface. Existing source policy, player eligibility and small batch caps remain separate. 971/1200 synthetic records repeat the largest current row shape with distinct fake IDs and forced research-only role:11,079,038/13,692,128 serialized bytes fit in memory. These are capacity fixtures, not extracted or accepted cars. Actual >256KiB files traverse each reader with tiny fixtures; old-reader versions reject them. The actual40 preparation re-registration remains byte-identical, with36 existing identities and four preserved conflicts.
+
+The selection verifier now reads the actual13-entry catalog but stages only original indices0/1/2/4 for its scenario, with Juiced2 at localindex3. It pins7,623,508 payload bytes instead of copying the whole48,520,001-byte retained directory/history at the audit checkpoint. Metadata scans count toward a128MiB total-read cap; selected payload stays<=64MiB. A retained four-entry research library passes the actual native CPU loader; no fresh GPU loop or additional player was published. Current counts remain13players, one retained traffic preparation,38research rows; all965 public-source and separate local-conversion limitations still apply.
+
+## Juiced2 wheel-source contract
+
+[The native contract](juiced2-wheel-contract.md) now recovers the shared profile's12-of13 constructor scan, setter rounding and scale/matrix/material consumers. The current ISO XEX matches the retained native-analysis source; memory-layout/export qualifications remain explicit. Actual profile data and four source declarations are freshly checked. Four research rows gain a `native_wheel_contract` evidence field with `geometry_applied:false` and per-car argument assignment unverified. All52rows/13players, all GLBs, prior fields and other48rows remain unchanged apart from these annotations; new inventory SHA3fb258cf…. The TyreCode parser bridge exists, but the renderer adjusts nominal inputs using a resource fraction and writable multiplier, so the CLI demonstration must not be applied as stock model values. Shared-Toyo geometry remains an adaptation; no new cars are accepted.

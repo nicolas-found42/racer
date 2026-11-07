@@ -1,0 +1,9 @@
+inputs/
+analysis/
+experiments/*/output/
+assets/local/
+.DS_Store
+__pycache__/
+*.pyc
+.deps/
+build/

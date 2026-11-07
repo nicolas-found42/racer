@@ -1,0 +1,63 @@
+# Experiments
+
+## 2026-11-06 follow-up
+
+- [Car source coverage](2026-11-06-car-coverage/README.md): active corpus inventory, held geometry defects and eleven installed players.
+- [Expanded native acceptance](2026-11-06-expanded-acceptance/README.md): ten/eleven-car checkpoints, complete Focus loops, Juiced2 template cleanup and exact retained inputs.
+- [Import recovery](2026-11-06-import-recovery/README.md): native corrupted-load/save-failure/retry/restart reconstruction.
+- [Asset failure context](2026-11-06-asset-failure-context/README.md): shared load-stage/input/descriptor hashes, fresh review and native verification.
+- [Native coverage](2026-11-06-native-coverage/README.md): observer/capture failure isolation, transient boundary events, fresh hidden input/steering/interruption checks and retained pixel review.
+- [Offline tool coverage](2026-11-06-tool-coverage/README.md): hash-bound source inventory, mixed-generation report fix and bounded compiled-data failure checks.
+- [Verifier coverage](2026-11-06-verifier-coverage/README.md): retained verifier lifecycle, timeout attribution repair and aggregated first-party boundary inspection inventory.
+- Source-family expansions: [GT4](2026-11-06-gt4-coverage/README.md), [Ford](2026-11-06-ford-expansion/README.md), [MCLA](2026-11-06-mcla-expansion/README.md), [MC3](2026-11-06-mc3-coverage/README.md), [Juiced2](2026-11-06-juiced2-expansion/README.md), [SLRR](2026-11-06-slrr-coverage/README.md). Metadata/source configurations remain separate from playable acceptance.
+
+- [Fit review and seven-car publication](2026-11-06-fit-review/README.md): retained candidate/maximum-steer/motion views, strict source exclusions, explicit authored fits and local native acceptance.
+- [SLRR rest fit](2026-11-06-slrr-rest-fit/README.md): exact source spring audit, rejected compression poses and independently checked fixed-pose clearance.
+- [Observability coverage delta](2026-11-06-observability-delta/README.md): career/parts/livery save-state identities, failure/retry/restart reconstruction and explicit coverage limits.
+
+Every investigation, including a small one-off probe, starts at `<id>/README.md`. Use the hub's templates/experiment/README.md; name IDs YYYY-MM-DD-short-question, adding a suffix when repeated. Keep commands, observations, evidence, retention, and next action together. Larger outputs may stay at established tool-required paths, linked from this record and counted in the same resource budget.
+
+- [2026-11-05-car-models](2026-11-05-car-models/README.md): active car extraction/import/runtime/physics checklist; real default cars and native integration verification.
+- [2026-11-05-city-scale](2026-11-05-city-scale/README.md): city-driving reference images, canonical manufacturer/source dimensions, shared metric fixtures and seven-car native review.
+- [2026-11-05-car-catalog](2026-11-05-car-catalog/README.md): pinned 1,435-entry catalog, bounded verified acquisition, reproducible two-car installer and GT4 preparation.
+- [2026-11-05-mcla-vehicle](2026-11-05-mcla-vehicle/README.md): native-bone-verified 350Z preparation and explicit source-unit limits.
+- [2026-11-05-ford-vehicle](2026-11-05-ford-vehicle/README.md): assembled 1973 Mustang, configured tyre fit, resource limits and independent review.
+- [2026-11-05-other-car-families](2026-11-05-other-car-families/README.md): historical pilot adapters; GT1/Redline are now excluded, and later MC3 authored fitting is recorded in the current fit review.
+- [2026-11-05-slrr-assembled](2026-11-05-slrr-assembled/README.md): source-slot assembled Furrano exterior and runtime preparation underway.
+- [2026-11-05-juiced2-data](2026-11-05-juiced2-data/README.md): retained native archive/scripts data; separate from the newly requested mesh extraction.
+
+- [2026-11-05-milestone-acceptance](2026-11-05-milestone-acceptance/README.md): original requirements audit,82 image hashes revalidated, corrected-build85s no-capture full-course verification; human acceptance remains blocked.
+- [2026-11-05-observability-preservation](2026-11-05-observability-preservation/README.md): repeat audit; corrupt-only evidence visibility, bounded whole-run/capture bundles, moved-store retrieval and new hidden interruption verification.
+- [2026-11-05-observability](2026-11-05-observability/README.md): human steering incident, render-boundary fix, codebase coverage audit, bounded retained recorder, retrieval and failure/lifecycle verification.
+- [2026-11-05-feedback-implementation](2026-11-05-feedback-implementation/README.md): truthful state/comparisons, phases and course guidance; native two-size loop, verification and remaining human/hardware limits.
+- [2026-11-05-slrr-feedback](2026-11-05-slrr-feedback/README.md): revalidated source/manual accept/cancel and persistence evidence.
+- [2026-11-05-gt4-comparisons](2026-11-05-gt4-comparisons/README.md): setup/comparison manual context, local hashes and runtime/edition limits.
+- [2026-11-05-mc3-guidance](2026-11-05-mc3-guidance/README.md): garage/checkpoint manual intent, xemu configuration blocker and edition uncertainty.
+- [2026-11-05-feedback-milestone-plan](2026-11-05-feedback-milestone-plan/README.md): completion assessment; planned presentation milestone, bounded donor research and verification matrix.
+- [2026-11-05-garage-visual-review](2026-11-05-garage-visual-review/README.md): 22 screenshots of the complete tuning loop; prioritized UI findings and gallery.
+- [2026-11-05-garage-tests](2026-11-05-garage-tests/README.md): implemented; persisted garage setups, measured tests, native keyboard/gamepad loop and validation.
+- [2026-11-05-next-milestone-plan](2026-11-05-next-milestone-plan/README.md): historical planning; proposed garage setup and measured-test loop from the completed grid.
+- [2026-11-05-plan-validation](2026-11-05-plan-validation/README.md): historical; plan revalidation, focus/resume fixes and regression evidence.
+- [2026-11-05-first-playable](2026-11-05-first-playable/README.md): implemented; C++/SDL3/bgfx Metal driving grid and verification.
+- [2026-11-05-donor-inventory](2026-11-05-donor-inventory/README.md): current; source inventory, initial REA evidence and requirements interview.
+- [2026-11-05-project-setup](2026-11-05-project-setup/README.md): completed documentation scaffold.
+
+## Latest cohort continuation —2026-11-06
+
+- [Root acceptance](2026-11-06-cohort-acceptance/README.md):12players,184 reviewed static images,37-image Lightning loop, actual post-retry reload,65tests and164-file boundary inventory.
+- [Ford](2026-11-06-ford-cohort/README.md): all35inputs/33ordinary+1optionalEX candidates; INDIGO held.
+- [Juiced2](2026-11-06-juiced2-cohort/README.md):94configuration rechecks and4new source assemblies.
+- [MC3](2026-11-06-mc3-cohort/README.md):4native body/sharedwheel assemblies plus optionalglass; sharedexhaust/unit holds.
+- [F150](2026-11-06-f150-contact/README.md): source pivot/contact and exactFlareside variant remain unresolved.
+
+[MC3 attachments](2026-11-06-mc3-attachments/README.md) and [native acceptance](2026-11-06-mc3-attachment-acceptance/README.md): two source-informed exhaust candidates, 22 reviewed images, 66 passing targets, repaired failure attribution; twelve players unchanged. Exact variant/size holds remain.
+
+## Latest preparation registry and GT continuation
+
+- [Preparation registry](2026-11-06-preparation-registry/README.md): forty CPU-audited candidates, 37 research additions, preserved active conflicts, dry-run evidence and early-input failure repair; 68 regression targets and 169-file boundary inventory.
+- [Ford GT reference](2026-11-06-ford-gt-reference/README.md): bounded original brochure and actual table-pixel review, explicit year/trim/width qualifications.
+- [Ford GT native acceptance](2026-11-06-ford-gt-native/README.md): thirteen reviewed captures, motion/full-lock/keyboard, player-thirteen publication and actual new-process saved-selection reload; previous twelve entries preserved.
+
+- [Inventory capacity continuation](2026-11-06-inventory-capacity/README.md): shared bounded metadata across four readers, actual over256KiB acceptance, full-corpus-shaped in-memory fixtures, bounded four-model selection snapshot, retained read/write failure ownership,70tests and172-source inventory. Current13players unchanged.
+
+- [Juiced2 wheel consumer](2026-11-06-juiced2-wheel-consumer/README.md): current ISO/XEX pairing, pre-import memory-layout qualification, native12-anchor profile scan and setter/matrix/material/input bridge; bounded audit/kernel, four research evidence annotations,71tests,174-source inventory. No model promotion or new GPU acceptance.

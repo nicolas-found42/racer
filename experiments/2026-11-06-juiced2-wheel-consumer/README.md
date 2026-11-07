@@ -1,0 +1,15 @@
+# Juiced2 wheel consumer investigation
+
+Question: can retained source/runtime analysis establish stock rim scaling or procedural tyre-profile construction for held Juiced2 ISO assemblies, without guessed dimensions or arbitrary fits?
+
+Previous goal turn was verified progress: shared bounded inventory capacity and four-model verification snapshots; current13players/52preparationrows unchanged. Full goal remains active. Juiced2 canonical ISO remains /Users/nicolas/Documents/github/reverse-engineering/games/raw/juiced-2/juiced-2.iso. Reuse cached native evidence/REAstate, do not duplicate originals.
+
+Before production: measure current remainingproject allowance beforeanyoutput; initial reservationthisleaf256KiB total, eachcommand<=300s and20GiBminimumfree. No fullnative executable extraction/new Ghidra database or model preparation copies fit this reservation. Only small retained queries/source ranges/receipts; if required input is absent, verify actual blocker before next action. Existing heldGLBs each3.9–5.2MB exceed remaining~1.8MB project allowance for duplicatepublication; no suchcopy is authorized here. All work headless/noactivation, no emulatorinstall or desktopinput.
+
+Plan: inspect current REAsession and retained executable/config indexing; resolve nativeconsumer entrypoint only from actualsourceaddresses/refs. Sourceconfigurationdeclarations are not formulas. Use smallREAranges and savedprojects; retain provider/build/hash and boundednegativefindings. A source-backed small adapterchange can be implemented/verified if its neededinputs are established withoutnewlargeoutputs. Do not claim originalgameexecution or promote heldcars from metadataalone.
+
+Resume: find currentREAsession and any existingnativeJuiced2 executable/proofs, then traceTYRE_PROFILE/rim construction. KeepGT1/Redlineexcluded and MCLAambienttrafficonly.
+
+Before furtherconsumer excerpts/verification: raise thisleafreservation to512KiB total (supersedes256KiB), within1,846,569B measuredprojectheadroom; command<=300s, sourceexcerpt<=32KiB each, rawcode/data ranges<=16KiBbatch. No largeproducer/newdatabase/modelcopies. Existingsourceidentityreviewused128861B, including retained strictfailedprobes. SourceXEX nowfreshlymatchedactualISO; nineexportedsectionsmatchdecodedmemorybut.rdata43Bdifferent/.relocunexported. Usepre-importdecodedmemoryforactualbytequeries, notordinaryPEloaderorexported.rdataasidentical.
+
+Before implementation: build a bounded first-party native-wheel contract audit/kernel, with generatedsmallfixtures and actualISO/profile+decodedimage readback. It will encode proven rawnative profile anchor/sample-count and setter float-operation order, retaining unresolved argument semantics/shader deformation; it will NOT change existing renderer/physics/defaultvehicleconversion or publishmodels. New report+596Bprofile+source/test snapshots+logs/native windows within512KiB leaf. Tests memoryonly forimagepins/finite/rawschema; syntheticdiskfixtures<=32KiB. No fullmodel/PE/databasecopies. Final gate uses boundedactualproof notwholetranslations.

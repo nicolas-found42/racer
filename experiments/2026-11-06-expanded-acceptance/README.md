@@ -1,0 +1,34 @@
+# Expanded car native acceptance
+
+Question: do the new ten-car installed library and isolated Juiced 2 rubber-only candidates retain correct visible scale/wheel assembly, steering/reverse/reset, garage/tune/test/comparison and persistence behavior?
+
+Preflight: all native runs hidden `--background`; no desktop input/focus/app activation. New output<=128MiB, command<=300s, each native child<=45s except bounded full feedback script<=295s. At creation root car-coverage output79MiB, Ford output27MiB, free420GiB; standard project outputs remain below2GiB. Preserve original inputs, old candidates and rejected traces. No new dependencies/network for native verification.
+
+Inputs: installed catalog from car-coverage/output/publication-three-v1.json adds GT4 Dodge/Midget and Ford Focus to prior seven; immutable original/updated catalog and ownership receipts retained in assets/local/carmodels/catalogs. Source dimensions and native assumptions in assets/catalog/dimensions.json and source-family experiment records. MX5 is research-only pending native rim/tyre scaling; rubber-only source candidates omit duplicated Toyo template decorations by explicit material/structure/hash contract.
+
+Target executable: freeze current first-party source/runtime after registered regression tests; exact hash in output/build/manifest.json. A working-tree copy is not an atomic compiler-input attestation. Models and capture histories must be retained separately at exact hashes. No screenshot-producing run is performance evidence.
+
+Next: review filtered candidates, full garage loop with current Focus, current selection/load-failure/retry/restart path, existing behavior regressions and coverage report retrieval. Do not claim all source cars, native dynamics, physical controller or human acceptance.
+
+## Verified checkpoint before additional loader context
+
+The frozen build-v1 executable is `2c6247862e6c16ce1f19dee2cc03cc2a9d1f978d4c60e99e08e7dc441ff7e607`; preservation reported no issues. At that checkpoint, all 58 CTest targets passed in 10.46 seconds. The ten-car library after the Juiced2 cleanup is separately frozen in `output/ten-clean-library-v2`, catalog SHA `09ca8cb1fceda07091658e3c208e05a9d58e7123aaf062da51f7033e7e80216b`.
+
+All ten cars passed actual SDL keyboard garage, edit/apply, automatic test, comparison, same-process disk readback, retry and focus checks. Each run confirmed the exact loaded mesh and workflow events, with no capture requests. See `output/live-ten-v2/manifest.json`. Total time was 136.85 seconds. Short samples ran 12.508–12.5092 seconds per car at 119.992–120.003 FPS; the longest interval was 13.389 ms, with none above 16.67 ms. This measures a short mixed workflow, not sustained city performance or physical hardware behavior.
+
+The Juiced2 350Z cleanup `77a9becc…` passed four scale views, seven motion captures including carrier checks, keyboard garage checks and four principal-screen captures. All 15 images were reviewed. The filter omits only named decoration primitives from the shared Toyo template; descriptor geometry, wheels and body bounds are unchanged. Old inputs and histories remain retained. The MX5 rubber-only candidate `db36cf8f…` has four reviewed native views but remains on research hold because native wheel sizing and procedural tyre generation are unresolved.
+
+The Focus full loop at 720p passed all 37 captures in 182.09 seconds on the earlier `c32a43…` executable, using the exact label-release descriptor and mesh `659038…`. All images were reviewed and their input/image hashes independently checked. Run `1793952416574910-54709` has 5,990 events, 3,433,712 bytes, no evidence issues and zero dropped events. At sequence 5362/operation 63 and sequence 5719/operation 67, temporary-file creation fails with errno 13. Sequence 5847/operation 70 succeeds atomically under the same retry parent 65. The images and `driver-at-launch.py` are retained. The script uses explicit timing and gate overrides to verify presentation; it does not establish a human lap. This capture-producing run had 37 slow intervals and a 37.55 ms maximum; use the separate no-capture measurements for performance.
+
+The feedback driver now freezes the selected descriptor, mesh, single-entry library and executable, then checks them after the run. Six mocked-native tests and independent before/after probes cover source changes, mutations to frozen runtime inputs, wrong-car outcomes and nonzero selection indices. The earlier 720p run is explicitly identified as preceding this freezer change. The real 1080p check completed on the retained loader-context build, as recorded below.
+
+[Import recovery](../2026-11-06-import-recovery/README.md) verifies broken-load recovery, previous-car retention, selection save failure, retry and new-process reload with 14 reviewed images. Its generic `asset_parse` event motivated the shared loader-context work. Whole-catalog support, source-game execution, human acceptance and physical controllers remain unproven.
+
+
+## Eleven-car and 1080p closure
+
+The later eleven-car library SHA is `1046fe72141006028c468c3441cbaab7900dcf5ec5c45ca5aaca264de3197547`. All eleven passed fresh keyboard loops on executable `73b6409966b408902d5b8bf99432617a3f76d6538aa16cb2df38da31a9009ffa`; see the [actual manifest](../2026-11-06-asset-failure-context/output/live-eleven/manifest.json). This is a same-process ProfileStore disk readback per car. Actual new-process selection reload is separately proven by the Juiced 2 import-recovery run; it is not inferred for every car.
+
+The Focus 1080p loop completed in 182.624844 seconds, with all 37 PNGs at 1920×1080, exact asset loaded and frozen inputs unchanged. Root reviewed every image through seven ordered contact pages, and inspected comparison, right guidance, left guidance and result-save failure at original resolution. [Review record](../2026-11-06-native-coverage/output/visual-review-1080-v1/integrity.json) includes exact build and driver identity; canonical PNG hashes/actions remain in [the run manifest](output/focus-full-loop-1080-v2/manifest.json). The driver-at-launch was copied from the exact retained source snapshot, rather than today's later lifecycle-instrumented driver. No clipping or contradictory save/result status was seen in the inspected frames. The 720p and 1080p runs use explicit time/gate overrides: neither establishes a human lap or independent real-time acceleration measurement. Capture-producing timing is not performance evidence.
+
+Resume: current installed eleven are locally verified at their recorded checkpoints. Continue held source variants and remaining corpus work using [coverage](../../findings/car-coverage.md); keep human and physical-controller acceptance open. The later native/tool/verifier hardening experiments supersede this checkpoint only for their explicitly tested changes. No original input, old model revision or profile was removed.

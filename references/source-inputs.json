@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-05",
+  "canonical_root": "../../raw",
+  "hub_manifest": "../../INPUTS.json",
+  "hash_coverage": "Selected canonical images, compressed carriers and main executables only; not a digest of entire installation folders.",
+  "artifacts": [
+    {
+      "path": "gran-turidmo-4.iso",
+      "bytes": 5314478080,
+      "type": "file",
+      "sha256": "67b6c0075837f3ae1132d608acf2858bf13b2dd62d6eae83dff76df02e4e824f",
+      "state": "complete"
+    },
+    {
+      "path": "juiced-2.7z",
+      "bytes": 4487500236,
+      "type": "file",
+      "sha256": "e140502ddbc976ffa4b8f584b42f520e9a0c06ffd4e8700624a2ae01ff1a72ba",
+      "state": "complete"
+    },
+    {
+      "path": "mc3.iso",
+      "bytes": 4840554496,
+      "type": "file",
+      "sha256": "d58490dc8e1837e9f47716268b52ae1f1ac8578e5a5e42e061fa7f1c4b068b52",
+      "state": "complete"
+    },
+    {
+      "path": "midnight-club-la.7z",
+      "bytes": 6612480974,
+      "type": "file",
+      "sha256": "cadd0f7b71bc888435793fd9d2fde68d1667a01d6f146592846b5487317986e8",
+      "state": "complete"
+    },
+    {
+      "path": "slrr-221/StreetLegal_Redline.bak.exe",
+      "bytes": 2408448,
+      "type": "file",
+      "sha256": "7d77466a8c1a34d16a59d9ccf2e8059664dff1bfb421338074a461a932e8edde",
+      "state": "complete"
+    },
+    {
+      "path": "slrr-221/StreetLegal_Redline.exe",
+      "bytes": 2408448,
+      "type": "file",
+      "sha256": "b284a7a53909d0b9ce59d59ddc11e14df40a7eb74d86fa76efb06305aadc2b03",
+      "state": "complete"
+    },
+    {
+      "path": "juiced-2/Juiced 2 - Hot Import Nights (World) (En,Fr,De,Es,It).iso",
+      "bytes": 7835492352,
+      "type": "file",
+      "sha256": "e2fd26e6a56b204fdacf6f751b520bf1bcc58e54fa7fe4e7b54bdd03640176ef",
+      "state": "complete"
+    },
+    {
+      "path": "slrr-231/StreetLegal_Redline.exe",
+      "bytes": 2446848,
+      "type": "file",
+      "sha256": "f44fb88a4335c657e20701cdb84afb8d1d85f7c3aceb93d30113e6e6e44fefc2",
+      "state": "complete"
+    },
+    {
+      "path": "midnight-club-la/Midnight Club - Los Angeles - Complete Edition (USA, Europe).iso",
+      "bytes": 7838695424,
+      "type": "file",
+      "sha256": "877a9415f695d27f8170d04d3f18aab13e2b4de3cbabda824e04c9338b2914e9",
+      "state": "complete"
+    }
+  ],
+  "selected_disc_extracts": [
+    {
+      "path": "/Users/nicolas/Documents/github/reverse-engineering/games/racer/experiments/2026-11-05-donor-inventory/output/disc-probes/mc3-default.xbe",
+      "bytes": 5099520,
+      "sha256": "0b3d81a02834e57864a601d473d5296cc0a2463e4b837373d91030f751fa51a3",
+      "header_hex": "584245481b7ededd7d434cc07d468338aa213b0986785837ee697c86a56ba9b802b1d6530ffa5b901850a7ac5e45748648c08f8d638ccc29c9ef4dc95bd23a27"
+    },
+    {
+      "path": "/Users/nicolas/Documents/github/reverse-engineering/games/racer/experiments/2026-11-05-donor-inventory/output/disc-probes/mcla-default.xex",
+      "bytes": 9252864,
+      "sha256": "c386f4001fa569e6ad4b982f441f67412f00b3f47c166134555cd4b59854a432",
+      "header_hex": "58455832000000010000300000000000000000900000000f000002ff000010e4000003ff000010f800010100821322b80001020182000000000103ff000027b0"
+    },
+    {
+      "path": "/Users/nicolas/Documents/github/reverse-engineering/games/racer/experiments/2026-11-05-donor-inventory/output/disc-probes/gt4-SCUS_973.28",
+      "bytes": 273020,
+      "sha256": "f8f10823160e2b5cef5c7032628134632b291b1df87a9aee3c144794dd8019fa",
+      "header_hex": "7f454c46010101000000000000000000020008000100000008000001340000004c2804000140922034002000030028000e000d00000000703cec02003cdc0201"
+    },
+    {
+      "path": "/Users/nicolas/Documents/github/reverse-engineering/games/racer/experiments/2026-11-05-donor-inventory/output/disc-probes/gt4-SYSTEM.CNF",
+      "bytes": 57,
+      "sha256": "7bb2979e21efc32977f7a47fd28618c659994ee6e5a9272da5e258695b22f2c0",
+      "header_hex": "424f4f5432203d206364726f6d303a5c534355535f3937332e32383b310d0a564552203d20322e30300d0a564d4f4445203d204e5453430d0a"
+    },
+    {
+      "path": "/Users/nicolas/Documents/github/reverse-engineering/games/racer/experiments/2026-11-05-donor-inventory/output/disc-probes/juiced2-default.xex",
+      "bytes": 5349376,
+      "sha256": "ae20f2467cc0535872b18517941ac4434f60408cb6d07bf47da799ce1564e574",
+      "header_hex": "58455832000000010000200000000000000000900000000f000002ff00000b2c000003ff00000b4000010100823d7fd80001020182000000000103ff00001888"
+    }
+  ],
+  "evidence": "../experiments/2026-11-05-donor-inventory/README.md"
+}
