@@ -146,6 +146,18 @@ inline void gridLamps(std::vector<AssetVertex>& m) {
     gridLamp(m,100.f*float(road),along,side,false);
   }
 }
+// Roadside neon pylon: dark pole with two emitter blades (surface id -2, own colour). By day the
+// blades are plain coloured boxes; at night the shader makes them hot emitters. Authored signage.
+inline void neonPylon(std::vector<AssetVertex>& m,float x,float z,unsigned variant,bool alongX) {
+  const uint32_t colors[3][2]={{rgb(255,40,170),rgb(40,220,255)},{rgb(255,150,30),rgb(255,50,60)},{rgb(60,255,160),rgb(120,90,255)}};
+  const auto metal=rgb(52,55,60);
+  box(m,x,0,z,.4f,.3f,.4f,metal);
+  pole(m,{x,.3f,z},{x,6.6f,z},.1f,metal,5);
+  const auto& c=colors[variant%3];
+  const float w=alongX?1.9f:.3f,d=alongX?.3f:1.9f;
+  box(m,x,4.4f,z,w,1.1f,d,c[0],.9f,-2.f);
+  box(m,x,5.7f,z,w*.9f,.9f,d*.9f,c[1],.9f,-2.f);
+}
 inline void streetlight(std::vector<AssetVertex>& m,float x,float z,bool alongX) {
   const auto metal=rgb(73,78,77);
   box(m,x,.15f,z,.5f,.35f,.5f,metal);
@@ -314,6 +326,12 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
     }
   }
   gridLamps(m);
+  for(int ix=-2;ix<=2;++ix) for(int iz=-2;iz<=2;++iz) {
+    const float cx=100.f*float(ix),cz=100.f*float(iz);
+    const unsigned v=unsigned((ix+3)*5+(iz+3)*3);
+    neonPylon(m,cx+10.f,cz+10.f,v,true);
+    neonPylon(m,cx-10.f,cz-10.f,v+1,false);
+  }
   terrain(m);
   return m;
 }

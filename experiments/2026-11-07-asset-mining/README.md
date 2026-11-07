@@ -51,6 +51,12 @@ Names only: no shader code, constants or parameter values were recovered. Sessio
 - **Paint** (`--paint red|orange|yellow|green|teal|blue|purple|black`): clear-coated exterior sections keep their texture luminance and take the chosen hue (`u_reflectionState.zw`). Applies only to sections with a clear-coat entry in `vehicle_look.h` (the six NSX exterior families and the Roadster paint set); other cars are unchanged. `before-after/paint-red.png` (default silver vs red, same state) and `console-compare/mcla-paint-vs-racer.png` (MCLA red RX-8 vs Racer red NSX): paint hue now matches the reference's saturated body colour, but reference reflections, flake and body detail are far richer.
 - Capture script gains `--paint` and `--time dusk`.
 
+## Signage, flake, launch smoke (follow-up 2)
+- **Neon pylons** (`src/world_scene.h`, `src/visual_shader.h`): 50 roadside pylons at the 25 intersection corners (10 m from both road centres, clear of lamps/trees, within the 7 m clearance rule), each with two emitter blades (surface id -2, own colour). Emitters now keep their vertex colour and become hot at night (lamps warm, neon magenta/cyan/amber/red/green/violet). They emit only: no coloured light is cast onto surroundings. Sheet `before-after/neon-night.png`.
+- **Paint flake** (`src/visual_shader.h`): per-texel random micro-normals add sparkle to the clear-coat highlight on clear-coated sections (NSX/Roadster only). Close-up `output/neon/flake.png` (`--paint blue`): speckle on the door and fender. **Not isolated** by a flake-off capture (no flag), so the before/after is not established; a texel-grid pattern may look noisy.
+- **Launch smoke** (`src/main.cpp`): hard throttle from near standstill (speed < 8 m/s) emits thinner, smaller puffs (authored trigger; wheelspin is not simulated). `before-after/launch-smoke.png` vs `--no-tyre-smoke`. A first attempt (same density as braking smoke) produced a grey ball that hid the car and was reduced.
+- Still no dust or exhaust-pipe smoke, no coloured light cast by signs, no facade detail, no terrain relief, no depth of field.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 

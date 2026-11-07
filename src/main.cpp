@@ -975,6 +975,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const double speedNow=std::abs(shown.speed);
       const double lateral=speedNow*speedNow*std::abs(std::tan(shown.steering))/std::max(.5,sim.wheelbase());
       const bool marking=speedNow>7 && (selectedInput.brake>.7 || lateral>9);
+      // Launch smoke: hard throttle from near standstill (wheelspin is not simulated; authored trigger).
+      const bool launching=!marking && selectedInput.throttle>.85 && speedNow<8;
       const double c=std::cos(shown.heading),sn=std::sin(shown.heading);
       for(int k=0;k<2;++k) {
         const auto& wheel=geometry.wheels[rear[size_t(k)]];
@@ -990,14 +992,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           if(len>.05){track.x=wx;track.z=wz;}
         } else {track.valid=marking;track.x=wx;track.z=wz;}
         if(marking)track.valid=true;
-        if(marking && tyreSmoke && puffs.size()<900) {
-          puffCarry[k]+=dt*110.0;
+        if((marking||launching) && tyreSmoke && puffs.size()<900) {
+          puffCarry[k]+=dt*(launching?26.0:110.0);
           while(puffCarry[k]>=1.0) {
             puffCarry[k]-=1.0;++puffCounter;
             auto rnd=[&](unsigned salt){uint32_t h=(puffCounter*2654435761u)^(salt*40503u);h^=h>>13;h*=1274126177u;h^=h>>16;return float(h&0xffff)/65535.f-.5f;};
             const float back=-float(std::copysign(1.0,shown.speed));
             puffs.push_back({float(wx),.15f,float(wz),
-              float(sn)*back*.6f+rnd(1)*.9f,.5f+rnd(2)*.4f,float(c)*back*.6f+rnd(3)*.9f,0,1.6f+rnd(4)*.6f,.75f+rnd(5)*.25f,rnd(6)});
+              float(sn)*back*.6f+rnd(1)*.9f,.5f+rnd(2)*.4f,float(c)*back*.6f+rnd(3)*.9f,0,1.6f+rnd(4)*.6f,(launching?.45f:.75f)+rnd(5)*.2f,rnd(6)+(launching?2.f:0.f)});
           }
         }
       }
@@ -1490,7 +1492,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float t=p->age/p->life;
         const float size=p->size*(1+3.2f*t);
         const float fade=std::min(1.f,t*8.f)*(1-t)*(1-t);
-        const uint32_t a=uint32_t(255*std::clamp(.95f*fade,0.f,1.f));
+        const uint32_t a=uint32_t(255*std::clamp((p->seed>1.f?.42f:.95f)*fade,0.f,1.f)); // launch puffs (seed>1) are thinner
         // Start-to-end colour ramp (MCLA exposes smokeStartColor/smokeEndColor; values authored).
         const float ramp=std::clamp(t*1.6f,0.f,1.f);
         auto lerp8=[&](float from,float to){return uint32_t(from+(to-from)*ramp);};

@@ -230,7 +230,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(mode>1.5 && mode<2.5) { o.color=float4(sky(normalize(in.world-_mtl_u.u_visualCamera.xyz),_mtl_u.u_headlight.w),1); return o; }
  if(mode>2.5) { o.color=float4(linearDisplay(in.color.rgb),in.color.a); return o; }
  if(mode>.5 && in.uv.y<-1.5) { // lamp head: display colour by day, hot emitter at night
-  o.color=float4(mix(linearDisplay(in.color.rgb),float3(1.0,.70,.38)*7.0,_mtl_u.u_headlight.w),1);return o;
+  o.color=float4(linearDisplay(in.color.rgb)*mix(1.0,7.0,_mtl_u.u_headlight.w),1);return o; // emitter keeps its own colour (lamps warm, neon coloured)
  }
  float night=_mtl_u.u_headlight.w;
  float4 sampled=_mtl_u.u_visualMaterial.z>.5?s_texColor.sample(smp,in.uv):float4(1);
@@ -386,6 +386,11 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   if(_mtl_u.u_reflectionState.x>.5)
    coatEnvironment=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(coatRough))).rgb,float3(0));
   float coatHighlight=pow(max(dot(n,h),0.0),mix(500.0,8.0,coatRough))*2.0*ndl*visibility;
+  // Metallic flake: per-texel random micro-normals sparkle where they catch the half vector. Authored.
+  float2 flakeCell=floor(in.uv*260.0);
+  float3 flakeRnd=float3(hash(flakeCell),hash(flakeCell+3.1),hash(flakeCell+7.7))-.5;
+  float3 flakeNormal=normalize(n+flakeRnd*.9);
+  coatHighlight+=pow(max(dot(flakeNormal,h),0.0),90.0)*step(.55,hash(flakeCell+11.3))*ndl*visibility*2.2;
   lit=lit*(1-coat*coatF)+coat*(coatF*coatEnvironment+coatDirectF*coatHighlight*specColor);
  }
  if(foliage) lit+=albedo*.12;
