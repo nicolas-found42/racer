@@ -238,3 +238,26 @@ Observed controlled failure: phasecapture, `publication_kind: mesh`, `active_inp
 Check its `started_unix_ms`/`finished_unix_ms` for a time-range match and use expected mesh SHA/original index plus source catalog SHA to identify the operation. These are per-attempt records, not a global phase journal. The invoking experiment must retain the Python tool version; this phase freezes twelve changed/new files in `inventory-capacity/output/after` and links160 unchanged hashes to the prior source inventory. This is not an automatic source backup for future standalone invocations or an atomic executing-code attestation. Current player inventory/catalog were unchanged by the capacity/verification work.
 
 Read-counter precision: admitted successful bytes are capped; the existing regular-file reader may consume one additional byte when probing an oversized rejected file. Failed read attempts increment the attempt count but do not add unadmitted bytes to the retained successful-byte total. This is not an OS-level I/O counter.
+
+## Juiced 2 wheel-contract retrieval
+
+The bounded native-wheel contract audit (`scripts/juiced2_wheel_contract.py`) writes a bounded report, the retained 596-byte profile and a private lifecycle sidecar. It never touches geometry, eligibility or the player catalog. The contract findings file gives the recovered static chain and its limits; these commands retrieve the actual checkpoint evidence:
+
+```sh
+python3 -m json.tool experiments/2026-11-06-juiced2-wheel-consumer/output/contract-v2/report.json
+python3 -m json.tool experiments/2026-11-06-juiced2-wheel-consumer/output/contract-v2/lifecycle.json
+python3 -m json.tool experiments/2026-11-06-juiced2-wheel-consumer/output/inventory-evidence-update.json
+python3 -m json.tool experiments/2026-11-06-juiced2-wheel-consumer/output/kernel-review-v2.json
+PYTHONDONTWRITEBYTECODE=1 python3 tests/juiced2_wheel_contract_checks.py
+```
+
+Join an incident's preparation row to the audit by inventory SHA: the annotated `native_wheel_contract` field pins the actual report/profile/evidence SHAs, and `geometry_applied: false` means no stock-wheel geometry was applied. Per-car argument assignment is explicitly unverified, so a car row carrying this field is still ineligible; absence of the field on other rows is normal. Before/after inventory SHAs distinguish the annotated generation (`a75b0ce5…` → `3fb258cf…`); the immutable before snapshot is retained under `assets/local/carmodels/catalogs/`. The 71-target regression log and 174-file source inventory (`aggregate-source-coverage-v7.json`) bind the tool/test sources at their reviewed hashes. The decoded memory image is a memory layout, not an ordinary PE; the exported `.rdata` differs at 43 bytes and `.reloc` is unexported, so byte queries against exported sections carry that qualification.
+
+## 2026-11-06 checkpoint review fixes (record)
+
+Independent review (reviewer agent, 2026-11-06) of the stages/wheel-args/verification checkpoint found one blocker and three non-blocking items, all repaired same-pass:
+- Blocker: `scripts/juiced2_wheel_state.py` `extra_424` used an unaudited `field72*2` term; replaced with the audited kernel formula `f32((f32(f32(f1*f2)*0.1)-f32(maxY-minY))/radial)`, verified bit-exact against `scripts/juiced2_wheel_contract.py` sizing_fields on identical registers; `attributions-v2.json` emitted (v1 retained as the rejected calculation).
+- Stale storage figures in the verification-pass and wheel-consumer READMEs now carry as-of labels with the 2026-11-07T02:34Z refresh (2,133,993,602 B used, 13,490,046 B headroom, PASS).
+- `car_stages.py` `discovered` stage is now derived (pinned public catalog → retained SLRR native-audit chassis alias → existing experiment evidence) instead of asserted; `car-stages-v2.json` shows all 52 rows derived.
+- Installed join now also hashes `.vehicle` content against inventory descriptor SHA256s (no content-only matches; recorded as `installed_content_only_matches: []`).
+Re-verification: 71/71 CTest, 9/9 kernel checks, stages v2 report, hub checker PASS.

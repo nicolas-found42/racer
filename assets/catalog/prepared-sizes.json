@@ -4745,58 +4745,58 @@
     {
       "model_id": "juiced-2/Z4",
       "source_sha256": "2091a57c4411df01c0d73e4bb72b47fea15b09ecbd5994ca9deb9387d632447f",
-      "prepared_sha256": "1b9a63c5a3a9d93719093d5fe73f3b8beb01a311fcf55aef2e1766232a8027b6",
-      "descriptor_sha256": "55ac1d90d01f73ebdba3b65e24879edfdd74b9c33041257c907546f3cbaf617f",
-      "descriptor": "experiments/2026-11-06-juiced2-cohort/output/z4-prepared-v1/1b9a63c5a3a9d93719093d5fe73f3b8beb01a311fcf55aef2e1766232a8027b6.vehicle",
-      "role": "research-candidate",
-      "player_eligible": false,
+      "prepared_sha256": "3eef358a12ff24f754145be735f7cb28bee15a641cd11d27f2613b5667ce51d7",
+      "descriptor_sha256": "e5e5aee8b68ee3839af9b62c3f10e63f1f3828eaf20b3000d07f190ff554861b",
+      "descriptor": "experiments/2026-11-06-held-glb-publication/output/stock-v1/z4/3eef358a12ff24f754145be735f7cb28bee15a641cd11d27f2613b5667ce51d7.vehicle",
+      "role": "player",
+      "player_eligible": true,
       "canonical": null,
       "unit_authority": "Measured descriptor geometry in Racer coordinates; native physical units and factory applicability are unproven.",
       "measured": {
         "length": 4.093645725250244,
         "visible_body_width": 1.8844222259521484,
         "body_box_height": 1.142158498764038,
-        "ground_height": 1.2953972434997558,
+        "ground_height": 1.2817222595214843,
         "wheelbase": 2.5019255447387696,
         "front_track": 1.4820397949218749,
         "rear_track": 1.4820399475097656,
-        "minimum_tire_clearance": -8.743746837680533e-08,
+        "minimum_tire_clearance": 0.0,
         "body_bounds": [
           -0.9422110366821289,
-          0.15323874473571777,
+          0.13956376075744628,
           -2.005235443115234,
           0.9422111892700196,
-          1.2953972434997558,
+          1.2817222595214843,
           2.0884102821350097
         ],
         "wheels": {
           "FL": [
             -0.7410201263427735,
-            0.318525390625,
+            0.3048504066467285,
             1.2699510192871093,
-            0.31852496307833755,
-            0.24004230499267565
+            0.3048504066467285,
+            0.22904566287994377
           ],
           "FR": [
             0.7410196685791015,
-            0.3185248756408692,
+            0.3048498916625977,
             1.2699510192871093,
-            0.31852496307833755,
-            0.24004230499267587
+            0.3048498916625977,
+            0.22904574394226085
           ],
           "RL": [
             -0.7410198211669922,
-            0.3204475784301758,
+            0.3067725944519043,
             -1.2319750213623046,
-            0.3185249630783378,
-            0.24004230499267587
+            0.3067725944519043,
+            0.2550000000000001
           ],
           "RR": [
             0.7410201263427735,
-            0.32044797897338867,
+            0.3067729949951172,
             -1.2319740295410155,
-            0.3185249630783377,
-            0.24004230499267565
+            0.3067729949951172,
+            0.2550000000000001
           ]
         }
       },
@@ -4807,11 +4807,11 @@
         "limits": "Local Juiced 2 source identity is explicitly supplied and descriptor-bound; no public-catalog membership claim."
       },
       "review_evidence": {
-        "evidence_0": "experiments/2026-11-06-juiced2-cohort/output/z4-prepared-v1/receipt.json",
-        "evidence_1": "experiments/2026-11-06-juiced2-cohort/output/z4-prepared-v1/source-vertex-proof.json",
-        "evidence_2": "experiments/2026-11-06-juiced2-cohort/output/cohort-audit-v3.json",
-        "evidence_3": "experiments/2026-11-06-ford-cohort/output/independent-juiced2-cohort-review.json",
-        "evidence_4": "experiments/2026-11-06-preparation-registry/output/independent-CPU-validation.json"
+        "native_views": "experiments/2026-11-06-held-glb-publication/output/stock-views-v1/manifest.json",
+        "stock_tyre_fit": "experiments/2026-11-06-held-glb-publication/output/stock-v1/z4/receipt.json",
+        "motion": "experiments/2026-11-06-held-glb-publication/output/motion2-13/manifest.json",
+        "garage_1080": "experiments/2026-11-06-held-glb-publication/output/garage2-1080-13/manifest.json",
+        "selection_reload_1080": "experiments/2026-11-06-held-glb-publication/output/reload2-1080/manifest.json"
       },
       "review_evidence_identity": [
         {
@@ -4843,9 +4843,12 @@
       "limitations": [
         "Local canonical Xbox360 ISO selected extent/hash provenance, not public1435 catalog membership.",
         "100 native units/metre is an import interpretation; native rim/procedural tyre consumer scale remains unresolved.",
-        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference."
+        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference.",
+        "MINI/Charger glass visually noisy.",
+        "Racer-authored stock tyre fit (scripts/fit_juiced2_stock_tyres.py): per-axle outer radius = native hub height (pivot Y/100), tyre width = sourced stock section width (numeric-signature identity hypothesis); NOT native f4/shader sizing or factory outer diameter.",
+        "Published on user instruction; native views, motion and garage loops reviewed, human lap and physical controller not run."
       ],
-      "eligibility_reason": "Research registration only. Supplied review evidence is retained by path/hash, not semantically certified. Explicit separate review is required for player eligibility.",
+      "eligibility_reason": "User-authorized publication 2026-11-06 after storage allowance doubled; hidden native four-view scale capture reviewed by root (plausible silhouette, wheels grounded). Native rim/procedural tyre scale remains unresolved.",
       "source_preparation_requirement": null,
       "native_wheel_contract": {
         "status": "shared-native-static-contract-partially-recovered",
@@ -4873,63 +4876,64 @@
             "sha256": "7d8ece697aa4d9fa6195ed159fe1b96c27c24b5134f3635bb4ed7cbfab6e0c89"
           }
         }
-      }
+      },
+      "approval_scope": "Local player catalog publication on user instruction; not proof of original-game runtime behavior, stock wheel sizing or human acceptance."
     },
     {
       "model_id": "juiced-2/MINI",
       "source_sha256": "41f0debcc6b59ce5c8542539db87529381415054c0020121b97f3a8138f58800",
-      "prepared_sha256": "b4b7b383c1d46c2475c40ddf9ee5e52fa282c0f4b683931e29fc4ff6d8c5a12b",
-      "descriptor_sha256": "ad7597e825ff0b53147b992df008cb0bc13e6ed0879d7ab386b971cb72f1d5b8",
-      "descriptor": "experiments/2026-11-06-juiced2-cohort/output/mini-prepared-v1/b4b7b383c1d46c2475c40ddf9ee5e52fa282c0f4b683931e29fc4ff6d8c5a12b.vehicle",
-      "role": "research-candidate",
-      "player_eligible": false,
+      "prepared_sha256": "fbbd36fea34e3fd45dd71f114e4372fb60c2aeb6d271954e0d578bb16bb15a4e",
+      "descriptor_sha256": "b69024f358eda6cf2c66f37cdb7634141ce0df253a88ce487633bed8a014aab5",
+      "descriptor": "experiments/2026-11-06-held-glb-publication/output/stock-v1/mini/fbbd36fea34e3fd45dd71f114e4372fb60c2aeb6d271954e0d578bb16bb15a4e.vehicle",
+      "role": "player",
+      "player_eligible": true,
       "canonical": null,
       "unit_authority": "Measured descriptor geometry in Racer coordinates; native physical units and factory applicability are unproven.",
       "measured": {
         "length": 3.6174590969085694,
         "visible_body_width": 1.9055789875984193,
         "body_box_height": 1.6417043304443357,
-        "ground_height": 1.8324054718017577,
+        "ground_height": 1.819920196533203,
         "wheelbase": 2.4683180236816407,
         "front_track": 1.4564991760253907,
         "rear_track": 1.4565020751953126,
-        "minimum_tire_clearance": -8.743746859884993e-08,
+        "minimum_tire_clearance": 0.0,
         "body_bounds": [
           -0.9573033499717712,
-          0.1907011413574219,
+          0.1782158660888672,
           -1.7559263610839844,
           0.9482756376266479,
-          1.8324054718017577,
+          1.819920196533203,
           1.861532735824585
         ],
         "wheels": {
           "FL": [
             -0.728248291015625,
-            0.31852546691894534,
+            0.30604019165039065,
             1.237126007080078,
-            0.31852496307833755,
-            0.24004230499267565
+            0.30604019165039065,
+            0.23495899200439463
           ],
           "FR": [
             0.7282508850097656,
-            0.31852537155151367,
+            0.306040096282959,
             1.237126007080078,
-            0.31852496307833755,
-            0.24004230499267565
+            0.306040096282959,
+            0.23495905399322514
           ],
           "RL": [
             -0.7282510375976563,
-            0.3185249710083008,
+            0.3060396957397461,
             -1.2311920166015624,
-            0.3185249630783378,
-            0.24004230499267565
+            0.3060396957397461,
+            0.2349590015411378
           ],
           "RR": [
             0.7282510375976563,
-            0.3185248756408692,
+            0.3060396003723145,
             -1.2311920166015624,
-            0.3185249630783378,
-            0.24004230499267565
+            0.3060396003723145,
+            0.2349590015411378
           ]
         }
       },
@@ -4940,11 +4944,11 @@
         "limits": "Local Juiced 2 source identity is explicitly supplied and descriptor-bound; no public-catalog membership claim."
       },
       "review_evidence": {
-        "evidence_0": "experiments/2026-11-06-juiced2-cohort/output/mini-prepared-v1/receipt.json",
-        "evidence_1": "experiments/2026-11-06-juiced2-cohort/output/mini-prepared-v1/source-vertex-proof.json",
-        "evidence_2": "experiments/2026-11-06-juiced2-cohort/output/cohort-audit-v3.json",
-        "evidence_3": "experiments/2026-11-06-ford-cohort/output/independent-juiced2-cohort-review.json",
-        "evidence_4": "experiments/2026-11-06-preparation-registry/output/independent-CPU-validation.json"
+        "native_views": "experiments/2026-11-06-held-glb-publication/output/stock-views-v1/manifest.json",
+        "stock_tyre_fit": "experiments/2026-11-06-held-glb-publication/output/stock-v1/mini/receipt.json",
+        "motion": "experiments/2026-11-06-held-glb-publication/output/motion2-14/manifest.json",
+        "garage_1080": "experiments/2026-11-06-held-glb-publication/output/garage2-1080-14/manifest.json",
+        "selection_reload_1080": "experiments/2026-11-06-held-glb-publication/output/reload2-1080/manifest.json"
       },
       "review_evidence_identity": [
         {
@@ -4976,9 +4980,12 @@
       "limitations": [
         "Local canonical Xbox360 ISO selected extent/hash provenance, not public1435 catalog membership.",
         "100 native units/metre is an import interpretation; native rim/procedural tyre consumer scale remains unresolved.",
-        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference."
+        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference.",
+        "MINI/Charger glass visually noisy.",
+        "Racer-authored stock tyre fit (scripts/fit_juiced2_stock_tyres.py): per-axle outer radius = native hub height (pivot Y/100), tyre width = sourced stock section width (numeric-signature identity hypothesis); NOT native f4/shader sizing or factory outer diameter.",
+        "Published on user instruction; native views, motion and garage loops reviewed, human lap and physical controller not run."
       ],
-      "eligibility_reason": "Research registration only. Supplied review evidence is retained by path/hash, not semantically certified. Explicit separate review is required for player eligibility.",
+      "eligibility_reason": "User-authorized publication 2026-11-06 after storage allowance doubled; hidden native four-view scale capture reviewed by root (plausible silhouette, wheels grounded). Native rim/procedural tyre scale remains unresolved.",
       "source_preparation_requirement": null,
       "native_wheel_contract": {
         "status": "shared-native-static-contract-partially-recovered",
@@ -5006,16 +5013,17 @@
             "sha256": "7d8ece697aa4d9fa6195ed159fe1b96c27c24b5134f3635bb4ed7cbfab6e0c89"
           }
         }
-      }
+      },
+      "approval_scope": "Local player catalog publication on user instruction; not proof of original-game runtime behavior, stock wheel sizing or human acceptance."
     },
     {
       "model_id": "juiced-2/CHARGER_RT",
       "source_sha256": "d5c1d5bb767e02c392615b067c4f9c99f33df6ec22d19b10434c34e568e64a98",
-      "prepared_sha256": "ab48025753ddcc2405ac6907e81bcb5e64aed3026561a68a023875852ef7c40f",
-      "descriptor_sha256": "422203289ec8348714c376b6840930387b9ed95b3d95f91394b57e900d6ac481",
-      "descriptor": "experiments/2026-11-06-juiced2-cohort/output/charger_rt-prepared-v1/ab48025753ddcc2405ac6907e81bcb5e64aed3026561a68a023875852ef7c40f.vehicle",
-      "role": "research-candidate",
-      "player_eligible": false,
+      "prepared_sha256": "61ca0c7893a7c56f3665b27f9a4f999f37f2f7f139367cd48f0fcc8bf9c26a97",
+      "descriptor_sha256": "437da8b30f489728bf32f2fd5d495ae7ba97fed9511ca575ffaf68da33ad85d6",
+      "descriptor": "experiments/2026-11-06-held-glb-publication/output/stock-v1/charger_rt/61ca0c7893a7c56f3665b27f9a4f999f37f2f7f139367cd48f0fcc8bf9c26a97.vehicle",
+      "role": "player",
+      "player_eligible": true,
       "canonical": null,
       "unit_authority": "Measured descriptor geometry in Racer coordinates; native physical units and factory applicability are unproven.",
       "measured": {
@@ -5026,7 +5034,7 @@
         "wheelbase": 3.0405139923095703,
         "front_track": 1.5812847137451174,
         "rear_track": 1.5812842559814455,
-        "minimum_tire_clearance": 0.017860039057892907,
+        "minimum_tire_clearance": 0.0,
         "body_bounds": [
           -1.0262466812133788,
           0.13468557357788086,
@@ -5040,29 +5048,29 @@
             -0.7906446838378907,
             0.33638500213623046,
             1.7617070007324218,
-            0.31852496307833755,
-            0.24004230499267565
+            0.33638500213623046,
+            0.23759038925170906
           ],
           "FR": [
             0.7906400299072266,
             0.33638500213623046,
             1.7617070007324218,
-            0.31852496307833755,
-            0.24004230499267565
+            0.33638500213623046,
+            0.23759037971496588
           ],
           "RL": [
             -0.7906442260742188,
             0.33638500213623046,
             -1.2788069915771485,
-            0.31852496307833755,
-            0.24004230499267565
+            0.33638500213623046,
+            0.2375903081893922
           ],
           "RR": [
             0.7906400299072266,
             0.33638500213623046,
             -1.2788069915771485,
-            0.31852496307833755,
-            0.24004230499267565
+            0.33638500213623046,
+            0.23759037971496588
           ]
         }
       },
@@ -5073,11 +5081,11 @@
         "limits": "Local Juiced 2 source identity is explicitly supplied and descriptor-bound; no public-catalog membership claim."
       },
       "review_evidence": {
-        "evidence_0": "experiments/2026-11-06-juiced2-cohort/output/charger_rt-prepared-v1/receipt.json",
-        "evidence_1": "experiments/2026-11-06-juiced2-cohort/output/charger_rt-prepared-v1/source-vertex-proof.json",
-        "evidence_2": "experiments/2026-11-06-juiced2-cohort/output/cohort-audit-v3.json",
-        "evidence_3": "experiments/2026-11-06-ford-cohort/output/independent-juiced2-cohort-review.json",
-        "evidence_4": "experiments/2026-11-06-preparation-registry/output/independent-CPU-validation.json"
+        "native_views": "experiments/2026-11-06-held-glb-publication/output/stock-views-v1/manifest.json",
+        "stock_tyre_fit": "experiments/2026-11-06-held-glb-publication/output/stock-v1/charger_rt/receipt.json",
+        "motion": "experiments/2026-11-06-held-glb-publication/output/motion2-15/manifest.json",
+        "garage_1080": "experiments/2026-11-06-held-glb-publication/output/garage2-1080-15/manifest.json",
+        "selection_reload_1080": "experiments/2026-11-06-held-glb-publication/output/reload2-1080/manifest.json"
       },
       "review_evidence_identity": [
         {
@@ -5109,9 +5117,12 @@
       "limitations": [
         "Local canonical Xbox360 ISO selected extent/hash provenance, not public1435 catalog membership.",
         "100 native units/metre is an import interpretation; native rim/procedural tyre consumer scale remains unresolved.",
-        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference."
+        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference.",
+        "MINI/Charger glass visually noisy.",
+        "Racer-authored stock tyre fit (scripts/fit_juiced2_stock_tyres.py): per-axle outer radius = native hub height (pivot Y/100), tyre width = sourced stock section width (numeric-signature identity hypothesis); NOT native f4/shader sizing or factory outer diameter.",
+        "Published on user instruction; native views, motion and garage loops reviewed, human lap and physical controller not run."
       ],
-      "eligibility_reason": "Research registration only. Supplied review evidence is retained by path/hash, not semantically certified. Explicit separate review is required for player eligibility.",
+      "eligibility_reason": "User-authorized publication 2026-11-06 after storage allowance doubled; hidden native four-view scale capture reviewed by root (plausible silhouette, wheels grounded). Native rim/procedural tyre scale remains unresolved.",
       "source_preparation_requirement": null,
       "native_wheel_contract": {
         "status": "shared-native-static-contract-partially-recovered",
@@ -5139,63 +5150,64 @@
             "sha256": "7d8ece697aa4d9fa6195ed159fe1b96c27c24b5134f3635bb4ed7cbfab6e0c89"
           }
         }
-      }
+      },
+      "approval_scope": "Local player catalog publication on user instruction; not proof of original-game runtime behavior, stock wheel sizing or human acceptance."
     },
     {
       "model_id": "juiced-2/KOENIGSEGG",
       "source_sha256": "8b0a8bc936a2538f2f4d823743aa884e0d3692d15b439e88fe452897a3abde95",
-      "prepared_sha256": "3c432bbfd38323eb26bb7e113145fb26340d7e5a27ace8a86c1021784a8ecefc",
-      "descriptor_sha256": "a3ade517d6bea7de324acbd7114e29805761f532d46f018b0a3d65218c1eb2bd",
-      "descriptor": "experiments/2026-11-06-juiced2-cohort/output/koenigsegg-prepared-v1/3c432bbfd38323eb26bb7e113145fb26340d7e5a27ace8a86c1021784a8ecefc.vehicle",
-      "role": "research-candidate",
-      "player_eligible": false,
+      "prepared_sha256": "2a233c68739f140680e259fa3b3f961a3141cce0bc17c3a2556e909b5fff9e93",
+      "descriptor_sha256": "0d801a2323497310c570453d96b67553fd7b23ecd932dfc5803fd0b0860d7875",
+      "descriptor": "experiments/2026-11-06-held-glb-publication/output/stock-v1/koenigsegg/2a233c68739f140680e259fa3b3f961a3141cce0bc17c3a2556e909b5fff9e93.vehicle",
+      "role": "player",
+      "player_eligible": true,
       "canonical": null,
       "unit_authority": "Measured descriptor geometry in Racer coordinates; native physical units and factory applicability are unproven.",
       "measured": {
         "length": 4.309337921142578,
         "visible_body_width": 1.9979844665527344,
         "body_box_height": 1.0211162185668945,
-        "ground_height": 1.1074656867980956,
+        "ground_height": 1.1067816162109374,
         "wheelbase": 2.6594169616699217,
         "front_track": 1.6397799682617187,
         "rear_track": 1.6397799682617187,
-        "minimum_tire_clearance": -8.743746859884993e-08,
+        "minimum_tire_clearance": 0.0,
         "body_bounds": [
           -0.9989926147460938,
-          0.08634946823120117,
+          0.08566539764404298,
           -2.064344940185547,
           0.9989918518066406,
-          1.1074656867980956,
+          1.1067816162109374,
           2.244992980957031
         ],
         "wheels": {
           "FL": [
             -0.8198899841308593,
-            0.3185248756408691,
+            0.31784080505371093,
             1.3605769348144532,
-            0.3185249630783377,
-            0.24004230499267587
+            0.31784080505371093,
+            0.2549999999999999
           ],
           "FR": [
             0.8198899841308593,
-            0.3185248756408691,
+            0.31784080505371093,
             1.3605769348144532,
-            0.3185249630783377,
-            0.24004230499267587
+            0.31784080505371093,
+            0.2549999999999999
           ],
           "RL": [
             -0.8198899841308593,
-            0.3493760871887207,
+            0.3486920166015625,
             -1.2988400268554687,
-            0.31852496307833755,
-            0.24004230499267587
+            0.3486920166015625,
+            0.355
           ],
           "RR": [
             0.8198899841308593,
-            0.3493760871887207,
+            0.3486920166015625,
             -1.2988400268554687,
-            0.31852496307833755,
-            0.24004230499267587
+            0.3486920166015625,
+            0.355
           ]
         }
       },
@@ -5206,11 +5218,11 @@
         "limits": "Local Juiced 2 source identity is explicitly supplied and descriptor-bound; no public-catalog membership claim."
       },
       "review_evidence": {
-        "evidence_0": "experiments/2026-11-06-juiced2-cohort/output/koenigsegg-prepared-v1/receipt.json",
-        "evidence_1": "experiments/2026-11-06-juiced2-cohort/output/koenigsegg-prepared-v1/source-vertex-proof.json",
-        "evidence_2": "experiments/2026-11-06-juiced2-cohort/output/cohort-audit-v3.json",
-        "evidence_3": "experiments/2026-11-06-ford-cohort/output/independent-juiced2-cohort-review.json",
-        "evidence_4": "experiments/2026-11-06-preparation-registry/output/independent-CPU-validation.json"
+        "native_views": "experiments/2026-11-06-held-glb-publication/output/stock-views-v1/manifest.json",
+        "stock_tyre_fit": "experiments/2026-11-06-held-glb-publication/output/stock-v1/koenigsegg/receipt.json",
+        "motion": "experiments/2026-11-06-held-glb-publication/output/motion2-16/manifest.json",
+        "garage_1080": "experiments/2026-11-06-held-glb-publication/output/garage2-1080-16/manifest.json",
+        "selection_reload_1080": "experiments/2026-11-06-held-glb-publication/output/reload2-1080/manifest.json"
       },
       "review_evidence_identity": [
         {
@@ -5242,9 +5254,12 @@
       "limitations": [
         "Local canonical Xbox360 ISO selected extent/hash provenance, not public1435 catalog membership.",
         "100 native units/metre is an import interpretation; native rim/procedural tyre consumer scale remains unresolved.",
-        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference."
+        "Source-specific rims plus pinned shared Toyo rubber-only adaptation; no factory dimensions or eligibility inference.",
+        "MINI/Charger glass visually noisy.",
+        "Racer-authored stock tyre fit (scripts/fit_juiced2_stock_tyres.py): per-axle outer radius = native hub height (pivot Y/100), tyre width = sourced stock section width (numeric-signature identity hypothesis); NOT native f4/shader sizing or factory outer diameter.",
+        "Published on user instruction; native views, motion and garage loops reviewed, human lap and physical controller not run."
       ],
-      "eligibility_reason": "Research registration only. Supplied review evidence is retained by path/hash, not semantically certified. Explicit separate review is required for player eligibility.",
+      "eligibility_reason": "User-authorized publication 2026-11-06 after storage allowance doubled; hidden native four-view scale capture reviewed by root (plausible silhouette, wheels grounded). Native rim/procedural tyre scale remains unresolved.",
       "source_preparation_requirement": null,
       "native_wheel_contract": {
         "status": "shared-native-static-contract-partially-recovered",
@@ -5272,7 +5287,8 @@
             "sha256": "7d8ece697aa4d9fa6195ed159fe1b96c27c24b5134f3635bb4ed7cbfab6e0c89"
           }
         }
-      }
+      },
+      "approval_scope": "Local player catalog publication on user instruction; not proof of original-game runtime behavior, stock wheel sizing or human acceptance."
     },
     {
       "model_id": "midnight-club-3-remix/vp_fleetline_49",
