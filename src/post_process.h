@@ -22,13 +22,19 @@ vertex Varying xlatMtlMain(Input in [[stage_in]]) {
 )MSL";
   constexpr std::string_view pixel=R"MSL(#include <metal_stdlib>
 using namespace metal;
-struct Globals { float4 u_post; float4 u_sun; };
+struct Globals { float4 u_post; float4 u_sun; float4 u_dof; };
 struct Varying { float4 position [[position]]; float2 uv [[user(locn0)]]; };
 // Fixed authored exposure1 and the existing Reinhard shoulder; exactly one display conversion.
 float hdrDisplay(float radiance) {
  float linear=max(radiance,0.0);return pow(linear/(linear+.72),1.0/2.2);
 }
 float bloomWeight(float peak) { return smoothstep(1.0,2.0,peak); }
+// Depth of field: circle of confusion from eye distance d against the focus distance (u_dof.x, m);
+// u_dof.y is the strength (0 disables), u_dof.w the in-focus half-range around it (m), and the radius is
+// capped at .010 of the frame height. Authored.
+float cocFor(float d,float4 dof) {
+ return clamp(max(abs(d-dof.x)-dof.w,0.0)/max(d,.5)*.012*dof.y,0.0,.010);
+}
 float grainHash(float2 p) { return fract(sin(dot(p,float2(12.9898,78.233)))*43758.5453); }
 // Authored lens glare: strength comes from the radiance actually visible at the sun
 // position, so buildings and cars occlude it. Not a recovered donor lens model.
@@ -58,7 +64,8 @@ float3 sunGlare(texture2d<float> scene, sampler smp, float2 uv, float4 sun) {
 }
 fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
  texture2d<float> s_postScene [[texture(0)]], sampler sceneSampler [[sampler(0)]],
- texture2d<float> s_postGlow [[texture(1)]], sampler glowSampler [[sampler(1)]]) {
+ texture2d<float> s_postGlow [[texture(1)]], sampler glowSampler [[sampler(1)]],
+ texture2d<float> s_postDepth [[texture(2)]]) {
  float4 config=_mtl_u.u_post;
  float3 scene=s_postScene.sample(sceneSampler,in.uv).rgb;
  if(config.x<.5) {
@@ -94,6 +101,21 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   // Blurred periphery loses saturation (MCLA exposes blurEffectDesatScale / blurEffectTintFade; amounts authored).
   float blurLuma=dot(linear,float3(.2126,.7152,.0722));
   linear=mix(linear,float3(blurLuma),clamp(blurWeight*2.2,0.0,.35));
+  if(_mtl_u.u_dof.y>.001) {
+   constexpr sampler depthSampler(filter::nearest,address::clamp_to_edge);
+   float centreCoc=cocFor(s_postDepth.sample(depthSampler,in.uv).r,_mtl_u.u_dof);
+   if(centreCoc>.0004) {
+    float3 sum=linear;float weightSum=1.0;
+    for(int i=0;i<12;++i) {
+     float angle=float(i)*2.39996,radius=sqrt((float(i)+.5)/12.0)*centreCoc;
+     float2 offset=float2(cos(angle)/_mtl_u.u_sun.w,sin(angle))*radius;
+     float tapCoc=cocFor(s_postDepth.sample(depthSampler,in.uv+offset).r,_mtl_u.u_dof);
+     float weight=clamp(tapCoc/max(radius,.0001),0.0,1.0);
+     sum+=max(s_postScene.sample(sceneSampler,in.uv+offset).rgb,float3(0))*weight;weightSum+=weight;
+    }
+    linear=mix(linear,sum/weightSum,smoothstep(.0004,.0025,centreCoc));
+   }
+  }
   linear+=s_postGlow.sample(glowSampler,in.uv).rgb*.14;
   // Four-point lens star on very bright highlights (lamps, sun, wet-road glints), read from the
   // blurred bright-pass so it stays cheap. Authored after the cross flares seen in MCLA frames.
@@ -134,22 +156,24 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   constexpr uint32_t interface=0x504f5354;
   u8(fragment?'F':'V');u8('S');u8('H');u8(12);
   u32(fragment?interface:0);u32(fragment?0:interface);u32(0);u32(0);
-  u16(fragment?4:0);
+  u16(fragment?6:0);
   if(fragment) {
     uniform("u_post",bgfx::UniformType::Vec4,0);
     uniform("u_sun",bgfx::UniformType::Vec4,16);
     uniform("s_postScene",bgfx::UniformType::Sampler|0x20,0);
     uniform("s_postGlow",bgfx::UniformType::Sampler|0x20,1);
+    uniform("s_postDepth",bgfx::UniformType::Sampler|0x20,2);
+    uniform("u_dof",bgfx::UniformType::Vec4,32);
   }
   const auto source=fragment?pixel:vertex;u32(uint32_t(source.size()));
   bytes.insert(bytes.end(),source.begin(),source.end());u8(0);
   u8(fragment?0:2);if(!fragment){u16(0x0001);u16(0x0010);}
-  u16(fragment?32:0);return bytes;
+  u16(fragment?48:0);return bytes;
 }
 
 class PostProcess {
   struct Targets {
-    bgfx::TextureHandle scene=BGFX_INVALID_HANDLE,depth=BGFX_INVALID_HANDLE;
+    bgfx::TextureHandle scene=BGFX_INVALID_HANDLE,depth=BGFX_INVALID_HANDLE,depthColor=BGFX_INVALID_HANDLE;
     std::array<bgfx::TextureHandle,2> glow{{BGFX_INVALID_HANDLE,BGFX_INVALID_HANDLE}};
     bgfx::FrameBufferHandle sceneFrame=BGFX_INVALID_HANDLE;
     std::array<bgfx::FrameBufferHandle,2> glowFrames{{BGFX_INVALID_HANDLE,BGFX_INVALID_HANDLE}};
@@ -159,6 +183,7 @@ class PostProcess {
       for(auto h:glowFrames)if(bgfx::isValid(h))bgfx::destroy(h);
       if(bgfx::isValid(scene))bgfx::destroy(scene);
       if(bgfx::isValid(depth))bgfx::destroy(depth);
+      if(bgfx::isValid(depthColor))bgfx::destroy(depthColor);
       for(auto h:glow)if(bgfx::isValid(h))bgfx::destroy(h);
     }
   };
@@ -179,10 +204,12 @@ public:
       program_=bgfx::createProgram(vertex,pixel,false);bgfx::destroy(vertex);bgfx::destroy(pixel);
       sceneSampler_=bgfx::createUniform("s_postScene",bgfx::UniformType::Sampler);
       glowSampler_=bgfx::createUniform("s_postGlow",bgfx::UniformType::Sampler);
+      depthSampler_=bgfx::createUniform("s_postDepth",bgfx::UniformType::Sampler);
+      dof_=bgfx::createUniform("u_dof",bgfx::UniformType::Vec4);
       config_=bgfx::createUniform("u_post",bgfx::UniformType::Vec4);
       sun_=bgfx::createUniform("u_sun",bgfx::UniformType::Vec4);
       if(!bgfx::isValid(vertices_)||!bgfx::isValid(program_)||!bgfx::isValid(sceneSampler_)||
-         !bgfx::isValid(glowSampler_)||!bgfx::isValid(config_)||!bgfx::isValid(sun_))throw std::runtime_error("post_resources");
+         !bgfx::isValid(glowSampler_)||!bgfx::isValid(config_)||!bgfx::isValid(sun_)||!bgfx::isValid(depthSampler_)||!bgfx::isValid(dof_))throw std::runtime_error("post_resources");
     }catch(...){release();throw;}
   }
   ~PostProcess(){release();}
@@ -210,8 +237,20 @@ public:
     next->depth=bgfx::createTexture2D(next->sceneWidth,next->sceneHeight,false,1,bgfx::TextureFormat::D32F,
       BGFX_TEXTURE_RT_MSAA_X4|BGFX_TEXTURE_RT_WRITE_ONLY);
     if(!bgfx::isValid(next->scene)||!bgfx::isValid(next->depth))throw std::runtime_error("post_scene_texture");
-    bgfx::TextureHandle attachments[]={next->scene,next->depth};
-    next->sceneFrame=bgfx::createFrameBuffer(2,attachments,false);
+    // Optional second colour target: eye distance in metres for depth of field. Absent when R32F cannot be a
+    // multisampled render target; the post pass then simply skips depth of field.
+    constexpr uint32_t depthColorRequired=BGFX_CAPS_FORMAT_TEXTURE_2D | BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER |
+      BGFX_CAPS_FORMAT_TEXTURE_FRAMEBUFFER_MSAA_X4;
+    if((caps->formats[bgfx::TextureFormat::R32F]&depthColorRequired)==depthColorRequired)
+      next->depthColor=bgfx::createTexture2D(next->sceneWidth,next->sceneHeight,false,1,bgfx::TextureFormat::R32F,
+        BGFX_TEXTURE_RT_MSAA_X4|sampling);
+    if(bgfx::isValid(next->depthColor)) {
+      bgfx::TextureHandle attachments[]={next->scene,next->depthColor,next->depth};
+      next->sceneFrame=bgfx::createFrameBuffer(3,attachments,false);
+    } else {
+      bgfx::TextureHandle attachments[]={next->scene,next->depth};
+      next->sceneFrame=bgfx::createFrameBuffer(2,attachments,false);
+    }
     if(!bgfx::isValid(next->sceneFrame))throw std::runtime_error("post_scene_framebuffer");
     for(size_t i=0;i<2;++i) {
       next->glow[i]=bgfx::createTexture2D(next->glowWidth,next->glowHeight,false,1,bgfx::TextureFormat::RGBA16F,
@@ -229,6 +268,9 @@ public:
   uint16_t sceneHeight() const {if(!targets_)throw std::logic_error("post_not_sized");return targets_->sceneHeight;}
   // Screen-space sun anchor: uv.xy (top-origin), visibility weight, aspect. Zero hides glare.
   void setSun(float u,float v,float weight,float aspect) {sun_value_={u,v,weight,aspect};}
+  // Focus distance (m) and strength; ignored (no depth of field) when the depth target is unavailable.
+  void setFocus(float distance,float strength) {focus_value_={std::max(distance,.5f),std::clamp(strength,0.f,4.f),0,2.6f};}
+  bool depthOfFieldAvailable() const {return targets_ && bgfx::isValid(targets_->depthColor);}
   // Speed blur amount in [0,1]; ignored by neutral output.
   void setMotion(float amount) {motion_=std::clamp(amount,0.f,1.f);}
   void draw(bool neutral) {
@@ -248,8 +290,8 @@ private:
   std::unique_ptr<Targets> targets_;
   bgfx::VertexBufferHandle vertices_=BGFX_INVALID_HANDLE;
   bgfx::ProgramHandle program_=BGFX_INVALID_HANDLE;
-  bgfx::UniformHandle sceneSampler_=BGFX_INVALID_HANDLE,glowSampler_=BGFX_INVALID_HANDLE,config_=BGFX_INVALID_HANDLE,sun_=BGFX_INVALID_HANDLE;
-  std::array<float,4> sun_value_{{0,0,0,1}};
+  bgfx::UniformHandle sceneSampler_=BGFX_INVALID_HANDLE,glowSampler_=BGFX_INVALID_HANDLE,config_=BGFX_INVALID_HANDLE,sun_=BGFX_INVALID_HANDLE,depthSampler_=BGFX_INVALID_HANDLE,dof_=BGFX_INVALID_HANDLE;
+  std::array<float,4> sun_value_{{0,0,0,1}},focus_value_{{8,0,0,0}};
   float motion_=0;
   uint32_t frame_=0; // Advances grain only; never affects neutral output.
   void pass(uint16_t view,bgfx::FrameBufferHandle frame,uint16_t width,uint16_t height,
@@ -258,6 +300,9 @@ private:
     bgfx::setViewMode(view,bgfx::ViewMode::Sequential);bgfx::setViewClear(view,BGFX_CLEAR_NONE);
     bgfx::setViewTransform(view,nullptr,nullptr);bgfx::setScissor();bgfx::setVertexBuffer(0,vertices_);
     bgfx::setTexture(0,sceneSampler_,input);bgfx::setTexture(1,glowSampler_,glow);
+    // Stage 2 always holds a texture that is not this pass's render target; without a depth target the scene stands in.
+    bgfx::setTexture(2,depthSampler_,targets_&&bgfx::isValid(targets_->depthColor)?targets_->depthColor:input);
+    {auto focus=focus_value_;if(!targets_||!bgfx::isValid(targets_->depthColor))focus[1]=0;bgfx::setUniform(dof_,focus.data());}
     bgfx::setUniform(config_,config.data());bgfx::setUniform(sun_,sun_value_.data());bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_MSAA);
     bgfx::submit(view,program_);
   }
@@ -265,7 +310,7 @@ private:
     targets_.reset();
     if(bgfx::isValid(vertices_))bgfx::destroy(vertices_);vertices_=BGFX_INVALID_HANDLE;
     if(bgfx::isValid(program_))bgfx::destroy(program_);program_=BGFX_INVALID_HANDLE;
-    for(auto* h:{&sceneSampler_,&glowSampler_,&config_,&sun_}) {if(bgfx::isValid(*h))bgfx::destroy(*h);*h=BGFX_INVALID_HANDLE;}
+    for(auto* h:{&sceneSampler_,&glowSampler_,&config_,&sun_,&depthSampler_,&dof_}) {if(bgfx::isValid(*h))bgfx::destroy(*h);*h=BGFX_INVALID_HANDLE;}
   }
 };
 }

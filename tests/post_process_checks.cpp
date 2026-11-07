@@ -11,7 +11,7 @@ std::map<uint16_t,char> live;
 std::map<uint16_t,std::vector<uint16_t>> frames;
 std::map<uint16_t,std::array<uint16_t,2>> sizes;
 std::map<uint16_t,uint16_t> viewFrames;
-std::array<uint16_t,2> sampled{};
+std::array<uint16_t,3> sampled{};
 std::vector<uint16_t> submitted;
 void check(bool value){if(!value)throw std::runtime_error("post mock contract");}
 uint16_t allocate(char type){if(++attempts==failAt)return UINT16_MAX;auto id=next++;live[id]=type;return id;}
@@ -54,7 +54,7 @@ void setViewClear(ViewId,uint16_t flags,uint32_t,float,uint8_t){mock::check(flag
 void setViewTransform(ViewId,const void*,const void*){}
 void setScissor(uint16_t){}
 void setVertexBuffer(uint8_t,VertexBufferHandle h){mock::check(mock::live.at(h.idx)=='v');}
-void setTexture(uint8_t stage,UniformHandle,TextureHandle h,uint32_t){mock::check(stage<2&&mock::live.at(h.idx)=='t');mock::sampled[stage]=h.idx;}
+void setTexture(uint8_t stage,UniformHandle,TextureHandle h,uint32_t){mock::check(stage<3&&mock::live.at(h.idx)=='t');mock::sampled[stage]=h.idx;}
 void setUniform(UniformHandle,const void*,uint16_t){}
 void setState(uint64_t,uint32_t){}
 void submit(ViewId view,ProgramHandle,uint32_t,uint8_t){
@@ -72,7 +72,7 @@ int main()try{
     mock::reset();{racer::PostProcess post;mock::missingDepth=bit;bool rejected=false;try{post.ensure(1280,720);}catch(const std::runtime_error&){rejected=true;}mock::check(rejected);}
     mock::check(mock::live.empty());
   }
-  for(int failure=1;failure<=15;++failure){
+  for(int failure=1;failure<=17;++failure){
     mock::reset(failure);bool rejected=false;
     try{racer::PostProcess post;post.ensure(1280,720);}catch(const std::runtime_error&){rejected=true;}
     mock::check(rejected&&mock::live.empty());

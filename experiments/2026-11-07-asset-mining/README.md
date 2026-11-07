@@ -62,6 +62,13 @@ Names only: no shader code, constants or parameter values were recovered. Sessio
 - **Exhaust wisps** (`src/main.cpp`): pale, thin puffs behind the body centre line while on the throttle. The pipe position is not recovered; the emitter is authored. `before-after/exhaust.png` vs `--no-tyre-smoke` at cruise: faint and subtle. The first version used a sine-pattern puff texture that left a visible lattice at low alpha; replaced by a plain radial falloff for all smoke.
 - **Tests:** new `tests/cli_option_checks.py` (invalid `--time` / `--paint`, missing value) joins `screenshot_delay_checks`; 95 ctest targets pass (10 skipped). Still no automated test of shading output.
 
+## Depth of field (follow-up 4; previously listed as blocked)
+- The earlier blocker (scene depth is a write-only MSAA D32F attachment) was avoidable: the main surface shader now also writes eye distance in metres to a second colour target (`R32F`, MSAA x4) and the final post pass does a 12-tap gather with a circle of confusion from the distance to a focus point at the car, a 2.6 m in-focus half-range, radius capped at .010 of frame height (`--no-dof` disables). Authored values; not a recovered lens model.
+- Optional by hardware: the target is created only if R32F is a multisampled render target; otherwise the pass skips DoF (this is also what the CPU mock exercises). The probe/cube passes also run the main shader without a second attachment; on this machine (Metal, Apple GPU) that rendered correctly, with no validation run.
+- First capture blurred the whole frame including the car; a debug visualisation of the depth target showed it was correct (3.5 m at the bumper, ~11 m down the street, far sky), so the cause was tuning: the focus point (car centre) left the nearer bumper out of focus. Fixed with the focus range. Debug code removed.
+- Evidence: `before-after/depth-of-field.png` (same build, `--no-dof` vs default): car sharp, street/houses/trees softened. 1080p at 99-mph run: 120.0 FPS with and without DoF, 0/1322 frames over 16.7 ms (one machine, one run).
+- Edge behaviour not examined: foreground/background bleeding at high contrast edges, alpha-blended particles blending distance values, HUD, 4K.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 
@@ -79,7 +86,7 @@ Observed: Racer's lighting, road finish, motion cues and post pipeline are now c
 3. ~~No tyre smoke~~ added for skid events; no dust, burnout or exhaust smoke.
 4. Car paint: saturated hue now available via `--paint` (default stays silver); flake, orange-peel and rich clearcoat reflections still missing (MCLA RX-8/Saleen).
 5. Terrain relief/horizon silhouette missing (hills, mountains).
-6. Depth of field: bgfx `examples/45-bokeh` (BSD-2) shows a linear-depth CoC pipeline in bgfx itself; blocked here by Racer's write-only MSAA depth attachment.
+6. ~~Depth of field~~ implemented (see follow-up 4); no bokeh shapes, no foreground-specific handling, no per-camera tuning.
 7. Side props (barriers, crowds, kerbs, billboards).
 
 ## Web/GitHub leads

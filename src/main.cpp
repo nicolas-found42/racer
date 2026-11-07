@@ -88,7 +88,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool autoDrive = false, benchmark = false, verify = false;
   double shotDelay = 2;
   bool shotDelayExplicit = false;
-  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true;
+  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true, depthOfField = true;
   float nightAmount = 0, paintHue = 0, paintStrength = 0;
   std::string shot, profilePath, scene, garageMode, captureLoop, reviewPath, previewMesh,skyMesh,sceneryMesh;
   std::vector<std::string> worldMeshes;
@@ -116,6 +116,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--no-skid-marks") skidMarks = false;
     else if (a == "--no-speed-fov") speedFov = false;
     else if (a == "--no-tyre-smoke") tyreSmoke = false;
+    else if (a == "--no-dof") depthOfField = false;
     else if (a == "--paint" && i + 1 < argc) {
       const std::string value = argv[++i];
       struct Entry {const char* name; float hue;};
@@ -1629,6 +1630,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float weight=std::clamp((1.12f-edge)/.12f,0.f,1.f);
         postProcess.setSun(x*.5f+.5f,.5f-y*.5f,weight,float(width)/height);
       } else postProcess.setSun(0,0,0,1);
+    }
+    {
+      // Focus on the car: eye-to-body distance, so the chase camera keeps it sharp and softens distant street.
+      const double fx=cameraX-shown.x,fy=cameraY-(bodyElevation+.6),fz=cameraZ-shown.z;
+      postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?1.f:0.f);
     }
     postProcess.setMotion(std::clamp((float(std::abs(shown.speed))-15.f)/35.f,0.f,1.f)*.85f);
     postProcess.draw(postNeutral);

@@ -54,6 +54,7 @@ struct Varying {
 struct Output {
  uint mask [[sample_mask, function_constant(bgfx_sampleMaskEnabled)]];
  float4 color [[color(0)]];
+ float4 depth [[color(1)]]; // eye distance in metres for depth of field; ignored by single-target passes
 };
 float displayToLinear(float channel) { return pow(max(channel,0.0),2.2); }
 float3 linearDisplay(float3 rgb) { return float3(displayToLinear(rgb.r),displayToLinear(rgb.g),displayToLinear(rgb.b)); }
@@ -219,6 +220,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  texturecube<float> s_environment [[texture(3)]], sampler environmentSampler [[sampler(3)]],
  texture2d<float> s_normal [[texture(4)]], sampler normalSampler [[sampler(4)]]) {
  Output o={}; if(bgfx_sampleMaskEnabled) o.mask=bgfx_sampleMask;
+ o.depth=float4(length(_mtl_u.u_visualCamera.xyz-in.world),0,0,1);
  float mode=_mtl_u.u_visualMaterial.w;
  if(mode>4.5) {
   float4 overlay=s_texColor.sample(smp,in.uv)*in.color;
