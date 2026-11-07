@@ -1,0 +1,86 @@
+# 2026-11-07 asset mining: road, lighting, lens, wheels
+
+**User goal for this session:** dedicated asset-mining pass using REA on the raw games plus web sources; close the listed visual gaps with before/after screenshots and console-game screenshots. The console-parity bar is **not** met; this record is evidence for specific gap closures only.
+
+## Target
+Branch `feat/improve-racer-visual-fidelity` worktree `~/.codex/worktrees/4314/racer`, base `a60c736`, uncommitted. Previous steps: `../2026-11-07-visual-resume/README.md`.
+
+## REA evidence used (observed names, no formulas)
+From `/private/tmp/racer-visual-common-bank/effect-observations.json` (earlier REA/ISO extraction of the MCLA Complete Edition disc; decoded `CityRoad.fxc`, 26,334 B at ISO offset 1790824448): the road pixel shader `PSCityRoad` binds `DiffuseSampler`, `GrimeSampler`, `PuddleSampler`, `ReflectionSampler`, `DecalSampler`, `ShadowCollectorSampler` and parameters `FresnelExponent`, `SpecularExponent`, `SpecularIntensityNear/Far`, `SpecularTint`, `SpecularColorMixer`, `WaterParameters`, `gReflectionParams`; vertex variants `VSCityRoad`, `VSCityRoadNight`, `VSCityRoadEnv`. Earlier common-bank strings also name `vehblurimposter`, `blur_wheel`, `zoomblurmasksize`. These are names and bindings only. No shader microcode was decompiled this session and no new REA session was opened; every implementation below is authored.
+
+### New REA session this pass (SLRR 2.31, `games/raw/slrr-231/StreetLegal_Redline.exe`, SHA-256 f44fb88a…efc2, Ghidra 12.2 provider, x86 PE)
+- `search_strings` regex over render/effect terms, 83 matches (Evidence `ev_8430584dab09833152859476522809c7233816eeece081c9df3bc8e0d0f5e8e0`): `blur.psh`; sphere-map specular materials (`CMaterial_ColorSpecularSpheremap`, `…TexSpecularSpheremap`, `…MixTASpecularSpheremapMasked`, bump-specular variants) and `diff_envmap.vsh`/`skinmesh*_diffenvmap.vsh`; `setGlobalEnvmap`; `LensFlareMaterial` with `lf_flare_count/minsize/maxsize/distance`; fog parameters `fog_start/end/color`; a skidmark system (`skid_PS`, `skid_SM`, `skid_SMcolor`, `skid_SFX`, `skidmark_max`, classes `WheelSkidmark_Context`, `rg_skidmark`, `RI_skidmark`). Ghidra string inventory only; absence of a name is not proof of absence.
+- `xrefs 0x593ed0` (`blur.psh`) → one site (Evidence `ev_d0ab5044…5382`); `procedure_pseudo_code 0x428891` (Evidence `ev_a07380e8…da7e4`): the containing function checks a Direct3D device capability then loads two pixel shaders, `clear_below.psh` and `blur.psh`, into an effect object. Parameters, kernel and render-target usage were not recovered. Session closed with `close_binary`.
+- Carried into code as authored features: skid marks, ghost lens flares. Not a recovered implementation.
+
+## Visible gaps from actual MCLA frames (contact sheet `mcla-contact.png`)
+1. Wheels are rotationally blurred at speed. 2. Bright lamps/highlights carry cross-star glare. 3. Roads have cracks, patches, polished wheel tracks and reflective water. 4. Shaded building faces are much brighter than our near-black walls. 5. (Not addressed) saturated deep paint, dense facades, depth of field.
+
+## Changes and before/after evidence
+All captures actual native runs (`output/`), composites in `before-after/` made by `scripts/compose_before_after.py`.
+- **Road model** (`src/visual_shader.h`): lane wheel-track grime/polish, noise puddles (rough .06, darker, probe reflection), hairline cracks. `before-after/road-rear.png`, `road-rear-crop.png` (before = `../2026-11-07-visual-resume/output/traffic-v3`): puddle reflecting street and sky; banded tracks across the intersection. First puddle tuning was far too wet (`road-v2`), reduced in `road-v3`. A first shader used `remainder()`, which Metal rejected (`Failed to create Fragment shader`); that failed attempt `road-v1` was deleted by me after the cause was identified (log text above is all that remains). Cracks seen in `before-after/wheel-side.png` (dark hairlines on the road).
+- **Shaded-wall fill**: ambient += (.080,.072,.066)*(1-|n.y|) for world and scenery. Measured luminance of fixed ROIs, same camera: left wall 53.3→64.9, right wall 46.4→60.3, sunlit 102→107 (`look-v2/rear.png` vs traffic-v3). Still darker than reference frames.
+- **Lens star** (`src/post_process.h`): 4-point star from blurred bright-pass above radiance 1.2. No isolated before/after capture; effect is small and was not separately verified in a frame with a lamp highlight.
+- **Wheel rotational blur** (`src/main.cpp`): six translucent ghosts per rolling wheel across the swept angle at >6 m/s, `--no-wheel-blur` disables. `before-after/wheel-side.png`, `wheel-crop.png` (same executable/state at 93 mph, 1437 frames in 12.0 s ≈ 120 FPS): spokes smeared radially after, crisp before.
+- **Tyre marks** (`src/main.cpp`): ring buffer of flat quads laid behind the two rear wheels while speed >7 m/s and (brake >.7 or estimated lateral accel >9 m/s²), drawn as an unlit alpha decal via a transient vertex buffer; `--no-skid-marks` disables. The simulation has no slip model, so the trigger is an authored heuristic. `before-after/skid-rear.png` (full-throttle then full brake, same executable/state; stops at z≈62 m): two dark parallel marks after, none before. `output/skid/elevated.png` shows the same marks from above.
+- **Ghost lens flares** (`src/post_process.h`): three tinted discs along the sun-to-centre axis (authored; names lf_flare_* from REA). Faint; `before-after/sun-flare.png` compares the whole cumulative state (traffic, road, cracks) against the older sun-only frame, so it is not an isolated flare comparison.
+- `tests/visual_lighting_checks.py` pinned output expression updated for the ghost alpha form (linear HDR output retained).
+
+- **Speed FOV** (`src/main.cpp`): chase-camera field of view widens up to +12° by ~48 m/s, smoothed; `--no-speed-fov` disables. `before-after/speed-fov.png` (same executable/state, 93 mph): wider view and stronger speed sensation after. The same frames show puddle reflections of buildings on the road.
+
+### REA on the MCLA executable carrier (this pass)
+Opened `/private/tmp/racer-hdr-evidence/mcla-sectioned-seeded.ppc.elf` (SHA-256 e6555097…29e2, 10,359,680 B, an earlier analyst-built ELF32 PowerPC carrier of the MCLA executable memory image, Ghidra 12.2, language PowerPC:BE:32; this language truncates some PPC64 save-helper flow, so only string inventory is used). `search_strings` regex over effect terms (Evidence `ev_02e03b04ccb2054a4c10cab007fdd415f86f47623d3e6ba61b309e1f684a7384`) observed:
+- **Night sky/lighting:** sky shader variants `ps_main_withmoon`, `ps_main_withstarfield_withmoon`; moon parameters MoonPhase/MoonSize/MoonColor/MoonBrightness, `$/sky/moon.dds`, `moon_glow.dds`; `sm_fGlobalNightLightIntensity`; HDRExposure/HDRSunExposure/HDRExposureClamp.
+- **Headlights:** `Racer_SetHeadlights`, `kLightHeadlight`, `m_vBumpedHeadlightColor`, `headlights_on/off`.
+- **Motion blur:** `PSStreakMotionBlur`, `PSMotionBlurCombineMC4`, `Mc4MotionBlurVehicleMtxs`, `GenVelocityMapNoVehicleBlur`, `blurEffectDesatScale`, `blurEffectTintFade`, `tireMotionBlur`, `blur_wheel`, `dtHIRES_CAR_RIM_BLUR`.
+- **Post:** `PSToneMap`, `ToneMapFogDistort`, `sm_iBloomIterations`, `sm_fBloomIntensity`.
+- **Skid/smoke:** `mcSkidMarkMgr`, `SkiddingThreshold`, `DEFAULT_SKID_CLAMP`; `smokeStartColor`, `smokeEndColor`, `smokeSize`.
+Names only: no shader code, constants or parameter values were recovered. Session closed with `close_binary`. Juiced 2, GT4 and MC3 were **not** reopened in this pass: their executables are inside disc images (Juiced 2 is the Xbox 360 release), no extracted carrier exists in the lab, and I did not attempt to mount 5-8 GB images; earlier records in `../2026-11-07-visual-fidelity/README.md` cover those titles, and their screenshots are used here only for visual comparison.
+
+## Night, trees and smoke (user-requested feature pass)
+- **Street trees** (`src/world_scene.h`, `src/visual_shader.h`): 192 trees on block sidewalks (12 leaf cards each, trunk, positions clear of existing lamps/benches/palms and the 7 m road clearance). Cards carry local coordinates in the tangent and surface id -1; both shaders cut noise-clumped foliage so canopies cast dappled shadows. Authored. `before-after/street-trees.png`.
+- **Tyre smoke** (`src/main.cpp`): up to 900 camera-facing puffs emitted at the rear wheels while the skid rule is active, sorted back-to-front, soft procedural puff texture, lifted so quads are not cut by the road, start→end colour ramp (after REA's smokeStartColor/EndColor names; values authored), `--no-tyre-smoke`. `before-after/tyre-smoke.png`.
+- **Night** (`--time night`; `src/visual_shader.h`, `src/world_scene.h`, `src/main.cpp`): one shader serves day and night through a new `u_headlight` uniform (car x, z, heading, night), set beside every material draw because bgfx applies uniforms per draw. Night replaces the sun with cool moonlight, collapses ambient, darkens haze, adds a star/moon sky (also over the photographic sky), grid-derived lamp lights (12.5 m offset, 25 m spacing, ±200 m, unshadowed, wet-road specular), emissive lamp heads (surface id -2), hashed lit windows on the authored skyline and a headlight cone for the player's car. Lamp meshes (504 posts) are always present in the world. Lamps and lit windows are restricted to the central ±200 m / authored skyline; the repeated outer city tiles and the prepared scenery windows are not lit.
+- **Refinements from MCLA names:** blurred periphery is desaturated; smoke ramp; ghost flares softened.
+- Test budget `world_scene_checks` vertex cap raised 200,000→300,000 (trees ~22k, lamps ~26k; authored fallback was at 197k of 200k). Clearance/foliage-domain checks were satisfied by changing the tree placement and surface ids, not loosened.
+- `output/night-v3` (standard views), `output/night-brake/{rear,left}.png` (braking at night with smoke, marks, headlights, lamps), `output/day-v3` (day regression; mean abs diff vs pre-night day frame 1.5/255 from lamp posts and grain).
+- `capture_visual_review.py` gains `--time day|night`.
+
+## Retention and publication boundary
+Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
+
+## Console/PC reference comparisons (actual screenshots, side by side)
+Reference images: 52 web screenshots gathered by a background agent into `references/web/` (`manifest.json` lists source page, URL, size, SHA-256, what each shows, and terms note; copyrighted, private comparison only; some carry site watermarks; SLRR frames are Steam community uploads that may be modded; 19 of 52 are under 960 px wide; PS2/PS3-era frames are 640x360-688x512). Contact sheets: `contact-*.png`. Sheets in `console-compare/` pair one reference per raw game with the current build (`output/final-v1`, camera distance 9, four traffic cars):
+- `mcla-vs-racer.png` (MCLA, RX-8 at Hollywood sign): reference has a large hero car filling the frame with saturated red paint and strong reflections, dense trees, hillside terrain and a very high-contrast low sun; Racer shows a small dark car, flat boxy buildings, no vegetation mass or terrain relief, HUD panels over the frame.
+- `juiced2-vs-racer.png` (Juiced 2 PC replay): reference has night lighting, crowds, kerbs and barriers, lit signage, many cars and **tyre marks on the road**; Racer now has comparable dark tyre marks (this pass) but no night/time of day, props, barriers or crowds.
+- `gt4-vs-racer.png` (GT4 PS2): reference has tree-lined road, mountain horizon, several nearby cars and a tight car close-up; Racer has no trees along the road, only a flat horizon of boxes and distant cars.
+- `slrr-vs-racer.png` (SLRR PC) and `mc3-vs-racer.png` (MC3 PS2 night burnout): reference frames show night/dusk lighting, headlight cones and tyre smoke; Racer has daytime only, no headlights on cars, no smoke.
+Observed: Racer's lighting, road finish, motion cues and post pipeline are now closer in kind to these frames than at the session start, but no pair is visually indistinguishable; in several pairs the 2005-era PS2 frames (GT4, MC3) are still richer in scene density than Racer.
+
+## Actionable findings (new, from the comparisons)
+1. ~~No vegetation along streets~~ street trees added (this pass); still no shrubs/hedges, grass, or terrain-scale forest (GT4, MCLA).
+2. ~~No time of day~~ `--time night` added; no dusk/dawn transition, no in-game toggle, no signage/neon (Juiced 2, MC3, MCLA).
+3. ~~No tyre smoke~~ added for skid events; no dust, burnout or exhaust smoke.
+4. Car paint close-ups remain flat (MCLA RX-8/Saleen); no saturated paint, flake or strong clearcoat reflections on the default car.
+5. Terrain relief/horizon silhouette missing (hills, mountains).
+6. Depth of field: bgfx `examples/45-bokeh` (BSD-2) shows a linear-depth CoC pipeline in bgfx itself; blocked here by Racer's write-only MSAA depth attachment.
+7. Side props (barriers, crowds, kerbs, billboards).
+
+## Web/GitHub leads
+`references/github-leads.md` (agent-verified): bgfx 45-bokeh, 38-bloom, 09-hdr; KinoStreak (MIT) anamorphic streak; blur-pro-urp (MIT) radial blur; Filament material guide (Apache-2.0) clearcoat; wet-road/puddle references (Lagarde "Observe rainy world"; an unlicensed gist is reference only); Forza Horizon 4 paint-calibration slides. No external code was copied into the project; none of these leads has been integrated yet beyond ideas already implemented independently (radial blur, streak, puddles).
+
+## Retention
+Output reduced to ~192 MiB: PPMs with PNG gzipped; superseded frozen executables gzipped (SHA/mode in `binary-retention.txt`); identical frozen city/sky GLB copies removed except in `final-v1` (hashes recorded). `road-v1` (shader compile failure) was deleted earlier by me. Nothing committed or pushed.
+
+## Checks
+ctest 94/94 pass (10 skipped, need local assets); hub `tools/check.py` PASS. `jev_review`: escalate, composite .62, safe_to_apply .17 overall (per file .17/.27/.25/.50), low confidence, no concrete defect named. No unit test covers road shading, ghosts or the star.
+
+## Unresolved (explicit)
+- Console parity unmet; side-by-side still shows far less geometry/material/lighting density than MCLA/GT4/Juiced frames.
+- Depth of field not implemented: scene depth is a write-only MSAA D32F attachment; sampling it needs an MRT or resolve step.
+- Car paint colour/flake, facade detail and deeper REA mining of building/paint shaders (`CityDefault.fxc`, window/sign shaders) not yet carried into code.
+- Road cracks/puddles are authored noise, not MCLA's puddle/grime textures; lane grid logic assumes the 100 m street grid.
+- See actionable findings 1-7 above; none is implemented yet.
+
+## Jev completion gate (this session)
+`jev_gate`, six claims, patch described by summary: action **escalate**. Verified: wheel-blur/skid/FOV before-after (.98, auto), wall-luminance measurement (1.0, auto), console comparison sheets and recorded findings (.88, auto), REA observation claim (.62, review). **Contradicted at .96-.98 by design:** "depth of field, tyre smoke, street trees, night lighting and saturated car paint are implemented" (they are not) and "indistinguishable from an Xbox 360/PS3 game" (it is not). Patch review safe_to_apply .03, composite .45, driven by a change *summary*, no concrete defect named; test gap flagged at .92 confidence (no unit test covers the new shading/effects). There is no passing gate. The goal is unmet; findings 1-7 remain open.

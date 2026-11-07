@@ -1,5 +1,7 @@
 # Experiments
 
+Latest: [asset mining: road, wheels, tyre marks/smoke, trees, night](2026-11-07-asset-mining/README.md); earlier: [visual resume, lens finish pass](2026-11-07-visual-resume/README.md): sun-anchored glare, filmic grade, vignette; in-game glare unverified; visual goal remains unmet.
+
 Active source-backed material continuation: [native materials](2026-11-07-native-materials/README.md). Selected signed R/A normal kernel and actual curb comparisons; visual goal remains unmet.
 
 - [Source streets, HDR and graded placement, active resume](2026-11-07-source-street/README.md): three qualified source blocks, exact façade restoration, shared texture admission, linear HDR and four-wheel visual placement. Fresh actual MCLA comparisons still show substantial visual gaps.

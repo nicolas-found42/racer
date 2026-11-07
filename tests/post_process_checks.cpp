@@ -72,7 +72,7 @@ int main()try{
     mock::reset();{racer::PostProcess post;mock::missingDepth=bit;bool rejected=false;try{post.ensure(1280,720);}catch(const std::runtime_error&){rejected=true;}mock::check(rejected);}
     mock::check(mock::live.empty());
   }
-  for(int failure=1;failure<=14;++failure){
+  for(int failure=1;failure<=15;++failure){
     mock::reset(failure);bool rejected=false;
     try{racer::PostProcess post;post.ensure(1280,720);}catch(const std::runtime_error&){rejected=true;}
     mock::check(rejected&&mock::live.empty());
@@ -83,6 +83,7 @@ int main()try{
     try{post.draw(false);}catch(const std::logic_error&){rejected=true;}mock::check(rejected);
     post.ensure(1281,721);const auto prior=post.sceneFrame();const auto attempts=mock::attempts;
     post.ensure(1281,721);mock::check(mock::attempts==attempts);
+    post.setSun(.4f,.3f,1.f,16.f/9.f);post.setMotion(9.f);post.setMotion(-2.f);post.setMotion(.5f); // clamped, never throws
     post.draw(false);mock::check(mock::submitted==std::vector<uint16_t>({10,11,12,13}));
     for(const auto& [frame,attachments]:mock::frames)if(attachments.size()==1)mock::check(mock::sizes.at(attachments[0])==std::array<uint16_t,2>{321,181});
     mock::submitted.clear();post.draw(true);mock::check(mock::submitted==std::vector<uint16_t>({13}));

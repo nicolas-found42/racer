@@ -28,6 +28,8 @@ def main():
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--reference-label", required=True)
     parser.add_argument("--vehicle", type=int, default=0, help="Index in the current local catalog")
+    parser.add_argument("--time", choices=["day","night"], default="day", help="Time of day passed to the game")
+    parser.add_argument("--traffic-vehicle", type=int, action="append", default=[], help="Extra catalog index frozen as parked traffic; repeat up to four")
     parser.add_argument("--vehicle-library", type=Path, help="Optional isolated preview catalog; the selected model is frozen before native runs")
     parser.add_argument("--world-mesh", type=Path, action="append", default=[], help="Optional local static world GLB; repeat up to four")
     parser.add_argument("--sky-mesh", type=Path, help="Optional bounded local skydome GLB; prepared local sky used by default")
@@ -64,7 +66,7 @@ def main():
     manifest = {"binary": str(binary), "binary_sha256": hashlib.sha256(binary_bytes).hexdigest(),
                 "reference": str(reference), "reference_sha256": hashlib.sha256(reference_bytes).hexdigest(),
                 "reference_label": args.reference_label,
-                "follow_ground":args.follow_ground,"world_origin": args.world_origin, "world_heading_degrees":args.world_heading,"camera_distance": args.camera_distance,"post_neutral":args.post_neutral,
+                "follow_ground":args.follow_ground,"world_origin": args.world_origin, "world_heading_degrees":args.world_heading,"camera_distance": args.camera_distance,"post_neutral":args.post_neutral,"time_of_day":args.time,
                 "limits": {"runs":4,"per_run_seconds":30,"dimensions":[1280,720],"frozen_input_bytes":input_limit,"output_bytes":output_limit},
                 "visual_acceptance": "unresolved; sanity checks do not establish fidelity",
                 "runs": []}
@@ -81,28 +83,36 @@ def main():
     lines = library_bytes.decode().splitlines()
     if len(lines) < 3 or lines[0] != "RACER_VEHICLES 1" or int(lines[1]) != len(lines) - 2:
         raise ValueError("Unexpected native catalog")
-    if not 0 <= args.vehicle < int(lines[1]):
-        raise ValueError("Selected vehicle index outside catalog")
-    descriptor_name = json.loads(lines[2 + args.vehicle])
-    descriptor = (library.parent / descriptor_name).resolve()
-    if descriptor.parent != library.parent or descriptor.suffix != ".vehicle":
-        raise ValueError("Selected descriptor is outside the library")
-    descriptor_bytes = regular_bytes(descriptor, 32768)
-    fields = {tokens[0]: tokens[1:] for line in descriptor_bytes.decode().splitlines()
-              if (tokens := shlex.split(line))}
-    mesh = (descriptor.parent / fields["mesh"][0]).resolve()
-    if mesh.parent != descriptor.parent or mesh.suffix != ".glb":
-        raise ValueError("Selected mesh is outside the library")
-    mesh_bytes = regular_bytes(mesh, 32 * 1024**2)
-    mesh_hash = hashlib.sha256(mesh_bytes).hexdigest()
-    if mesh_hash != fields["sha256"][0]:
-        raise ValueError("Selected mesh hash mismatch")
+    if len(args.traffic_vehicle) > 4 or len(set(args.traffic_vehicle)) != len(args.traffic_vehicle) or args.vehicle in args.traffic_vehicle:
+        raise ValueError("At most four distinct traffic vehicles, none equal to the selected vehicle")
     models = out / "models"
     models.mkdir()
-    retain(models / descriptor.name, descriptor_bytes)
-    retain(models / mesh.name, mesh_bytes)
+    def freeze(index):
+        if not 0 <= index < int(lines[1]):
+            raise ValueError("Vehicle index outside catalog")
+        descriptor_name = json.loads(lines[2 + index])
+        descriptor = (library.parent / descriptor_name).resolve()
+        if descriptor.parent != library.parent or descriptor.suffix != ".vehicle":
+            raise ValueError("Selected descriptor is outside the library")
+        descriptor_bytes = regular_bytes(descriptor, 32768)
+        fields = {tokens[0]: tokens[1:] for line in descriptor_bytes.decode().splitlines()
+                  if (tokens := shlex.split(line))}
+        mesh = (descriptor.parent / fields["mesh"][0]).resolve()
+        if mesh.parent != descriptor.parent or mesh.suffix != ".glb":
+            raise ValueError("Selected mesh is outside the library")
+        mesh_bytes = regular_bytes(mesh, 32 * 1024**2)
+        mesh_hash = hashlib.sha256(mesh_bytes).hexdigest()
+        if mesh_hash != fields["sha256"][0]:
+            raise ValueError("Selected mesh hash mismatch")
+        retain(models / descriptor.name, descriptor_bytes)
+        retain(models / mesh.name, mesh_bytes)
+        return descriptor, descriptor_bytes, mesh_hash
+    descriptor, descriptor_bytes, mesh_hash = freeze(args.vehicle)
+    traffic = [freeze(i)[0].name for i in args.traffic_vehicle]
+    manifest["traffic_vehicles"] = args.traffic_vehicle
     frozen_library = models / "catalog.racer"
-    frozen_library.write_text("RACER_VEHICLES 1\n1\n" + json.dumps(descriptor.name) + "\n")
+    names = [descriptor.name] + traffic
+    frozen_library.write_text("RACER_VEHICLES 1\n" + str(len(names)) + "\n" + "".join(json.dumps(n) + "\n" for n in names))
     shaders = out / "shaders"
     shaders.mkdir()
     shader_hashes = {}
@@ -160,6 +170,8 @@ def main():
             argv.append("--follow-ground")
         if args.post_neutral:
             argv.append("--post-neutral")
+        if args.time != "day":
+            argv.extend(["--time", args.time])
         if frozen_sky:
             argv.extend(["--sky-mesh", str(frozen_sky)])
         if frozen_scenery:

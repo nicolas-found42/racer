@@ -22,13 +22,40 @@ vertex Varying xlatMtlMain(Input in [[stage_in]]) {
 )MSL";
   constexpr std::string_view pixel=R"MSL(#include <metal_stdlib>
 using namespace metal;
-struct Globals { float4 u_post; };
+struct Globals { float4 u_post; float4 u_sun; };
 struct Varying { float4 position [[position]]; float2 uv [[user(locn0)]]; };
 // Fixed authored exposure1 and the existing Reinhard shoulder; exactly one display conversion.
 float hdrDisplay(float radiance) {
  float linear=max(radiance,0.0);return pow(linear/(linear+.72),1.0/2.2);
 }
 float bloomWeight(float peak) { return smoothstep(1.0,2.0,peak); }
+float grainHash(float2 p) { return fract(sin(dot(p,float2(12.9898,78.233)))*43758.5453); }
+// Authored lens glare: strength comes from the radiance actually visible at the sun
+// position, so buildings and cars occlude it. Not a recovered donor lens model.
+float3 sunGlare(texture2d<float> scene, sampler smp, float2 uv, float4 sun) {
+ if(sun.z<=0) return float3(0);
+ float peak=0;
+ const float2 taps[5]={float2(0,0),float2(.008,0),float2(-.008,0),float2(0,.012),float2(0,-.012)};
+ for(int i=0;i<5;++i) peak+=max(max(scene.sample(smp,sun.xy+taps[i]).r,scene.sample(smp,sun.xy+taps[i]).g),0.0)/5;
+ float visible=smoothstep(.9,2.4,peak)*sun.z;
+ float2 d=(uv-sun.xy)*float2(sun.w,1); float r=length(d);
+ float halo=exp(-r*7.0)*.10+exp(-r*26.0)*.16+exp(-r*90.0)*.30;
+ float streak=exp(-abs(d.y)*70.0)*exp(-abs(d.x)*2.6)*.07;
+ float ring=exp(-pow((r-.23)*16.0,2.0))*.012;
+ // Ghost flares along the sun-to-centre axis (count/size/distance echo the lf_flare_* parameter
+ // names REA found in the SLRR engine; values authored).
+ float2 axis=float2(.5)-sun.xy;
+ const float k[3]={.55,1.15,1.75};
+ const float size[3]={.040,.065,.028};
+ const float3 tint[3]={float3(1.0,.55,.30),float3(.45,.85,.55),float3(.55,.55,1.0)};
+ float3 ghosts=float3(0);
+ for(int i=0;i<3;++i) {
+  float2 gp=sun.xy+axis*k[i];
+  float gd=length((uv-gp)*float2(sun.w,1));
+  ghosts+=tint[i]*smoothstep(size[i],size[i]*.1,gd)*.016;
+ }
+ return float3(1.0,.76,.48)*(halo+streak+ring)*visible+ghosts*visible;
+}
 fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
  texture2d<float> s_postScene [[texture(0)]], sampler sceneSampler [[sampler(0)]],
  texture2d<float> s_postGlow [[texture(1)]], sampler glowSampler [[sampler(1)]]) {
@@ -48,16 +75,51 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   return float4(sum,1);
  }
  float3 linear=max(scene,float3(0));
- if(config.w<.5) linear+=s_postGlow.sample(glowSampler,in.uv).rgb*.12;
+ // Speed-driven radial blur with a protected centre, so the car stays sharp while the
+ // periphery streaks. Authored; config.z is the 0..1 motion amount.
+ float blurWeight=0;float3 blurred=linear;
+ if(config.w<.5 && config.z>.001) {
+  float2 toCentre=float2(.5)-in.uv;
+  blurWeight=smoothstep(.10,.50,length(toCentre*float2(1.7,1.0)))*config.z;
+  float3 sum=float3(0);
+  for(int i=0;i<8;++i) sum+=s_postScene.sample(sceneSampler,in.uv+toCentre*(float(i)/7.0)*blurWeight*.09).rgb;
+  blurred=max(sum/8.0,float3(0));
+ }
+ if(config.w<.5) {
+  // Radial lateral fringing grows toward the frame edge, as in a real lens.
+  float2 q=in.uv-.5; float2 shift=q*dot(q,q)*.0075;
+  linear.r=max(s_postScene.sample(sceneSampler,in.uv+shift).r,0.0);
+  linear.b=max(s_postScene.sample(sceneSampler,in.uv-shift).b,0.0);
+  linear=mix(linear,blurred,clamp(blurWeight*6.0,0.0,1.0));
+  // Blurred periphery loses saturation (MCLA exposes blurEffectDesatScale / blurEffectTintFade; amounts authored).
+  float blurLuma=dot(linear,float3(.2126,.7152,.0722));
+  linear=mix(linear,float3(blurLuma),clamp(blurWeight*2.2,0.0,.35));
+  linear+=s_postGlow.sample(glowSampler,in.uv).rgb*.14;
+  // Four-point lens star on very bright highlights (lamps, sun, wet-road glints), read from the
+  // blurred bright-pass so it stays cheap. Authored after the cross flares seen in MCLA frames.
+  float3 star=float3(0);
+  const float2 dirs[4]={float2(1,0),float2(-1,0),float2(0,1),float2(0,-1)};
+  for(int d=0;d<4;++d) for(int k=1;k<=7;++k) {
+   float t=float(k)/7.0;
+   float2 off=dirs[d]*t*.12*float2(.5625,1.0);
+   float3 g=max(s_postGlow.sample(glowSampler,in.uv+off).rgb-float3(1.2),float3(0));
+   star+=g*(1-t)*(1-t);
+  }
+  linear+=star*.035;
+  linear+=sunGlare(s_postScene,sceneSampler,in.uv,_mtl_u.u_sun);
+ }
  float3 display=float3(hdrDisplay(linear.r),hdrDisplay(linear.g),hdrDisplay(linear.b));
  if(config.w>.5) return float4(display,1); // Neutral still maps HDR; no bloom/grade.
  float luminance=dot(display,float3(.2126,.7152,.0722));
- display=mix(float3(luminance),display,1.04);
- display=(display-.5)*1.07+.5;
- float shadows=1-smoothstep(.10,.55,luminance),highlights=smoothstep(.55,.95,luminance);
- display+=shadows*float3(-.006,.001,.008)+highlights*float3(.008,.003,-.004);
+ display=mix(float3(luminance),display,1.16);
+ // Filmic S-curve, cool shadows and warm highlights, then a restrained edge vignette.
+ display=display*display*(3-2*display)*.38+display*.62;
+ display=(display-.5)*1.10+.5;
+ float shadows=1-smoothstep(.10,.55,luminance),highlights=smoothstep(.45,.95,luminance);
+ display+=shadows*float3(-.014,.002,.020)+highlights*float3(.020,.008,-.012);
  float2 p=in.uv-.5;
- display*=1-.08*smoothstep(.10,.50,dot(p,p));
+ display*=1-.17*smoothstep(.06,.46,dot(p,p));
+ display+=(grainHash(in.uv*float2(1731.0,947.0)+float2(config.y,config.y*1.7))-.5)*.014;
  return float4(clamp(display,float3(0),float3(1)),1);
 }
 )MSL";
@@ -72,16 +134,17 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   constexpr uint32_t interface=0x504f5354;
   u8(fragment?'F':'V');u8('S');u8('H');u8(12);
   u32(fragment?interface:0);u32(fragment?0:interface);u32(0);u32(0);
-  u16(fragment?3:0);
+  u16(fragment?4:0);
   if(fragment) {
     uniform("u_post",bgfx::UniformType::Vec4,0);
+    uniform("u_sun",bgfx::UniformType::Vec4,16);
     uniform("s_postScene",bgfx::UniformType::Sampler|0x20,0);
     uniform("s_postGlow",bgfx::UniformType::Sampler|0x20,1);
   }
   const auto source=fragment?pixel:vertex;u32(uint32_t(source.size()));
   bytes.insert(bytes.end(),source.begin(),source.end());u8(0);
   u8(fragment?0:2);if(!fragment){u16(0x0001);u16(0x0010);}
-  u16(fragment?16:0);return bytes;
+  u16(fragment?32:0);return bytes;
 }
 
 class PostProcess {
@@ -117,8 +180,9 @@ public:
       sceneSampler_=bgfx::createUniform("s_postScene",bgfx::UniformType::Sampler);
       glowSampler_=bgfx::createUniform("s_postGlow",bgfx::UniformType::Sampler);
       config_=bgfx::createUniform("u_post",bgfx::UniformType::Vec4);
+      sun_=bgfx::createUniform("u_sun",bgfx::UniformType::Vec4);
       if(!bgfx::isValid(vertices_)||!bgfx::isValid(program_)||!bgfx::isValid(sceneSampler_)||
-         !bgfx::isValid(glowSampler_)||!bgfx::isValid(config_))throw std::runtime_error("post_resources");
+         !bgfx::isValid(glowSampler_)||!bgfx::isValid(config_)||!bgfx::isValid(sun_))throw std::runtime_error("post_resources");
     }catch(...){release();throw;}
   }
   ~PostProcess(){release();}
@@ -163,6 +227,10 @@ public:
   }
   uint16_t sceneWidth() const {if(!targets_)throw std::logic_error("post_not_sized");return targets_->sceneWidth;}
   uint16_t sceneHeight() const {if(!targets_)throw std::logic_error("post_not_sized");return targets_->sceneHeight;}
+  // Screen-space sun anchor: uv.xy (top-origin), visibility weight, aspect. Zero hides glare.
+  void setSun(float u,float v,float weight,float aspect) {sun_value_={u,v,weight,aspect};}
+  // Speed blur amount in [0,1]; ignored by neutral output.
+  void setMotion(float amount) {motion_=std::clamp(amount,0.f,1.f);}
   void draw(bool neutral) {
     if(!targets_)throw std::logic_error("post_not_sized");
     const auto& t=*targets_;
@@ -174,27 +242,30 @@ public:
       pass(12,t.glowFrames[0],t.glowWidth,t.glowHeight,t.glow[1],t.scene,{2,0,1.f/t.glowHeight,0});
     }
     // Neutral does not read an uninitialized glow texture.
-    pass(13,BGFX_INVALID_HANDLE,t.width,t.height,t.scene,neutral?t.scene:t.glow[0],{3,0,0,neutral?1.f:0.f});
+    pass(13,BGFX_INVALID_HANDLE,t.width,t.height,t.scene,neutral?t.scene:t.glow[0],{3,float(frame_%61)*.0137f,motion_,neutral?1.f:0.f});++frame_;
   }
 private:
   std::unique_ptr<Targets> targets_;
   bgfx::VertexBufferHandle vertices_=BGFX_INVALID_HANDLE;
   bgfx::ProgramHandle program_=BGFX_INVALID_HANDLE;
-  bgfx::UniformHandle sceneSampler_=BGFX_INVALID_HANDLE,glowSampler_=BGFX_INVALID_HANDLE,config_=BGFX_INVALID_HANDLE;
+  bgfx::UniformHandle sceneSampler_=BGFX_INVALID_HANDLE,glowSampler_=BGFX_INVALID_HANDLE,config_=BGFX_INVALID_HANDLE,sun_=BGFX_INVALID_HANDLE;
+  std::array<float,4> sun_value_{{0,0,0,1}};
+  float motion_=0;
+  uint32_t frame_=0; // Advances grain only; never affects neutral output.
   void pass(uint16_t view,bgfx::FrameBufferHandle frame,uint16_t width,uint16_t height,
             bgfx::TextureHandle input,bgfx::TextureHandle glow,const std::array<float,4>& config) {
     bgfx::setViewFrameBuffer(view,frame);bgfx::setViewRect(view,0,0,width,height);
     bgfx::setViewMode(view,bgfx::ViewMode::Sequential);bgfx::setViewClear(view,BGFX_CLEAR_NONE);
     bgfx::setViewTransform(view,nullptr,nullptr);bgfx::setScissor();bgfx::setVertexBuffer(0,vertices_);
     bgfx::setTexture(0,sceneSampler_,input);bgfx::setTexture(1,glowSampler_,glow);
-    bgfx::setUniform(config_,config.data());bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_MSAA);
+    bgfx::setUniform(config_,config.data());bgfx::setUniform(sun_,sun_value_.data());bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_MSAA);
     bgfx::submit(view,program_);
   }
   void release() noexcept {
     targets_.reset();
     if(bgfx::isValid(vertices_))bgfx::destroy(vertices_);vertices_=BGFX_INVALID_HANDLE;
     if(bgfx::isValid(program_))bgfx::destroy(program_);program_=BGFX_INVALID_HANDLE;
-    for(auto* h:{&sceneSampler_,&glowSampler_,&config_}) {if(bgfx::isValid(*h))bgfx::destroy(*h);*h=BGFX_INVALID_HANDLE;}
+    for(auto* h:{&sceneSampler_,&glowSampler_,&config_,&sun_}) {if(bgfx::isValid(*h))bgfx::destroy(*h);*h=BGFX_INVALID_HANDLE;}
   }
 };
 }

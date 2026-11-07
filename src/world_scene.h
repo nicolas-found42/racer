@@ -97,6 +97,55 @@ inline void tree(std::vector<AssetVertex>& m,float x,float z,unsigned variant) {
     }
   }
 }
+// Street tree: brown trunk plus crossed leaf cards. Cards carry local coordinates in the tangent
+// (tx,ty) and surface id -1 (distinct from every atlas/foliage id); the shaders cut them into noise-clumped foliage. Authored geometry.
+inline void leafCard(std::vector<AssetVertex>& m,Point c,float yaw,float tilt,float size,uint32_t color) {
+  const float cy=std::cos(yaw),sy=std::sin(yaw),ct=std::cos(tilt),st=std::sin(tilt);
+  const Point right{cy,0,-sy},up{sy*st,ct,cy*st};
+  const float qx[4]={-1,1,1,-1},qy[4]={-1,-1,1,1};
+  AssetVertex v[4];
+  for(int i=0;i<4;++i) {
+    v[i]=AssetVertex{c.x+(right.x*qx[i]+up.x*qy[i])*size*.5f,c.y+(right.y*qx[i]+up.y*qy[i])*size*.5f,
+      c.z+(right.z*qx[i]+up.z*qy[i])*size*.5f,color,1.f,-1.f};
+    Point n{right.y*up.z-right.z*up.y,right.z*up.x-right.x*up.z,right.x*up.y-right.y*up.x};
+    v[i].nx=n.x;v[i].ny=n.y;v[i].nz=n.z;v[i].tx=qx[i]*.5f+.5f;v[i].ty=qy[i]*.5f+.5f;
+  }
+  for(int idx:{0,1,2,0,2,3})m.push_back(v[idx]);
+}
+inline void streetTree(std::vector<AssetVertex>& m,float x,float z,unsigned variant) {
+  pole(m,{x,.18f,z},{x,3.4f,z},.16f,rgb(86,70,54),5);
+  unsigned state=variant*2654435761u+12345u;
+  auto rnd=[&]{state=state*1664525u+1013904223u;return float((state>>8)&0xffff)/65535.f;};
+  const float height=5.4f+rnd()*1.2f,spread=2.2f+rnd()*.6f;
+  for(int i=0;i<12;++i) {
+    const float a=rnd()*6.2832f,r=std::sqrt(rnd())*spread*.8f,h=(rnd()-.35f)*spread*.9f;
+    const uint32_t color=rgb(46+unsigned(rnd()*26),88+unsigned(rnd()*30),38+unsigned(rnd()*20));
+    leafCard(m,{x+std::cos(a)*r,height+h,z+std::sin(a)*r},rnd()*6.2832f,(rnd()-.5f)*1.1f,spread*1.55f,color);
+  }
+}
+// Street lamp for the night-lighting grid; the shader derives the same positions analytically
+// (visual_shader.h lampLight). Pole at 9.0 m from the road centre, arm head at 7.7 m, head surface
+// id -2 marks an emitter. Authored.
+inline void gridLamp(std::vector<AssetVertex>& m,float roadAxis,float along,float side,bool alongZ) {
+  const auto metal=rgb(73,78,77);
+  const float pole=roadAxis+side*9.0f,head=roadAxis+side*7.7f;
+  auto place=[&](float lat,float y,float sx,float sy,float sz_lat,float sz_along,uint32_t color,float surface) {
+    if(alongZ) box(m,lat,y,along,sz_lat,sy,sz_along,color,.9f,surface);
+    else box(m,along,y,lat,sz_along,sy,sz_lat,color,.9f,surface);
+    (void)sx;
+  };
+  place(pole,0,0,8.2f,.16f,.16f,metal,0);
+  place((pole+head)*.5f,7.9f,0,.12f,std::abs(pole-head)+.1f,.12f,metal,0);
+  place(head,7.78f,0,.1f,.9f,.45f,rgb(239,224,177),-2.f);
+}
+inline void gridLamps(std::vector<AssetVertex>& m) {
+  for(int road=-2;road<=2;++road) for(float side:{-1.f,1.f}) for(int k=-8;k<8;++k) {
+    if(((k%4)+4)%4==0) continue;
+    const float along=25.f*float(k)+12.5f;
+    gridLamp(m,100.f*float(road),along,side,true);
+    gridLamp(m,100.f*float(road),along,side,false);
+  }
+}
 inline void streetlight(std::vector<AssetVertex>& m,float x,float z,bool alongX) {
   const auto metal=rgb(73,78,77);
   box(m,x,.15f,z,.5f,.35f,.5f,metal);
@@ -233,6 +282,11 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
       const int floors=1+int((seed+unsigned(lot)*7)%4);
       building(m,x+sx*23,z+sz*23,w,d,floors,seed+unsigned(lot));
     }
+    // Street trees on the block sidewalks, spaced clear of lamps, benches and palms.
+    for(float side:{-1.f,1.f}) for(float row:{-27.f,-3.f,21.f}) {
+      streetTree(m,x+side*38.0f,z+row,seed*7+unsigned(row+30)*3+(side>0?1u:0u));
+      streetTree(m,x+row,z+side*38.0f,seed*11+unsigned(row+30)*5+(side>0?2u:0u));
+    }
     for(float side:{-1.f,1.f}) {
       streetlight(m,x+side*37.5f,z-37.8f,false);
       box(m,x+side*37.2f,.18f,z+9,2.1f,.55f,3.2f,rgb(120,115,99));
@@ -259,6 +313,7 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
       box(m,x,y,z+d*.5f+.03f,w*.85f,1.05f,.06f,rgb(63,85,96),.22f,5);
     }
   }
+  gridLamps(m);
   terrain(m);
   return m;
 }

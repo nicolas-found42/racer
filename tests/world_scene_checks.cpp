@@ -29,7 +29,8 @@ std::pair<int,int> block(const racer::AssetVertex& v) {
 void inspectScene(const std::vector<racer::AssetVertex>& scene,bool textured) {
   mode=textured?"textured palms":"authored fallback";
   check(!scene.empty(),"city contains rendered geometry");
-  check(scene.size()<=200000,"city stays within its GPU vertex budget");
+  // Budget raised 200000->300000: street trees (~22k vertices) and night lamp grid (~30k); fallback was at 197k.
+  check(scene.size()<=300000,"city stays within its GPU vertex budget");
   check(scene.size()%3==0,"triangle-list vertex count");
   bool finite=true,unit=true,clear=true,triangles=true,normalsAgree=true,noRoadBridges=true;
   bool foliageDomain=true,foliageColor=true;

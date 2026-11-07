@@ -10,3 +10,10 @@ __pycache__/
 .deps/
 /.deps
 build/
+# Third-party reference screenshots, sheets built from them, and captures of proprietary game assets stay local.
+experiments/*/references/
+experiments/*/console-compare/
+experiments/*/before-after/
+experiments/*/contact-*.png
+experiments/*/mcla-contact.png
+experiments/*/binary-retention.txt

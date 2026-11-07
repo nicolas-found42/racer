@@ -86,6 +86,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool courseDriver = false, background = false;
   double autoTurn = .22;
   bool autoDrive = false, benchmark = false, verify = false;
+  double shotDelay = 2;
+  bool shotDelayExplicit = false;
+  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true;
+  float nightAmount = 0;
   std::string shot, profilePath, scene, garageMode, captureLoop, reviewPath, previewMesh,skyMesh,sceneryMesh;
   std::vector<std::string> worldMeshes;
   std::string vehicleLibrary=RACER_VEHICLE_LIBRARY,requestedVehicle;
@@ -108,6 +112,19 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--no-diagnostics") {}
     else if (a == "--background") background = true;
     else if (a == "--post-neutral") postNeutral = true;
+    else if (a == "--no-wheel-blur") wheelBlur = false;
+    else if (a == "--no-skid-marks") skidMarks = false;
+    else if (a == "--no-speed-fov") speedFov = false;
+    else if (a == "--no-tyre-smoke") tyreSmoke = false;
+    else if (a == "--time" && i + 1 < argc) {
+      const std::string value = argv[++i];
+      if (value == "day") nightAmount = 0;
+      else if (value == "night") nightAmount = 1;
+      else {
+        std::cerr << "--time must be day or night\n";
+        return 1;
+      }
+    }
     else if (a == "--hide-hud") hideHud = true;
     else if (a == "--follow-ground") followGround = true;
     else if (a == "--preview-gltf" && i + 1 < argc) previewMesh = argv[++i];
@@ -175,12 +192,20 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       autoDrive = true;
     else if (a == "--screenshot" && i + 1 < argc)
       shot = argv[++i];
+    else if (a == "--screenshot-delay" && i + 1 < argc) {
+      shotDelay = std::strtod(argv[++i], nullptr);
+      shotDelayExplicit = true;
+      if (!std::isfinite(shotDelay) || shotDelay < 2 || shotDelay > 30) {
+        std::cerr << "--screenshot-delay must be within [2,30] seconds\n";
+        return 1;
+      }
+    }
     else {
       std::cerr
           << "Usage: racer [--smoke seconds] [--autodrive] [--benchmark] "
              "[--verify-controls] [--verify-garage keyboard|gamepad] "
              "[--profile path] [--capture-loop directory] [--scene "
-             "garage|course|scale] [--camera-view rear|front|left|right|elevated] [--screenshot path.ppm] [--window width height] "
+             "garage|course|scale] [--camera-view rear|front|left|right|elevated] [--screenshot path.ppm [--screenshot-delay 2..30]] [--window width height] "
              "[--review-script path] [--course-driver] [--diagnostics-dir path] [--no-diagnostics]\n";
       std::cerr << "Cars: [--vehicle-library catalog.racer] [--vehicle index|id|name] [--preview-gltf local-path]\n";
       std::cerr << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh local.glb] [--sky-mesh local.glb] [--world-origin x y z] [--world-heading degrees] [--follow-ground] [--camera-distance metres] [--world-surfaces surfaces.rgba]\n";
@@ -191,6 +216,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   if(followGround && (worldMeshes.empty() || !previewMesh.empty()))
     throw std::runtime_error("surface_follow_requires_world_and_vehicle");
+  // A requested delayed capture must fit inside a bounded smoke run, or no image would be written.
+  if (shotDelayExplicit && smoke > 0 && shotDelay + .25 > smoke) {
+    std::cerr << "--screenshot-delay must be shorter than --smoke seconds\n";
+    return 1;
+  }
   if (cameraView!="rear" && cameraView!="front" && cameraView!="left" && cameraView!="right" && cameraView!="elevated")
     throw std::runtime_error("Unsupported --camera-view");
   if (windowWidth < 320 || windowHeight < 240 || windowWidth > 3840 || windowHeight > 2160) {
@@ -297,6 +327,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   };
   auto reflectionUniform=bgfx::createUniform("u_reflectionState",bgfx::UniformType::Vec4);
   auto coatUniform=bgfx::createUniform("u_visualCoat",bgfx::UniformType::Vec4);
+  auto headlightUniform=bgfx::createUniform("u_headlight",bgfx::UniformType::Vec4);
+  float headlightState[4]={0,0,0,nightAmount}; // car x,z,heading and night amount; refreshed every frame
   racer::SceneReflection sceneReflection;
   racer::PostProcess postProcess;
   bool texturedPalms=false;
@@ -368,7 +400,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   diagnostics.event("dependency",{{"component","livery_renderer"},{"success",true},{"source","embedded_visual_shader_linear_scene"}});
   Mesh world;
-  box(world, 0, -.3, 0, 1000, .5, 1000, 0xff455144);
+  box(world, 0, -.3, 0, 1800, .5, 1800, 0xff455144);
   for (int n = -500; n <= 500; n += 100) {
     box(world, float(n), -.04, 0, float(racer::worldScale::roadWidth), .08, 1000, 0xff34312e,1);
     box(world, 0, -.04, float(n), 1000, .08, float(racer::worldScale::roadWidth), 0xff34312e,1);
@@ -569,6 +601,57 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
   };
   loadCar(vehicles.empty() ? nullptr : &vehicles[activeVehicle]);
+  // Static curbside traffic from other catalog vehicles. Visual only: like the city
+  // props, parked cars have no collision. Authored layout, not recovered placement.
+  struct ParkedCar{size_t vehicle;double x,z,heading;std::unique_ptr<CarGraphics> graphics;};
+  std::vector<ParkedCar> parkedCars;
+  // Tyre marks on the flat road. SLRR's engine has a skidmark system (REA names skid_PS, skid_SM,
+  // WheelSkidmark_Context, skidmark_max); the simulation here has no slip, so marks use an authored
+  // rule: hard braking or high lateral acceleration at speed. Visual only.
+  struct SkidQuad{float x0,z0,x1,z1,x2,z2,x3,z3,alpha;};
+  std::vector<SkidQuad> skidQuads;
+  struct SkidTrack{bool valid=false;double x=0,z=0;};
+  SkidTrack skidTracks[2];
+  // Tyre smoke: soft camera-facing puffs emitted at the rear wheels while marking. Authored; the
+  // references (Juiced 2, MCLA, MC3, SLRR) all show smoke but no formula was recovered.
+  struct Puff{float x,y,z,vx,vy,vz,age,life,size,seed;};
+  std::vector<Puff> puffs;
+  double puffCarry[2]={0,0};
+  uint32_t puffCounter=0;
+  bgfx::TextureHandle puffTexture=BGFX_INVALID_HANDLE;
+  {
+    constexpr int n=64;std::vector<uint8_t> pixels(n*n*4);
+    for(int y=0;y<n;++y)for(int x=0;x<n;++x){
+      const float dx=(float(x)+.5f)/n*2-1,dy=(float(y)+.5f)/n*2-1,r=std::sqrt(dx*dx+dy*dy);
+      float h=std::sin(float(x)*.91f+float(y)*.37f)*std::sin(float(y)*.83f-float(x)*.29f);
+      const float a=std::clamp(1-r,0.f,1.f);const float soft=a*a*(3-2*a)*(.8f+.2f*h);
+      const uint8_t v=uint8_t(std::clamp(soft,0.f,1.f)*255);
+      pixels[size_t(y*n+x)*4+0]=255;pixels[size_t(y*n+x)*4+1]=255;pixels[size_t(y*n+x)*4+2]=255;pixels[size_t(y*n+x)*4+3]=v;
+    }
+    puffTexture=bgfx::createTexture2D(n,n,false,1,bgfx::TextureFormat::RGBA8,BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP,
+      bgfx::copy(pixels.data(),uint32_t(pixels.size())));
+  }
+  if(vehicles.size()>1 && previewMesh.empty() && worldMeshes.empty() && scene!="scale") {
+    constexpr double pi=3.14159265358979323846;
+    const double slots[][3]={{4.7,18,0},{-4.7,31,pi},{4.7,52,0},{-4.7,76,pi},{4.7,110,0},{-4.7,150,pi}};
+    size_t pick=0;
+    for(const auto& slot:slots) {
+      if(pick>=std::min<size_t>(vehicles.size()-1,6))break;
+      const size_t index=(activeVehicle+1+pick++)%vehicles.size();
+      try {
+        racer::AssetLoadContext parkedContext;
+        auto asset=racer::loadVehicleAsset(vehicles[index],&parkedContext);
+        auto candidate=std::make_unique<CarGraphics>();candidate->sections=asset.sections;
+        for(const auto& image:asset.images)candidate->textures.push_back(racer::ownedAssetTexture(image,racer::uploadAssetTexture));
+        candidate->vertices=bgfx::createVertexBuffer(bgfx::copy(asset.triangles.data(),uint32_t(asset.triangles.size()*sizeof(Vertex))),layout);
+        if(!bgfx::isValid(candidate->vertices))throw racer::MeshAssetError("parked_geometry_gpu_create");
+        parkedCars.push_back({index,slot[0],slot[1],slot[2],std::move(candidate)});
+      } catch(...) {
+        try{diagnostics.event("parked_car_skipped",{{"vehicle",vehicles[index].id}});}catch(...){}
+      }
+    }
+    try{diagnostics.event("parked_cars",{{"count",parkedCars.size()}});}catch(...){}
+  }
   std::optional<racer::LiveryState> renderedLivery;
   auto &sim = flow.sim;
   if (scene == "garage")
@@ -870,6 +953,47 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         previous.heading + (shown.heading - previous.heading) * alpha;
     shown.steering=previous.steering+(shown.steering-previous.steering)*alpha;
     shown.travel=previous.travel+(shown.travel-previous.travel)*alpha;
+    if(skidMarks && !vehicles.empty() && !paused) {
+      const auto& geometry=vehicles[activeVehicle].geometry;
+      size_t rear[2]={0,1};
+      for(size_t i=0;i<4;++i) { // two wheels with the lowest z are the rear pair (nose is +Z)
+        if(geometry.wheels[i].center.z<geometry.wheels[rear[0]].center.z){rear[1]=rear[0];rear[0]=i;}
+        else if(i!=rear[0] && geometry.wheels[i].center.z<geometry.wheels[rear[1]].center.z)rear[1]=i;
+      }
+      const double speedNow=std::abs(shown.speed);
+      const double lateral=speedNow*speedNow*std::abs(std::tan(shown.steering))/std::max(.5,sim.wheelbase());
+      const bool marking=speedNow>7 && (selectedInput.brake>.7 || lateral>9);
+      const double c=std::cos(shown.heading),sn=std::sin(shown.heading);
+      for(int k=0;k<2;++k) {
+        const auto& wheel=geometry.wheels[rear[size_t(k)]];
+        const double wx=shown.x+c*wheel.center.x+sn*wheel.center.z,wz=shown.z-sn*wheel.center.x+c*wheel.center.z;
+        auto& track=skidTracks[k];
+        if(marking && track.valid) {
+          const double dx=wx-track.x,dz=wz-track.z,len=std::hypot(dx,dz);
+          if(len>.05 && len<1.5) {
+            const float hw=float(wheel.width*.45),px=float(-dz/len)*hw,pz=float(dx/len)*hw;
+            skidQuads.push_back({float(track.x)-px,float(track.z)-pz,float(track.x)+px,float(track.z)+pz,
+              float(wx)+px,float(wz)+pz,float(wx)-px,float(wz)-pz,.55f});
+          }
+          if(len>.05){track.x=wx;track.z=wz;}
+        } else {track.valid=marking;track.x=wx;track.z=wz;}
+        if(marking)track.valid=true;
+        if(marking && tyreSmoke && puffs.size()<900) {
+          puffCarry[k]+=dt*110.0;
+          while(puffCarry[k]>=1.0) {
+            puffCarry[k]-=1.0;++puffCounter;
+            auto rnd=[&](unsigned salt){uint32_t h=(puffCounter*2654435761u)^(salt*40503u);h^=h>>13;h*=1274126177u;h^=h>>16;return float(h&0xffff)/65535.f-.5f;};
+            const float back=-float(std::copysign(1.0,shown.speed));
+            puffs.push_back({float(wx),.15f,float(wz),
+              float(sn)*back*.6f+rnd(1)*.9f,.5f+rnd(2)*.4f,float(c)*back*.6f+rnd(3)*.9f,0,1.6f+rnd(4)*.6f,.75f+rnd(5)*.25f,rnd(6)});
+          }
+        }
+      }
+      for(auto& puff:puffs){puff.age+=float(dt);puff.x+=puff.vx*float(dt);puff.y+=puff.vy*float(dt);puff.z+=puff.vz*float(dt);
+        puff.vx*=1-float(dt)*.9f;puff.vz*=1-float(dt)*.9f;puff.vy*=1-float(dt)*.6f;}
+      puffs.erase(std::remove_if(puffs.begin(),puffs.end(),[](const Puff& p){return p.age>=p.life;}),puffs.end());
+      if(skidQuads.size()>1400)skidQuads.erase(skidQuads.begin(),skidQuads.begin()+400);
+    }
     std::optional<racer::surfaceFollow::GroundFrame> groundFrame;
     if(groundIndex){
       groundFrame=racer::surfaceFollow::fit(*groundIndex,vehicles[activeVehicle].geometry,
@@ -885,9 +1009,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if(groundFrame)std::copy(groundFrame->body.begin(),groundFrame->body.end(),output);
       else racer::worldTransform(output,shown.heading,shown.x,shown.z);
     };
-    auto wheelMatrix=[&](float* output,size_t index,bool rolling=true){
+    auto wheelMatrix=[&](float* output,size_t index,bool rolling=true,double extraSpin=0){
       const auto& g=vehicles[activeVehicle].geometry;
-      const auto spin=racer::wheelSpinAfterTravel(0,shown.travel,g.wheels[index].radius);
+      const auto spin=racer::wheelSpinAfterTravel(0,shown.travel,g.wheels[index].radius)+extraSpin;
       if(groundFrame)racer::surfaceFollow::wheelMatrix(output,*groundFrame,g,index,shown.steering,spin,rolling);
       else racer::wheelRenderTransform(output,g,index,shown.heading,shown.x,shown.z,shown.steering,spin,rolling);
     };
@@ -921,17 +1045,24 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bx::mtxOrtho(lightProjection,-65,65,-65,65,1,400,0,bgfx::getCaps()->homogeneousDepth);
     bx::mtxMul(lightMatrix,lightView,lightProjection);
     auto drawImportedWorld=[&](uint16_t target,bool shadow,const float* eye,bool reflections) {
-      for(bool transparent:{false,true}) for(const auto &importedWorld:importedWorlds)
+      // The prepared residential scenery spans +-182 m. Repeat it at 400 m multiples of the
+      // 100 m street grid in the main view only, so the horizon is not a bare plain. Authored
+      // repetition, not source placement; shadows and reflection probes use the original tile.
+      std::vector<std::array<float,2>> tiles{{0.f,0.f}};
+      if(target==1 && !shadow && worldMeshes.empty() && !sceneryMesh.empty())
+        for(float dx:{-400.f,0.f,400.f})for(float dz:{-400.f,0.f,400.f})if(dx!=0||dz!=0)tiles.push_back({dx,dz});
+      for(bool transparent:{false,true}) for(const auto &importedWorld:importedWorlds) for(const auto &tile:tiles)
         for(const auto &section:importedWorld->sections) {
         if(section.blend!=transparent || (shadow&&transparent))continue;
         racer::worldTransform(model,worldHeading,worldOrigin[0],worldOrigin[2]);
+        model[12]+=tile[0];model[14]+=tile[1];
         model[13]=worldOrigin[1];bgfx::setTransform(model);
         bgfx::setVertexBuffer(0,importedWorld->vertices,section.first,section.count);
         const float camera[4]={eye[0],eye[1],eye[2],section.mask?section.alphaCutoff:0};
         const float material[4]={section.roughness,section.metallic,section.image>=0?1.f:0.f,-1};
         const float coat[4]={section.clearcoat,section.coatRoughness,section.detailMode(),section.normalScale},reflection[4]={reflections?1.f:0.f,0,0,0};
         bgfx::setUniform(cameraUniform,camera);bgfx::setUniform(materialUniform,material);
-        bgfx::setUniform(coatUniform,coat);bgfx::setUniform(reflectionUniform,reflection);
+        bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,coat);bgfx::setUniform(reflectionUniform,reflection);
         bgfx::setUniform(shadowUniform,lightMatrix);
         const uint32_t flags=(section.wrapU==33071?BGFX_SAMPLER_U_CLAMP:section.wrapU==33648?BGFX_SAMPLER_U_MIRROR:0)|
           (section.wrapV==33071?BGFX_SAMPLER_V_CLAMP:section.wrapV==33648?BGFX_SAMPLER_V_MIRROR:0);
@@ -978,12 +1109,35 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_Z|BGFX_STATE_DEPTH_TEST_LESS);
       bgfx::submit(0,shadowProgram);
     }
+    for(const auto& parked:parkedCars) for(const auto &section:parked.graphics->sections) {
+      if(section.blend) continue;
+      if(section.wheel>=0)
+        racer::wheelRenderTransform(model,vehicles[parked.vehicle].geometry,size_t(section.wheel),parked.heading,parked.x,parked.z,0,0,section.rolling);
+      else racer::worldTransform(model,parked.heading,parked.x,parked.z);
+      bgfx::setTransform(model);bgfx::setVertexBuffer(0,parked.graphics->vertices,section.first,section.count);
+      const float cut[4]={0,0,0,section.mask?section.alphaCutoff:0},mat[4]={1,0,section.image>=0?1.f:0.f,0};
+      bgfx::setUniform(cameraUniform,cut);bgfx::setUniform(materialUniform,mat);
+      uint32_t flags=(section.wrapU==33071?BGFX_SAMPLER_U_CLAMP:section.wrapU==33648?BGFX_SAMPLER_U_MIRROR:0)|
+        (section.wrapV==33071?BGFX_SAMPLER_V_CLAMP:section.wrapV==33648?BGFX_SAMPLER_V_MIRROR:0);
+      bgfx::setTexture(0,liverySampler,section.image>=0?parked.graphics->textures.at(size_t(section.image))->handle:whiteTexture,flags);
+      bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+      bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_Z|BGFX_STATE_DEPTH_TEST_LESS);
+      bgfx::submit(0,shadowProgram);
+    }
     const float lookAhead=scene=="scale"?0.f:cameraView=="rear"||inspectionDistance>0?2.f:0.f;
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
                   {float(shown.x + std::sin(shown.heading)*lookAhead), float(bodyElevation+lookHeight()),
                    float(shown.z + std::cos(shown.heading)*lookAhead)});
-    bx::mtxProj(projection, inspectionDistance>0 || scene=="scale" ? 65 : 55, float(width) / height, .1f, 1600,
+    // Chase-camera field of view widens with speed (up to +12 degrees by ~48 m/s), smoothed so it
+    // never jumps; inspection and scale cameras keep their fixed lens.
+    static float fovKick=0;
+    const float fovTarget=(speedFov && inspectionDistance<=0 && scene!="scale")?
+      std::clamp((float(std::abs(shown.speed))-8.f)/40.f,0.f,1.f)*12.f:0.f;
+    fovKick+=(fovTarget-fovKick)*float(1-std::exp(-3*dt));
+    bx::mtxProj(projection, (inspectionDistance>0 || scene=="scale" ? 65 : 55)+fovKick, float(width) / height, .1f, 1600,
                 bgfx::getCaps()->homogeneousDepth);
+    // Car pose and time of day for the lamp/headlight terms of the surface shader (sticky uniform).
+    headlightState[0]=float(shown.x);headlightState[1]=float(shown.z);headlightState[2]=float(shown.heading);
     postProcess.ensure(uint16_t(width),uint16_t(height));
     bgfx::setViewFrameBuffer(1,postProcess.sceneFrame());
     bgfx::setViewRect(1, 0, 0, postProcess.sceneWidth(), postProcess.sceneHeight());
@@ -1001,7 +1155,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const float material[4]={1,0,1,mode};
       bgfx::setUniform(cameraUniform,eyeUniform);bgfx::setUniform(materialUniform,material);
       bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setUniform(reflectionUniform,reflectionState);
-      bgfx::setUniform(coatUniform,noCoat);
+      bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
       bgfx::setTexture(0,liverySampler,texture,BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP);
       bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
       bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());bindNormal();
@@ -1015,7 +1169,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float material[4]={1,0,1,4};
         bgfx::setUniform(cameraUniform,eye);bgfx::setUniform(materialUniform,material);
         bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setUniform(reflectionUniform,reflectionState);
-        bgfx::setUniform(coatUniform,noCoat);
+        bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
         bgfx::setTexture(0,liverySampler,section.image>=0?importedSky->textures.at(size_t(section.image))->handle:whiteTexture,
           BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP);
         bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
@@ -1031,7 +1185,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
     bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
     bindNormal();
-    bgfx::setUniform(coatUniform,noCoat);
+    bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
     bgfx::setTexture(0,liverySampler,whiteTexture);
     bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_MSAA);
     bgfx::submit(1,visualProgram);
@@ -1046,7 +1200,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
     bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
     bindNormal();
-    bgfx::setUniform(coatUniform,noCoat);
+    bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
     bgfx::setTexture(0,liverySampler,whiteTexture);
     bgfx::submit(1, visualProgram);
     drawImportedWorld(1,false,eyeUniform,sceneReflection.ready());
@@ -1156,6 +1310,62 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         {"applied_revision",flow.features.liveryRevision()},{"draft_revision",flow.features.draftRevision()},
         {"vehicle_id",flow.vehicleId}},flow.attempt);
     }
+    if(!skidQuads.empty() && bgfx::getAvailTransientVertexBuffer(uint32_t(skidQuads.size()*6),layout)>=skidQuads.size()*6) {
+      bgfx::TransientVertexBuffer skidBuffer;
+      bgfx::allocTransientVertexBuffer(&skidBuffer,uint32_t(skidQuads.size()*6),layout);
+      auto* out=reinterpret_cast<Vertex*>(skidBuffer.data);
+      size_t n=0;
+      for(size_t i=0;i<skidQuads.size();++i) {
+        const auto& q=skidQuads[i];
+        const uint32_t a=uint32_t(255*q.alpha*(.2+.8*double(i)/double(skidQuads.size())));
+        const uint32_t color=(a<<24);
+        const float xs[4]={q.x0,q.x1,q.x2,q.x3},zs[4]={q.z0,q.z1,q.z2,q.z3};
+        for(int idx:{0,1,2,0,2,3}) {Vertex v{xs[idx],.006f,zs[idx],color};out[n++]=v;}
+      }
+      bgfx::setTransform(nullptr);bgfx::setVertexBuffer(0,&skidBuffer,0,uint32_t(n));
+      const float skidMaterial[4]={1,0,0,3};
+      bgfx::setUniform(cameraUniform,eyeUniform);bgfx::setUniform(materialUniform,skidMaterial);
+      bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+      bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
+      bindNormal();bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);bgfx::setTexture(0,liverySampler,whiteTexture);
+      bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_BLEND_ALPHA|BGFX_STATE_MSAA);
+      bgfx::submit(1,visualProgram);
+    }
+    for(const auto& parked:parkedCars) {
+      const auto& geometry=vehicles[parked.vehicle].geometry;const auto& body=geometry.body;
+      float footprint[16];
+      bx::mtxSRT(footprint,float((body.maximum.x-body.minimum.x)*.74),1,float((body.maximum.z-body.minimum.z)*.64),
+        0,float(-parked.heading),0,float(parked.x),0,float(parked.z));
+      bgfx::setTransform(footprint);bgfx::setVertexBuffer(0,contactBuffer);
+      const float contactMaterial[4]={1,0,0,3};
+      bgfx::setUniform(cameraUniform,eyeUniform);bgfx::setUniform(materialUniform,contactMaterial);
+      bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+      bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
+      bindNormal();bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);bgfx::setTexture(0,liverySampler,whiteTexture);
+      bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_BLEND_ALPHA|BGFX_STATE_MSAA);
+      bgfx::submit(1,visualProgram);
+      for(bool transparent:{false,true}) for(const auto& section:parked.graphics->sections) {
+        if(section.blend!=transparent)continue;
+        float placed[16];
+        if(section.wheel>=0)racer::wheelRenderTransform(placed,geometry,size_t(section.wheel),parked.heading,parked.x,parked.z,0,0,section.rolling);
+        else racer::worldTransform(placed,parked.heading,parked.x,parked.z);
+        bgfx::setTransform(placed);bgfx::setVertexBuffer(0,parked.graphics->vertices,section.first,section.count);
+        uint32_t flags=BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP;
+        if(section.image>=0)flags=(section.wrapU==33071?BGFX_SAMPLER_U_CLAMP:section.wrapU==33648?BGFX_SAMPLER_U_MIRROR:0)|
+          (section.wrapV==33071?BGFX_SAMPLER_V_CLAMP:section.wrapV==33648?BGFX_SAMPLER_V_MIRROR:0);
+        bgfx::setTexture(0,liverySampler,section.image>=0?parked.graphics->textures.at(size_t(section.image))->handle:whiteTexture,flags);
+        bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_MSAA|
+          (transparent?BGFX_STATE_BLEND_ALPHA:BGFX_STATE_WRITE_Z));
+        const float carEye[4]={eyeUniform[0],eyeUniform[1],eyeUniform[2],section.mask?section.alphaCutoff:0};
+        const float carMaterial[4]={section.roughness,section.metallic,section.image>=0?1.f:0.f,0};
+        const float carCoat[4]={section.clearcoat,section.coatRoughness,section.detailMode(),section.normalScale};
+        bgfx::setUniform(cameraUniform,carEye);bgfx::setUniform(materialUniform,carMaterial);
+        bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+        bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
+        bindNormal(parked.graphics.get(),&section);bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,carCoat);
+        bgfx::submit(1,visualProgram);
+      }
+    }
     // Opaque sections precede blended sections. Transparent depth sorting and
     // additional donor material channels remain outside this inspection lane.
     if(!vehicles.empty()) {
@@ -1175,7 +1385,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
     bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
     bindNormal();
-    bgfx::setUniform(coatUniform,noCoat);
+    bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
       bgfx::setTexture(0,liverySampler,whiteTexture);
       bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_BLEND_ALPHA|BGFX_STATE_MSAA);
       bgfx::submit(1,visualProgram);
@@ -1222,7 +1432,70 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
       bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
       bindNormal(graphics.get(),&section);
-      bgfx::setUniform(coatUniform,carCoat);
+      bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,carCoat);
+      bgfx::submit(1,visualProgram);
+    }
+    // Rotational blur: translucent ghosts of each rolling wheel across the angle it sweeps during a
+    // ~1/40 s exposure, so spokes smear at speed as in the reference frames. Authored.
+    if(wheelBlur && !vehicles.empty() && std::abs(shown.speed)>6) {
+      const auto& wheels=vehicles[activeVehicle].geometry.wheels;
+      for(const auto &section:graphics->sections) {
+        if(section.wheel<0 || !section.rolling || section.blend)continue;
+        const double arc=std::min(1.7,std::abs(shown.speed)/wheels[size_t(section.wheel)].radius/40.0);
+        for(int k=-3;k<=3;++k) {
+          if(k==0)continue;
+          float ghost[16];wheelMatrix(ghost,size_t(section.wheel),true,arc*k/6.0);
+          bgfx::setTransform(ghost);bgfx::setVertexBuffer(0,graphics->vertices,section.first,section.count);
+          uint32_t flags=BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP;
+          if(section.image>=0)flags=(section.wrapU==33071?BGFX_SAMPLER_U_CLAMP:section.wrapU==33648?BGFX_SAMPLER_U_MIRROR:0)|
+            (section.wrapV==33071?BGFX_SAMPLER_V_CLAMP:section.wrapV==33648?BGFX_SAMPLER_V_MIRROR:0);
+          bgfx::setTexture(0,liverySampler,section.image>=0?graphics->textures.at(size_t(section.image))->handle:whiteTexture,flags);
+          bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_MSAA|BGFX_STATE_BLEND_ALPHA);
+          const float carEye[4]={eyeUniform[0],eyeUniform[1],eyeUniform[2],section.mask?section.alphaCutoff:0};
+          const float carMaterial[4]={section.roughness,section.metallic,section.image>=0?1.f:0.f,0};
+          const float carCoat[4]={section.clearcoat,section.coatRoughness,section.detailMode(),section.normalScale};
+          const float ghostState[4]={sceneReflection.ready()?1.f:0.f,.22f,0,0};
+          bgfx::setUniform(cameraUniform,carEye);bgfx::setUniform(materialUniform,carMaterial);
+          bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+          bgfx::setUniform(reflectionUniform,ghostState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
+          bindNormal(graphics.get(),&section);bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,carCoat);
+          bgfx::submit(1,visualProgram);
+        }
+      }
+    }
+    if(!puffs.empty() && bgfx::isValid(puffTexture) &&
+       bgfx::getAvailTransientVertexBuffer(uint32_t(puffs.size()*6),layout)>=puffs.size()*6) {
+      std::vector<const Puff*> order;order.reserve(puffs.size());
+      for(const auto& p:puffs)order.push_back(&p);
+      auto dist2=[&](const Puff* p){const double dx=p->x-cameraX,dy=p->y-cameraY,dz=p->z-cameraZ;return dx*dx+dy*dy+dz*dz;};
+      std::sort(order.begin(),order.end(),[&](const Puff* a,const Puff* b){return dist2(a)>dist2(b);});
+      bgfx::TransientVertexBuffer puffBuffer;
+      bgfx::allocTransientVertexBuffer(&puffBuffer,uint32_t(order.size()*6),layout);
+      auto* out=reinterpret_cast<Vertex*>(puffBuffer.data);
+      const float rx=view[0],ry=view[4],rz=view[8],ux=view[1],uy=view[5],uz=view[9];
+      size_t n=0;
+      for(const Puff* p:order) {
+        const float t=p->age/p->life;
+        const float size=p->size*(1+3.2f*t);
+        const float fade=std::min(1.f,t*8.f)*(1-t)*(1-t);
+        const uint32_t a=uint32_t(255*std::clamp(.95f*fade,0.f,1.f));
+        // Start-to-end colour ramp (MCLA exposes smokeStartColor/smokeEndColor; values authored).
+        const float ramp=std::clamp(t*1.6f,0.f,1.f);
+        auto lerp8=[&](float from,float to){return uint32_t(from+(to-from)*ramp);};
+        const uint32_t color=nightAmount>.5f?((a<<24)|(lerp8(120,80)<<16)|(lerp8(95,64)<<8)|lerp8(86,60))
+                                           :((a<<24)|(lerp8(232,150)<<16)|(lerp8(228,148)<<8)|lerp8(226,146));
+        const float cx[4]={-1,1,1,-1},cy[4]={-1,-1,1,1};
+        Vertex v[4];
+        for(int i=0;i<4;++i){
+          const float lift=size*.9f; // keep the quad above the road so it is not cut by the ground plane
+          v[i]=Vertex{p->x+(rx*cx[i]+ux*cy[i])*size,p->y+lift+(ry*cx[i]+uy*cy[i])*size,p->z+(rz*cx[i]+uz*cy[i])*size,color};
+          v[i].u=cx[i]*.5f+.5f;v[i].v=.5f-cy[i]*.5f;
+        }
+        for(int idx:{0,1,2,0,2,3})out[n++]=v[idx];
+      }
+      bgfx::setTransform(nullptr);bgfx::setVertexBuffer(0,&puffBuffer,0,uint32_t(n));
+      bindUnlit(5,puffTexture);
+      bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_BLEND_ALPHA|BGFX_STATE_MSAA);
       bgfx::submit(1,visualProgram);
     }
     if (!vehicles.empty() && !liveryState.layers.empty()) {
@@ -1284,7 +1557,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       requestCapture(review.capture);
       review.capture.clear();
     }
-    if (!shot.empty() && !captured && elapsed > (verify ? 2.5 : 2)) {
+    if (!shot.empty() && !captured && elapsed > (verify ? 2.5 : shotDelay)) {
       requestCapture(shot);
       captured = true;
     }
@@ -1301,7 +1574,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     auto probeBindings=[&](const float* material) {
       bgfx::setUniform(cameraUniform,probeEye);bgfx::setUniform(materialUniform,material);
       bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setUniform(reflectionUniform,noReflection);
-      bgfx::setUniform(coatUniform,noCoat);
+      bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
       bgfx::setTexture(0,liverySampler,whiteTexture);bgfx::setTexture(1,shadowSampler,shadowMap);
       bgfx::setTexture(2,surfaceSampler,surfaceTexture);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
       bindNormal();
@@ -1315,6 +1588,24 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::submit(probe.view,visualProgram);
     drawImportedWorld(probe.view,false,probeEye,false);
     sceneReflection.endFrame();
+    {
+      // Anchor lens glare to the authored sun direction used by the sky and shadow light.
+      const float sunLength=std::sqrt(110.f*110.f+68.f*68.f+140.f*140.f);
+      const float far[4]={float(cameraX)-110.f/sunLength*1000.f,float(cameraY)+68.f/sunLength*1000.f,
+                          float(cameraZ)+140.f/sunLength*1000.f,1};
+      float eyeSpace[4]{},clip[4]{};
+      for(int r=0;r<4;++r)for(int c=0;c<4;++c)eyeSpace[r]+=view[c*4+r]*far[c];
+      for(int r=0;r<4;++r)for(int c=0;c<4;++c)clip[r]+=projection[c*4+r]*eyeSpace[c];
+      if(clip[3]>0) {
+        const float x=clip[0]/clip[3],y=clip[1]/clip[3];
+        const float edge=std::max(std::abs(x),std::abs(y));
+        // Glare needs the disc on screen: the glare shader reads scene radiance at the sun
+        // position, which is edge-clamped once the sun is outside the frame.
+        const float weight=std::clamp((1.12f-edge)/.12f,0.f,1.f);
+        postProcess.setSun(x*.5f+.5f,.5f-y*.5f,weight,float(width)/height);
+      } else postProcess.setSun(0,0,0,1);
+    }
+    postProcess.setMotion(std::clamp((float(std::abs(shown.speed))-15.f)/35.f,0.f,1.f)*.85f);
     postProcess.draw(postNeutral);
     bgfx::frame();
     if (elapsed > 1) {

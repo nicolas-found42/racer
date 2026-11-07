@@ -24,7 +24,7 @@ for required in ('directFresnel*spec*','*diffuseWeight(metal)',
     if required not in source: raise AssertionError('lighting integration missing: '+required)
 for forbidden in ('lit=lit/(lit+.72)','float fog=1-exp(', 'pow(max(s_environment.sample'):
     if forbidden in surface: raise AssertionError('obsolete LDR scene path: '+forbidden)
-for required in ('float4(max(lit,float3(0)),base.a)', 'linearDisplay(overlay.rgb),overlay.a',
+for required in ('float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a)', 'linearDisplay(overlay.rgb),overlay.a',
                  'linearDisplay(s_texColor.sample(smp,in.uv).rgb)*2.0', 'linearDisplay(c)*2.0'):
     if required not in surface: raise AssertionError('linear scene boundary missing: '+required)
 if 'float3 linear=max(scene,float3(0))' not in post or 'if(config.w>.5) return float4(display,1)' not in post:

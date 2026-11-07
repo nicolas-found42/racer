@@ -116,6 +116,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_D
 add_executable(post_process_checks tests/post_process_checks.cpp)
 target_include_directories(post_process_checks PRIVATE src .deps/bgfx/include)
 add_test(NAME post_process_checks COMMAND post_process_checks)
+add_test(NAME screenshot_delay_checks COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/screenshot_delay_checks.py $<TARGET_FILE:racer>)
 add_executable(hud_layout_checks tests/hud_layout_checks.cpp)
 target_include_directories(hud_layout_checks PRIVATE src)
 add_test(NAME hud_layout_checks COMMAND hud_layout_checks)
