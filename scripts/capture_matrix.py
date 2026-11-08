@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Run a fixed matrix of native Racer captures from one frozen build for large reference comparisons.
+
+Usage: capture_matrix.py BASE_DIR OUT_DIR
+BASE_DIR is an output directory of capture_visual_review.py (frozen racer, models, shaders, surfaces).
+Writes OUT_DIR/<name>.png and OUT_DIR/matrix.json with each scenario's arguments, description and
+category. Frames are actual native captures; nothing is composited or altered beyond PPM->PNG.
+"""
+import json
+import subprocess
+import sys
+from pathlib import Path
+from PIL import Image
+
+base = Path(sys.argv[1]).resolve()
+out = Path(sys.argv[2]).resolve()
+out.mkdir(parents=True, exist_ok=True)
+scripts = Path(__file__).resolve().parent / "review_scripts"
+racer = base / "racer"
+if not racer.exists():
+    raise SystemExit("frozen racer missing: " + str(racer))
+
+TIMES = {"day": [], "dusk": ["--time", "dusk"], "night": ["--time", "night"]}
+VIEWS = {"rear": "rear", "front": "front", "left": "left", "right": "right", "elevated": "elevated"}
+scenarios = []
+
+
+def add(name, category, description, args, delay=3.0, smoke=5.0, script=None):
+    scenarios.append(dict(name=name, category=category, description=description, args=args, delay=delay, smoke=smoke, script=script))
+
+
+for t, targs in TIMES.items():
+    for v in VIEWS:
+        add(f"street-{t}-{v}", "street_" + t, f"Racer {t} street, {v} chase camera at 9 m, parked cars and trees", targs + ["--camera-view", v, "--camera-distance", "9"])
+    add(f"closeup-{t}-left", "closeup_" + t, f"Racer {t} close-up of the car from the side at 3 m", targs + ["--camera-view", "left", "--camera-distance", "3.2"])
+    add(f"closeup-{t}-rear", "closeup_" + t, f"Racer {t} close-up of the car from behind at 4 m", targs + ["--camera-view", "rear", "--camera-distance", "4"])
+for colour in ("red", "blue", "black"):
+    add(f"paint-{colour}-left", "closeup_day", f"Racer day close-up, {colour} paint, side view", ["--paint", colour, "--camera-view", "left", "--camera-distance", "3.2"])
+for t, targs in (("day", []), ("night", ["--time", "night"])):
+    for delay in (6, 10, 14):
+        add(f"speed-{t}-{delay}s", "speed_" + t, f"Racer {t} at full throttle after {delay} s (speed blur, wider field of view)", targs + ["--camera-view", "rear", "--camera-distance", "7"], delay=delay, smoke=delay + 2, script="full-throttle.review")
+    for v in ("rear", "left"):
+        add(f"brake-{t}-{v}", "braking_" + t, f"Racer {t} hard braking from speed, {v} view (tyre marks, tyre smoke)", targs + ["--camera-view", v, "--camera-distance", "7"], delay=6.4, smoke=8, script="brake.review")
+add("launch-day-left", "braking_day", "Racer day launch from standstill, thin smoke at the rear wheels", ["--camera-view", "left", "--camera-distance", "8"], delay=2.1, smoke=5, script="full-throttle.review")
+add("neon-night-front", "street_night", "Racer night near the corner neon pylons, front camera at 5 m", ["--time", "night", "--camera-view", "front", "--camera-distance", "5"])
+add("neon-night-left", "street_night", "Racer night near the corner neon pylons, side camera at 5 m", ["--time", "night", "--camera-view", "left", "--camera-distance", "5"])
+
+records = []
+for i, s in enumerate(scenarios, 1):
+    ppm = out / f"{s['name']}.ppm"
+    argv = [str(racer), "--background", "--smoke", str(s["smoke"]), "--window", "1280", "720",
+            "--vehicle-library", str(base / "models/catalog.racer"), "--vehicle", "0",
+            "--shader-dir", str(base / "shaders"), "--world-surfaces", str(base / "surfaces.rgba"),
+            "--screenshot", str(ppm), "--screenshot-delay", str(s["delay"]),
+            "--profile", str(out / f"{s['name']}-profile.txt"), "--no-diagnostics", "--hide-hud",
+            "--sky-mesh", str(base / "models/sky.glb"), "--scenery-mesh", str(base / "models/city.glb")] + s["args"]
+    if s["script"]:
+        argv += ["--review-script", str(scripts / s["script"])]
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=60)
+    ok = ppm.exists() and ppm.stat().st_size > 0
+    if ok:
+        Image.open(ppm).convert("RGB").save(out / f"{s['name']}.png")
+        ppm.unlink()
+    (out / f"{s['name']}-profile.txt.career").unlink(missing_ok=True)
+    (out / f"{s['name']}-profile.txt").unlink(missing_ok=True)
+    records.append(dict(s, ok=ok, exit=result.returncode, file=f"{s['name']}.png" if ok else None))
+    print(f"[{i}/{len(scenarios)}] {s['name']} ok={ok} exit={result.returncode}", flush=True)
+(out / "matrix.json").write_text(json.dumps(records, indent=1))
+print("done:", sum(r["ok"] for r in records), "of", len(records))
