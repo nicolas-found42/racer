@@ -47,7 +47,7 @@ for required in ('exp(-(L.x*L.x+L.z*L.z)*.35)*atten*cone*.5',
 if 'mix(1.0,.93,smoothstep(.55,.95,dayWeight))' not in post:
     raise AssertionError('day green trim (dusk-gated) missing from the post pass')
 main_cpp=(root/'src/main.cpp').read_text()
-for required in ('2 chassis spark','sparkCarry'):
+for required in ('rnd(26), 2});','sparkCarry'):
     if required not in main_cpp: raise AssertionError('chassis spark emitter missing: '+required)
 for forbidden in ('lit=lit/(lit+.72)','float fog=1-exp(', 'pow(max(s_environment.sample'):
     if forbidden in surface: raise AssertionError('obsolete LDR scene path: '+forbidden)

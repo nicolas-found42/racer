@@ -32,7 +32,8 @@ evidence, and explicitly scope the rest.
 3. **G8 day green trim:** Racer day frames still read G>R against web2 MCLA day
    references (+.054 G−R vs MCLA −.013); dusk already matched (B−R −.154 vs
    MCLA −.142) so the trim is gated by `smoothstep(.55,.95,dayWeight)` to leave
-   dusk untouched.
+   dusk untouched. Trim factor: green ×0.93 at full day (post-trim day G−R
+   measured +.012; see the results table).
 4. **G7 road studs:** night emission dots along lane lines (12 m spacing,
    lateral ±3 m), named analogues `roadreflectors` / `fx_reflector` in MC3's
    executable strings (juiced2-rea README).
