@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run a fixed matrix of native Racer captures from one frozen build for large reference comparisons.
 
-Usage: capture_matrix.py BASE_DIR OUT_DIR
+Usage: capture_matrix.py BASE_DIR OUT_DIR [VEHICLE_INDEX [NAME,NAME,...]]
+With a vehicle index (0-4) every scenario name is prefixed "v<N>-"; the optional list limits the run.
 BASE_DIR is an output directory of capture_visual_review.py (frozen racer, models, shaders, surfaces).
 Writes OUT_DIR/<name>.png and OUT_DIR/matrix.json with each scenario's arguments, description and
 category. Frames are actual native captures; nothing is composited or altered beyond PPM->PNG.
@@ -17,6 +18,10 @@ out = Path(sys.argv[2]).resolve()
 out.mkdir(parents=True, exist_ok=True)
 scripts = Path(__file__).resolve().parent / "review_scripts"
 racer = base / "racer"
+vehicle = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+only = set(sys.argv[4].split(",")) if len(sys.argv) > 4 else None
+if not 0 <= vehicle <= 4:
+    raise SystemExit("vehicle index must be 0-4")
 if not racer.exists():
     raise SystemExit("frozen racer missing: " + str(racer))
 
@@ -45,11 +50,18 @@ add("launch-day-left", "braking_day", "Racer day launch from standstill, thin sm
 add("neon-night-front", "street_night", "Racer night near the corner neon pylons, front camera at 5 m", ["--time", "night", "--camera-view", "front", "--camera-distance", "5"])
 add("neon-night-left", "street_night", "Racer night near the corner neon pylons, side camera at 5 m", ["--time", "night", "--camera-view", "left", "--camera-distance", "5"])
 
+if only is not None:
+    scenarios = [s for s in scenarios if s["name"] in only]
+    if not scenarios:
+        raise SystemExit("no scenario matches the name list")
+if vehicle:
+    for s in scenarios:
+        s["name"] = f"v{vehicle}-" + s["name"]
 records = []
 for i, s in enumerate(scenarios, 1):
     ppm = out / f"{s['name']}.ppm"
     argv = [str(racer), "--background", "--smoke", str(s["smoke"]), "--window", "1280", "720",
-            "--vehicle-library", str(base / "models/catalog.racer"), "--vehicle", "0",
+            "--vehicle-library", str(base / "models/catalog.racer"), "--vehicle", str(vehicle),
             "--shader-dir", str(base / "shaders"), "--world-surfaces", str(base / "surfaces.rgba"),
             "--screenshot", str(ppm), "--screenshot-delay", str(s["delay"]),
             "--profile", str(out / f"{s['name']}-profile.txt"), "--no-diagnostics", "--hide-hud",
@@ -65,5 +77,5 @@ for i, s in enumerate(scenarios, 1):
     (out / f"{s['name']}-profile.txt").unlink(missing_ok=True)
     records.append(dict(s, ok=ok, exit=result.returncode, file=f"{s['name']}.png" if ok else None))
     print(f"[{i}/{len(scenarios)}] {s['name']} ok={ok} exit={result.returncode}", flush=True)
-(out / "matrix.json").write_text(json.dumps(records, indent=1))
+(out / ("matrix.json" if not vehicle else f"matrix-v{vehicle}.json")).write_text(json.dumps(records, indent=1))
 print("done:", sum(r["ok"] for r in records), "of", len(records))
