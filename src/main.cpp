@@ -1639,7 +1639,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     {
       // Focus on the car: eye-to-body distance, so the chase camera keeps it sharp and softens distant street.
       const double fx=cameraX-shown.x,fy=cameraY-(bodyElevation+.6),fz=cameraZ-shown.z;
-      postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?1.f:0.f);
+      postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?.55f:0.f);
     }
     postProcess.setMotion(std::clamp((float(std::abs(shown.speed))-15.f)/35.f,0.f,1.f)*.85f);
     postProcess.draw(postNeutral);

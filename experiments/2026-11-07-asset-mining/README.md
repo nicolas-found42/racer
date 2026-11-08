@@ -82,6 +82,9 @@ Ran the protocol for real (ledger and artifacts outside the repo): generated per
 - Patch overlap at the corners is not handled (coincident same-colour geometry).
 - The formal review gate (head `2aa6f76`) is stale for this and the orange-peel commit.
 
+## Depth-of-field retune (follow-up 7)
+Depth of field was too strong at a 9 m chase camera (it blurred the whole street, which also made the terrain comparison unreadable). Default strength 1.0 → 0.55 (`depthOfField?.55f:0.f` in `src/main.cpp`). `before-after/dof-retune.png` (same build, only the strength differs, 9 m rear camera): the street and houses stay readable with a softer falloff. Not tuned against a reference frame; 1080p full-throttle run after the change is recorded in the PR comment.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 
