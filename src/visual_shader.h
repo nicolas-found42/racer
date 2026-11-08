@@ -166,8 +166,13 @@ float3 detailNormal(float3 world,float2 uv,float3 normal,float4 authored,float3 
 // lamp meshes in world_scene.h. Analytic, unshadowed point lights; authored values.
 void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread float3& spec) {
  const float3 color=float3(1.0,.66,.32)*4.2;
+ // The lamp lattice repeats with the 400 m scenery tile (posts are drawn at the same offsets), out to the
+ // edge of the road grid; q is p wrapped into the central tile and shift maps lamp positions back.
+ if(max(abs(p.x),abs(p.z))>620.0) return;
+ float3 q=float3(p.x-400.0*round(p.x/400.0),p.y,p.z-400.0*round(p.z/400.0));
+ float3 shift=p-q;
  for(int axis=0;axis<2;++axis) {
-  float lat=axis==0?p.x:p.z,along=axis==0?p.z:p.x;
+  float lat=axis==0?q.x:q.z,along=axis==0?q.z:q.x;
   float road=round(lat/100.0)*100.0;
   if(abs(road)>200.0||abs(lat-road)>34.0) continue;
   float k0=floor((along-12.5)/25.0);
@@ -176,7 +181,7 @@ void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread
    if(m<.5||abs(s)>200.0) continue;
    for(int side=-1;side<=1;side+=2) {
     float latPos=road+float(side)*7.7;
-    float3 lamp=axis==0?float3(latPos,7.9,s):float3(s,7.9,latPos);
+    float3 lamp=(axis==0?float3(latPos,7.9,s):float3(s,7.9,latPos))+float3(shift.x,0,shift.z);
     float3 L=lamp-p;float d2=dot(L,L);float3 l=L*rsqrt(d2);
     float atten=1.0/(1.0+d2/30.0)*(1-smoothstep(700.0,1400.0,d2));
     float cone=smoothstep(.2,.7,l.y);
@@ -191,13 +196,15 @@ void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread
 // Light cast by the corner neon pylons (world_scene.h neonPylon): same intersection table
 // (25 corners, +-10 m from the crossing, colour palette by (ix*5+iz*3) mod 3). Unshadowed; authored.
 void neonLight(float3 p,float3 n,thread float3& diff) {
- float2 cell=round(p.xz/100.0);
+ if(max(abs(p.x),abs(p.z))>620.0) return;
+ float2 wrapped=p.xz-400.0*round(p.xz/400.0),tileShift=p.xz-wrapped;
+ float2 cell=round(wrapped/100.0);
  if(abs(cell.x)>2.0||abs(cell.y)>2.0) return;
  float v=(cell.x+3.0)*5.0+(cell.y+3.0)*3.0;
  for(int i=0;i<2;++i) {
   float s=i==0?1.0:-1.0,vv=v+float(i),pal=vv-3.0*floor(vv/3.0);
   float3 col=pal<.5?float3(1.0,.16,.67):(pal<1.5?float3(1.0,.59,.12):float3(.24,1.0,.63));
-  float3 L=float3(cell.x*100.0+s*10.0,5.0,cell.y*100.0+s*10.0)-p;
+  float3 L=float3(cell.x*100.0+s*10.0+tileShift.x,5.0,cell.y*100.0+s*10.0+tileShift.y)-p;
   float d2=dot(L,L);
   diff+=col*(3.4*max(dot(n,L*rsqrt(d2)),0.0)/(1.0+d2/60.0))*(1-smoothstep(900.0,1600.0,d2));
  }

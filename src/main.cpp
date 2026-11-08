@@ -426,6 +426,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   diagnostics.event("dependency",{{"component","livery_renderer"},{"success",true},{"source","embedded_visual_shader_linear_scene"}});
   Mesh world;
+  size_t lampFirst=0,lampCount=0; // lamp posts + neon pylons inside `world`, repeated at the scenery tile offsets
   box(world, 0, -.3, 0, 1800, .5, 1800, 0xff455144);
   for (int n = -500; n <= 500; n += 100) {
     box(world, float(n), -.04, 0, float(racer::worldScale::roadWidth), .08, 1000, 0xff34312e,1);
@@ -468,7 +469,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   if(scene=="scale" || !worldMeshes.empty())sceneryMesh.clear();
   if(scene!="scale" && worldMeshes.empty()) {
-    auto city=racer::buildCityScene(texturedPalms,sceneryMesh.empty());world.insert(world.end(),city.begin(),city.end());
+    size_t cityLampFirst=0;
+    auto city=racer::buildCityScene(texturedPalms,sceneryMesh.empty(),&cityLampFirst,&lampCount);
+    lampFirst=world.size()+cityLampFirst;world.insert(world.end(),city.begin(),city.end());
     auto street=racer::streetDetails::build();world.insert(world.end(),street.begin(),street.end());
   }
   if(!worldMeshes.empty()) {
@@ -1244,6 +1247,23 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::setTexture(0,liverySampler,whiteTexture);
     bgfx::submit(1, visualProgram);
     drawImportedWorld(1,false,eyeUniform,sceneReflection.ready());
+    // Lamp posts and neon pylons repeat at the scenery's 400 m tile offsets (main view only), so night lighting
+    // and signage continue past the central district. Shadows and the reflection probe use the central copy.
+    if(lampCount>0 && worldMeshes.empty() && !sceneryMesh.empty() && scene!="scale")
+      for(float dx:{-400.f,0.f,400.f})for(float dz:{-400.f,0.f,400.f}) {
+        if(dx==0&&dz==0)continue;
+        bx::mtxTranslate(model,dx,0,dz);bgfx::setTransform(model);
+        bgfx::setVertexBuffer(0,worldBuffer,uint32_t(lampFirst),uint32_t(lampCount));
+        bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_A|BGFX_STATE_WRITE_Z|BGFX_STATE_DEPTH_TEST_LESS|BGFX_STATE_MSAA);
+        bgfx::setUniform(cameraUniform,eyeUniform);bgfx::setUniform(materialUniform,worldMaterial);
+        bgfx::setUniform(shadowUniform,lightMatrix);bgfx::setTexture(1,shadowSampler,shadowMap);bgfx::setTexture(2,surfaceSampler,surfaceTexture);
+        bgfx::setUniform(reflectionUniform,reflectionState);bgfx::setTexture(3,environmentSampler,sceneReflection.readTexture());
+        bindNormal();
+        bgfx::setUniform(headlightUniform,headlightState);bgfx::setUniform(coatUniform,noCoat);
+        bgfx::setTexture(0,liverySampler,whiteTexture);
+        bgfx::submit(1,visualProgram);
+      }
+    bx::mtxIdentity(model);
     if (!flow.session.active() && scene!="scale") {
       for (const auto &marker:flow.career.markers()) {
         racer::worldTransform(model,0,marker.x,marker.z);

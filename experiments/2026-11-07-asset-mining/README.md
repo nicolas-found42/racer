@@ -96,6 +96,12 @@ A probe of an unwritable `--screenshot` path found the game ran, wrote nothing, 
 - **Star artifact fixed:** the first capture showed that the DoF gather turned tiny stars (far sky, maximum blur radius) into flower-shaped patterns because 12 taps undersample points. Blur now fades to ~10% beyond 80-200 m (`cocFor`), which also keeps the sky sharp; visible in both frames of the pair (the flowers are gone). A genuinely defocused sky is therefore not simulated.
 - The formal review gate (`db394d8`) is stale again for this change.
 
+## Night lamps and neon on the outer tiles (follow-up 9)
+- `buildCityScene` now reports the contiguous vertex range holding the lamp posts and neon pylons (`lampFirst/lampCount`); the main pass redraws just that range at the scenery's eight 400 m tile offsets (`setVertexBuffer(0,worldBuffer,first,count)`), and the shader's lamp and neon lattices wrap by the same 400 m period (limit 620 m from the origin). Shadows and the reflection probe still use only the central copy.
+- Isolated before/after (same build, only this change; night, full-throttle run, camera at z≈290 m, `before-after/outer-tile-lamps.png`): before, the street beyond +-200 m is dark with no posts; after, lamp posts, warm light pools and neon signs continue down the street.
+- Limits: the tiled lamps/pylons reach 600 m but the road grid ends at 500 m, so the outermost copies stand over the grass beyond the last road; copies at tile seams (x or z = +-200 m) duplicate coincident posts; the outer-tile houses' windows (prepared scenery) are still unlit.
+- The formal review gate (`db394d8`) is stale for this and the bokeh commit.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 

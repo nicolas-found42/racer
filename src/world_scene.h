@@ -263,7 +263,9 @@ inline void terrain(std::vector<AssetVertex>& m,int quarterTurns=0,int columns=1
 } // namespace racer::city
 
 namespace racer {
-inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool authoredBuildings=true) {
+// lampFirst/lampCount (optional) report the contiguous vertex range holding the lamp posts and neon pylons,
+// so the renderer can repeat just that range at the 400 m tile offsets used for the scenery.
+inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool authoredBuildings=true,size_t* lampFirst=nullptr,size_t* lampCount=nullptr) {
   std::vector<AssetVertex> m;m.reserve(190000);
   using namespace city;
   // Four by four varied blocks form the detailed central district. Every block
@@ -336,6 +338,7 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
   }
   // Foothills on the three other sides (the original +z patch is added below by terrain(m)).
   for(int turn=1;turn<=3;++turn) terrain(m,turn,48,12);
+  const size_t lampsBegin=m.size();
   gridLamps(m);
   for(int ix=-2;ix<=2;++ix) for(int iz=-2;iz<=2;++iz) {
     const float cx=100.f*float(ix),cz=100.f*float(iz);
@@ -343,6 +346,8 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
     neonPylon(m,cx+10.f,cz+10.f,v,true);
     neonPylon(m,cx-10.f,cz-10.f,v+1,false);
   }
+  if(lampFirst)*lampFirst=lampsBegin;
+  if(lampCount)*lampCount=m.size()-lampsBegin;
   terrain(m);
   return m;
 }
