@@ -238,6 +238,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     std::cerr << "--screenshot-delay must be shorter than --smoke seconds\n";
     return 1;
   }
+  // A capture that cannot be written must fail loudly rather than exit 0 with no image.
+  if (!shot.empty()) {
+    const auto parent = std::filesystem::path(shot).parent_path();
+    if (!parent.empty() && !std::filesystem::is_directory(parent)) {
+      std::cerr << "--screenshot parent directory does not exist: " << parent.string() << "\n";
+      return 1;
+    }
+  }
   if (cameraView!="rear" && cameraView!="front" && cameraView!="left" && cameraView!="right" && cameraView!="elevated")
     throw std::runtime_error("Unsupported --camera-view");
   if (windowWidth < 320 || windowHeight < 240 || windowWidth > 3840 || windowHeight > 2160) {

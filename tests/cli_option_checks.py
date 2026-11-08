@@ -9,6 +9,7 @@ cases = {
     "time_unknown": (["--time", "noon"], "--time must be day, dusk or night"),
     "time_missing_value": (["--time"], None),
     "paint_unknown": (["--paint", "chartreuse"], "--paint must be red"),
+    "screenshot_parent_missing": (["--screenshot", "/nonexistent-dir-for-racer-check/never.ppm"], "--screenshot parent directory does not exist"),
 }
 for name, (extra, message) in cases.items():
     result = subprocess.run([str(binary), "--background", "--no-diagnostics", *extra],

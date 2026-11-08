@@ -122,6 +122,30 @@ int main() {
   }
   check(connected&&outside&&landBounds,"terrain seams share positions/normals beyond drivable bounds");
   check(heights.size()>80,"terrain has a varied bounded ridgeline rather than repeated peaks");
+  // Quarter-turn patches (coarse grid) cover the other three horizons: all outside the drivable
+  // square, upward-facing, bounded, and each turn reaches its own direction.
+  {
+    bool turnsOutside=true,turnsUp=true,turnsBounded=true;
+    // Patch centroids: +z for turn 0, then -x, -z, +x (x'=x c - z s with s=1 for one quarter turn).
+    const double expectX[4]={0,-1,0,1},expectZ[4]={1,0,-1,0};
+    bool turnsPlaced=true;
+    for(int turn=0;turn<4;++turn) {
+      std::vector<racer::AssetVertex> patch;
+      racer::city::terrain(patch,turn,turn==0?120:48,turn==0?30:12);
+      double cx=0,cz=0;
+      for(const auto& v:patch) {
+        turnsOutside&=std::max(std::abs(v.x),std::abs(v.z))>racer::worldScale::halfExtent;
+        turnsUp&=v.ny>0;turnsBounded&=std::isfinite(v.x)&&std::isfinite(v.z)&&v.y>=-1&&v.y<220;
+        cx+=v.x;cz+=v.z;
+      }
+      cx/=double(patch.size());cz/=double(patch.size());
+      turnsPlaced&=std::abs(cx-expectX[turn]*1000)<150&&std::abs(cz-expectZ[turn]*1000)<150;
+    }
+    check(turnsOutside,"every terrain quarter-turn patch lies outside the drivable square");
+    check(turnsUp,"every terrain quarter-turn patch has upward-facing normals");
+    check(turnsBounded,"every terrain quarter-turn patch is finite and within the bounded height range");
+    check(turnsPlaced,"terrain patches sit on the +z, -x, -z and +x horizons");
+  }
   // Distinct crown rotations remain deterministic without rebuilding the whole
   // district repeatedly or relying on counts that mirror each emission loop.
   std::vector<racer::AssetVertex> first,repeat,other;
