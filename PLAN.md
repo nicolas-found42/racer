@@ -265,3 +265,13 @@ Evidence: [capacity experiment](experiments/2026-11-06-inventory-capacity/README
 - [ ] Establish actual per-car inputs/resource state and continuous curve/shader construction; implement and review the resulting wheel geometry before promotion. Existing sharedToyo fit remains authored. Human/controller/source-game runtime and the remaining corpus are unfinished.
 
 Evidence: [wheel contract](findings/juiced2-wheel-contract.md), [experiment](experiments/2026-11-06-juiced2-wheel-consumer/README.md). Current inventory52rows/13players SHA `3fb258cfeddaaa854e2c456176221cc2b69249caa1b0d32af40b7f2e12f23c4f`; active catalog remains `3da5f93bb8a18355877d4614c7ecb4c6fb79273d67c286aa9eee602719e7327c`. New source inventory174files at selected boundaries, with171unchanged hashes inherited. No Ghidra target or original game process was used. Next trace actual per-car TyreCode/resource f4/runtime override selection and verify native geometry construction, within a new measured reservation. Keep all-car goal active, GT1/Redline excluded and MCLAambient traffic-only.
+
+## Visual fidelity rounds — 2026-11-07/08
+
+- [x] Catalog 262 console reference crops (MCLA/GT4/MC3/Juiced 2) and pair them against 82 Racer frames with category sheets (comparison-matrix experiment).
+- [x] Facade 16-tile RCRSURF4 atlas: procedural window grids, curtain glass, sign boards, shop glazing on mid/high-rise walls; near <3-storey facades unchanged.
+- [x] MCLA colour-correct as a day-weighted balance; night-only saturation reduction (main set .492→.427, city .405); lamp/headlight colours from the decoded MCLA tuning table.
+- [x] Close-out: chassis spark particles, stronger wet-road streaks, dusk-gated day green trim (×0.93; day G−R +.054→+.012 vs MCLA −.013; dusk untouched), night road studs; locations f/g/h + closeup/paint captures.
+- [x] Evidence: 33 before/after pairs + 162 console pairs, sheets viewed, experiment READMEs with measured results; PR #1 updated and rendered-page inspected (55/55 images).
+- [x] Verification: ctest 96/96; hub check PASS; adversarial-code-review re-run since `5735fa2` (persona Otto) — two findings fixed, deterministic gate exits 0; jev checkpoints verified with zero final contradictions.
+- [ ] Unfinished: world density/city-canyon re-bake (dominant residual), brake/tail-light glow, headlight cone sprite, per-window glass glow, auto exposure (numeric defaults unlocated), garage scene, cockpit, MCLA city-art decode (blocked on `CSR` tag). Unexecuted: 10 asset-dependent ctest skips; merge with `main` not built. Console parity remains unmet.

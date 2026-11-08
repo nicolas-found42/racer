@@ -1,6 +1,10 @@
 # Experiments
 
-Latest: [asset mining: road, wheels, tyre marks/smoke, trees, night](2026-11-07-asset-mining/README.md); earlier: [visual resume, lens finish pass](2026-11-07-visual-resume/README.md): sun-anchored glare, filmic grade, vignette; in-game glare unverified; visual goal remains unmet.
+Latest: [facade-v4 close-out: night lighting, smoke/sparks, streaks, reflectors](2026-11-08-facade-v4/README.md): sparks, stronger wet-road streaks, dusk-gated day green trim, night road studs; measured night saturation .492→.427 (city .405), day G−R +.054→+.012 vs MCLA; adversarial re-review gate exits 0. Console parity remains unmet; world density is the dominant residual.
+
+Earlier: [comparison matrix and console-reference catalog](2026-11-07-comparison-matrix/README.md): 262 named reference crops from MCLA/GT4/MC3/Juiced 2 paired against 82 Racer frames with before/after and category sheets; still-substantial gaps catalogued per category.
+
+Earlier: [asset mining: road, wheels, tyre marks/smoke, trees, night](2026-11-07-asset-mining/README.md); earlier: [visual resume, lens finish pass](2026-11-07-visual-resume/README.md): sun-anchored glare, filmic grade, vignette; in-game glare unverified; visual goal remains unmet.
 
 Active source-backed material continuation: [native materials](2026-11-07-native-materials/README.md). Selected signed R/A normal kernel and actual curb comparisons; visual goal remains unmet.
 
@@ -29,6 +33,8 @@ Active source-backed material continuation: [native materials](2026-11-07-native
 - [Fit review and seven-car publication](2026-11-06-fit-review/README.md): retained candidate/maximum-steer/motion views, strict source exclusions, explicit authored fits and local native acceptance.
 - [SLRR rest fit](2026-11-06-slrr-rest-fit/README.md): exact source spring audit, rejected compression poses and independently checked fixed-pose clearance.
 - [Observability coverage delta](2026-11-06-observability-delta/README.md): career/parts/livery save-state identities, failure/retry/restart reconstruction and explicit coverage limits.
+
+Main-side additions (links resolve when `main` merges; directories exist only on `main` today): [car pipeline stages](2026-11-06-car-stages/README.md), [Juiced2 wheel args](2026-11-06-juiced2-wheel-args/README.md), [verification pass](2026-11-06-verification-pass/README.md), [held GLB publication](2026-11-06-held-glb-publication/README.md), [Juiced 2 native sizing trace](2026-11-06-juiced2-native-sizing/README.md), [adversarial code review](2026-11-07-adversarial-code-review/README.md).
 
 Every investigation, including a small one-off probe, starts at `<id>/README.md`. Use the hub's templates/experiment/README.md; name IDs YYYY-MM-DD-short-question, adding a suffix when repeated. Keep commands, observations, evidence, retention, and next action together. Larger outputs may stay at established tool-required paths, linked from this record and counted in the same resource budget.
 
@@ -82,3 +88,4 @@ Every investigation, including a small one-off probe, starts at `<id>/README.md`
 
 - [MCLA tuning data](2026-11-08-mcla-city-textures/README.md): REA extraction of 941 tune files (lighting, post-processing, glow, cameras, sky) from the retail disc; recovered colorcorrect applied as a day-weighted colour balance, measured against 21+4+5 MCLA reference frames. World textures were not found by name.
 - [Juiced 2 / GT4 / MC3 effect strings](2026-11-08-juiced2-rea/README.md): XEX decoded to a PPC carrier and searched with REA; GT4 ELF searched; MC3 XBE rejected by REA (string scan only). Names and addresses of the effect systems each game ships; no numeric defaults found.
+- [Facade window grids and sign boards](2026-11-08-facade-windows/README.md): 16-tile RCRSURF4 atlas with procedural window grids, curtain glass and sign artwork on mid/high-rise walls; near <3-storey facades and world density remain the dominant residuals.
