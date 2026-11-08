@@ -399,10 +399,16 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   float coat=_mtl_u.u_visualCoat.x,coatRough=clamp(_mtl_u.u_visualCoat.y,.05,1.0);
   float coatF=.04+.96*fresnelWeight(ndv);
   float coatDirectF=.04+.96*fresnelWeight(max(dot(v,h),0.0));
-  float3 coatEnvironment=sky(reflect(-v,n),_mtl_u.u_headlight.w);
+  // Orange peel: a fine, low-amplitude noise perturbation of the coat normal (u_reflectionState.y < 0
+  // carries the strength; positive values mark wheel ghosts). Authored. Breaks up mirror-perfect reflections.
+  float peel=max(-_mtl_u.u_reflectionState.y,0.0);
+  float2 peelUV=in.uv*150.0;
+  float3 peelNormal=normalize(n+(float3(noise(peelUV),noise(peelUV+17.3),noise(peelUV+41.7))-.5)*.05*peel);
+  float3 coatReflect=reflect(-v,peelNormal);
+  float3 coatEnvironment=sky(coatReflect,_mtl_u.u_headlight.w);
   if(_mtl_u.u_reflectionState.x>.5)
-   coatEnvironment=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(coatRough))).rgb,float3(0));
-  float coatHighlight=pow(max(dot(n,h),0.0),mix(500.0,8.0,coatRough))*2.0*ndl*visibility;
+   coatEnvironment=max(s_environment.sample(environmentSampler,coatReflect,level(reflectionLod(coatRough))).rgb,float3(0));
+  float coatHighlight=pow(max(dot(peelNormal,h),0.0),mix(500.0,8.0,coatRough))*2.0*ndl*visibility;
   // Metallic flake: per-texel random micro-normals sparkle where they catch the half vector. Authored.
   float2 flakeCell=floor(in.uv*260.0);
   float3 flakeRnd=float3(hash(flakeCell),hash(flakeCell+3.1),hash(flakeCell+7.7))-.5;

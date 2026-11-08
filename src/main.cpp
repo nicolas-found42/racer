@@ -88,7 +88,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool autoDrive = false, benchmark = false, verify = false;
   double shotDelay = 2;
   bool shotDelayExplicit = false;
-  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true, depthOfField = true;
+  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true, depthOfField = true, orangePeel = true;
   float nightAmount = 0, paintHue = 0, paintStrength = 0;
   std::string shot, profilePath, scene, garageMode, captureLoop, reviewPath, previewMesh,skyMesh,sceneryMesh;
   std::vector<std::string> worldMeshes;
@@ -117,6 +117,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--no-speed-fov") speedFov = false;
     else if (a == "--no-tyre-smoke") tyreSmoke = false;
     else if (a == "--no-dof") depthOfField = false;
+    else if (a == "--no-orange-peel") orangePeel = false;
     else if (a == "--paint" && i + 1 < argc) {
       const std::string value = argv[++i];
       struct Entry {const char* name; float hue;};
@@ -223,7 +224,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::cerr << "Cars: [--vehicle-library catalog.racer] [--vehicle index|id|name] [--preview-gltf local-path]\n";
       std::cerr << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh local.glb] [--sky-mesh local.glb] [--world-origin x y z] [--world-heading degrees] [--follow-ground] [--camera-distance metres] [--world-surfaces surfaces.rgba]\n";
       std::cerr << "Look and effects: [--time day|dusk|night] [--paint red|orange|yellow|green|teal|blue|purple|black] "
-                   "[--no-wheel-blur] [--no-skid-marks] [--no-tyre-smoke] [--no-speed-fov] [--no-dof]\n";
+                   "[--no-wheel-blur] [--no-skid-marks] [--no-tyre-smoke] [--no-speed-fov] [--no-dof] [--no-orange-peel]\n";
       std::cerr << "Capture/automation: [--background] [--shader-dir path] [--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
       std::cerr << "Asset inspection: [--hide-hud]\n";
@@ -1175,7 +1176,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     bgfx::setViewTransform(1, view, projection);
     bgfx::touch(1);
     const float eyeUniform[4]={float(cameraX),float(cameraY),float(cameraZ),0};
-    const float reflectionState[4]={sceneReflection.ready()?1.f:0.f,0,paintHue,paintStrength};
+    // y < 0 carries the clear-coat orange-peel strength; ghosts use their own positive y.
+    const float reflectionState[4]={sceneReflection.ready()?1.f:0.f,orangePeel?-1.f:0.f,paintHue,paintStrength};
     const float noCoat[4]={0,.1f,0,0};
     const float skyMaterial[4]={1,0,0,2},worldMaterial[4]={.95f,0,sourceSurfaces?2.f:0.f,1};
     // Scene attachments are linear HDR. Unlit source colors and livery still
