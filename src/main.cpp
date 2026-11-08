@@ -653,7 +653,18 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     for(int y=0;y<n;++y)for(int x=0;x<n;++x){
       const float dx=(float(x)+.5f)/n*2-1,dy=(float(y)+.5f)/n*2-1,r=std::sqrt(dx*dx+dy*dy);
       const float a=std::clamp(1-r,0.f,1.f);const float soft=a*a*(3-2*a); // clean radial falloff, no lattice
-      const uint8_t v=uint8_t(std::clamp(soft,0.f,1.f)*255);
+      // Billowy break-up: three octaves of smooth value noise (hashed lattice, smoothstep interpolation,
+      // no sine pattern) multiply the falloff so a puff is a lumpy cloud rather than a clean disc. Authored.
+      auto lattice=[](int ix,int iy,int period){ix=((ix%period)+period)%period;iy=((iy%period)+period)%period;
+        uint32_t h=uint32_t(ix)*374761393u+uint32_t(iy)*668265263u;h=(h^(h>>13))*1274126177u;return float((h^(h>>16))&0xffff)/65535.f;};
+      auto vnoise=[&](float fx,float fy,int period){const int ix=int(std::floor(fx)),iy=int(std::floor(fy));
+        float tx=fx-ix,ty=fy-iy;tx=tx*tx*(3-2*tx);ty=ty*ty*(3-2*ty);
+        const float a0=lattice(ix,iy,period),a1=lattice(ix+1,iy,period),b0=lattice(ix,iy+1,period),b1=lattice(ix+1,iy+1,period);
+        return (a0+(a1-a0)*tx)*(1-ty)+(b0+(b1-b0)*tx)*ty;};
+      const float u=float(x)/n,w=float(y)/n;
+      const float cloud=vnoise(u*4,w*4,4)*.55f+vnoise(u*8,w*8,8)*.30f+vnoise(u*16,w*16,16)*.15f;
+      const float lumpy=std::clamp((cloud-.18f)*1.9f,0.f,1.f);
+      const uint8_t v=uint8_t(std::clamp(soft*(.35f+.65f*lumpy),0.f,1.f)*255);
       pixels[size_t(y*n+x)*4+0]=255;pixels[size_t(y*n+x)*4+1]=255;pixels[size_t(y*n+x)*4+2]=255;pixels[size_t(y*n+x)*4+3]=v;
     }
     puffTexture=bgfx::createTexture2D(n,n,false,1,bgfx::TextureFormat::RGBA8,BGFX_SAMPLER_U_CLAMP|BGFX_SAMPLER_V_CLAMP,
@@ -1538,7 +1549,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float t=p->age/p->life;
         const float size=p->size*(1+3.2f*t);
         const float fade=std::min(1.f,t*8.f)*(1-t)*(1-t);
-        const uint32_t a=uint32_t(255*std::clamp((p->seed>3.f?.26f:p->seed>1.f?.42f:.95f)*fade,0.f,1.f)); // seed>1 launch, seed>3 exhaust: thinner
+        const uint32_t a=uint32_t(255*std::clamp((p->seed>3.f?.26f:p->seed>1.f?.42f:.62f)*fade,0.f,1.f)); // seed>1 launch, seed>3 exhaust: thinner
         // Start-to-end colour ramp (MCLA exposes smokeStartColor/smokeEndColor; values authored).
         const float ramp=std::clamp(t*1.6f,0.f,1.f);
         auto lerp8=[&](float from,float to){return uint32_t(from+(to-from)*ramp);};
@@ -1546,9 +1557,12 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                                            :((a<<24)|(lerp8(232,150)<<16)|(lerp8(228,148)<<8)|lerp8(226,146));
         const float cx[4]={-1,1,1,-1},cy[4]={-1,-1,1,1};
         Vertex v[4];
+        // Each puff is rotated by its seed so the lumpy texture does not repeat in the same orientation.
+        const float spin=p->seed*6.2831853f+p->age*.35f,sc=std::cos(spin),ss=std::sin(spin);
         for(int i=0;i<4;++i){
           const float lift=size*.9f; // keep the quad above the road so it is not cut by the ground plane
-          v[i]=Vertex{p->x+(rx*cx[i]+ux*cy[i])*size,p->y+lift+(ry*cx[i]+uy*cy[i])*size,p->z+(rz*cx[i]+uz*cy[i])*size,color};
+          const float qx=cx[i]*sc-cy[i]*ss,qy=cx[i]*ss+cy[i]*sc;
+          v[i]=Vertex{p->x+(rx*qx+ux*qy)*size,p->y+lift+(ry*qx+uy*qy)*size,p->z+(rz*qx+uz*qy)*size,color};
           v[i].u=cx[i]*.5f+.5f;v[i].v=.5f-cy[i]*.5f;
         }
         for(int idx:{0,1,2,0,2,3})out[n++]=v[idx];

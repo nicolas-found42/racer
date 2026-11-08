@@ -31,6 +31,8 @@ for forbidden in ('lit=lit/(lit+.72)','float fog=1-exp(', 'pow(max(s_environment
 for required in ('float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a)', 'linearDisplay(overlay.rgb),overlay.a',
                  'linearDisplay(s_texColor.sample(smp,in.uv).rgb)*2.0', 'linearDisplay(c)*2.0'):
     if required not in surface: raise AssertionError('linear scene boundary missing: '+required)
+if 'blurWeight*=1.0-.9*smoothstep(120.0,260.0,s_postDepth.sample(speedDepthSampler,in.uv).r)' not in post:
+    raise AssertionError('speed blur must fade out on far sky (stars smear into dashes otherwise)')
 if 'float3 linear=max(scene,float3(0))' not in post or 'if(config.w>.5) return float4(display,1)' not in post:
     raise AssertionError('neutral HDR mapping missing')
 packed=re.search(r'float3 sourceBumpNormal\([^)]*\)\s*\{[^{}]*\}',surface)

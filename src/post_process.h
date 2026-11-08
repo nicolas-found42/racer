@@ -89,6 +89,10 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(config.w<.5 && config.z>.001) {
   float2 toCentre=float2(.5)-in.uv;
   blurWeight=smoothstep(.10,.50,length(toCentre*float2(1.7,1.0)))*config.z;
+  // Far sky (stars, moon) smeared radially reads as white dashes, not motion: fade the blur out
+  // where the eye distance is sky-far (only sampled when the depth target exists, i.e. depth of field is active).
+  constexpr sampler speedDepthSampler(filter::nearest,address::clamp_to_edge);
+  if(_mtl_u.u_dof.y>.001) blurWeight*=1.0-.9*smoothstep(120.0,260.0,s_postDepth.sample(speedDepthSampler,in.uv).r);
   float3 sum=float3(0);
   for(int i=0;i<8;++i) sum+=s_postScene.sample(sceneSampler,in.uv+toCentre*(float(i)/7.0)*blurWeight*.09).rgb;
   blurred=max(sum/8.0,float3(0));

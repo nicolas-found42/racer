@@ -69,6 +69,11 @@ Branch `feat/improve-racer-visual-fidelity`, executable built from the working t
 - **Evidence:** `output/artefact-fix/disc-and-puddle-before-after.jpg` (before = round-1 matrix frames at 28e7412, after = working tree, three scenarios, same arguments and build otherwise). The disc is gone in all three; puddles are softer but still present at speed. `ctest` 96/96 (10 skipped for missing local assets); `visual_lighting_checks` now pins both guards and fails when the `disc` argument is removed (mutation-checked).
 - **Not fixed:** puddles still read as flat dark patches with a blue tint at distance; the wet-road look is not at reference quality.
 
+### Second fix batch (artefacts 4(c) and 4(d))
+- **Night-sky dashes at speed:** the radial speed blur smeared stars into white dashes. The blur weight now fades out where the eye-distance target says "sky-far" (120-260 m; only sampled when the depth target exists). Evidence `output/artefact-fix/smoke-and-sky-dashes-before-after.jpg` (bottom row): dashes gone, stars remain as dots. `visual_lighting_checks` pins the expression (mutation-checked: weakening the factor fails it).
+- **Rear braking smoke:** puffs now use a lumpy noise texture (three octaves of hashed value noise times the radial falloff), each puff is rotated by its seed, and tyre-smoke peak alpha dropped from .95 to .62. From behind it is still one cloud over the road (top two rows); side view is lumpier. Not at reference quality: no lit particles, sparks or tyre-attached wisps.
+- The "before" frames are the frozen matrix build (before the disc fix too), so the disc is also gone in the after frames.
+
 ### Next actions
 1. Artefacts 4(a) and 4(b) are fixed above (4(a) was the mirrored sun disc, not the lens ghost, so the Inferred note about the flare was wrong); 4(c) night-sky dashes at speed and 4(d) the opaque rear-braking smoke ball are still open.
 2. Add capture locations (more than one intersection) and a hood/cockpit camera so the matrix covers more than one view of one place.
