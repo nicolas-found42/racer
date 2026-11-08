@@ -2,8 +2,18 @@ inputs/
 analysis/
 experiments/*/output/
 assets/local/
+/assets/local
+assets/visual-local/
 .DS_Store
 __pycache__/
 *.pyc
 .deps/
+/.deps
 build/
+# Third-party reference screenshots, sheets built from them, and captures of proprietary game assets stay local.
+experiments/*/references/
+experiments/*/console-compare/
+experiments/*/before-after/
+experiments/*/contact-*.png
+experiments/*/mcla-contact.png
+experiments/*/binary-retention.txt

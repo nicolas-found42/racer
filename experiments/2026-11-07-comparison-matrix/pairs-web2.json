@@ -1,0 +1,1836 @@
+[
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_001_cockpit_dash.jpg",
+  "ref_label": "mcla_001_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-wheel_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_002_wheel_closeup.jpg",
+  "ref_label": "mcla_002_wheel_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-day-left.png",
+  "racer_label": "Racer closeup-day-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_003_car_closeup.jpg",
+  "ref_label": "mcla_003_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-day-left.png",
+  "racer_label": "Racer closeup-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_004_night_street.jpg",
+  "ref_label": "mcla_004_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_005_car_closeup.jpg",
+  "ref_label": "mcla_005_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-day-left.png",
+  "racer_label": "Racer v1-closeup-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_006_day_street.jpg",
+  "ref_label": "mcla_006_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_007_day_street.jpg",
+  "ref_label": "mcla_007_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_008_headlights_lamps.jpg",
+  "ref_label": "mcla_008_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-rear.png",
+  "racer_label": "Racer closeup-night-rear"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_009_cockpit_dash.jpg",
+  "ref_label": "mcla_009_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_010_night_street.jpg",
+  "ref_label": "mcla_010_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_011_day_street.jpg",
+  "ref_label": "mcla_011_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_012_motion_blur.jpg",
+  "ref_label": "mcla_012_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-14s.png",
+  "racer_label": "Racer speed-day-14s"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_013_buildings_facade.jpg",
+  "ref_label": "mcla_013_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_014_dusk.jpg",
+  "ref_label": "mcla_014_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-rear.png",
+  "racer_label": "Racer street-dusk-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_015_car_closeup.jpg",
+  "ref_label": "mcla_015_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-day-left.png",
+  "racer_label": "Racer v2-closeup-day-left"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_016_smoke_skid.jpg",
+  "ref_label": "mcla_016_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-day-left.png",
+  "racer_label": "Racer brake-day-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_017_dusk.jpg",
+  "ref_label": "mcla_017_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-dusk-rear.png",
+  "racer_label": "Racer v1-street-dusk-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_018_day_street.jpg",
+  "ref_label": "mcla_018_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_019_day_street.jpg",
+  "ref_label": "mcla_019_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_020_skyline_horizon.jpg",
+  "ref_label": "mcla_020_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_021_night_street.jpg",
+  "ref_label": "mcla_021_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-rear.png",
+  "racer_label": "Racer v2-street-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_022_day_street.jpg",
+  "ref_label": "mcla_022_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_023_day_street.jpg",
+  "ref_label": "mcla_023_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_024_headlights_lamps.jpg",
+  "ref_label": "mcla_024_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-night-rear.png",
+  "racer_label": "Racer v1-closeup-night-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_025_buildings_facade.jpg",
+  "ref_label": "mcla_025_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_026_skyline_horizon.jpg",
+  "ref_label": "mcla_026_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_027_motion_blur.jpg",
+  "ref_label": "mcla_027_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-10s.png",
+  "racer_label": "Racer speed-day-10s"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_028_day_street.jpg",
+  "ref_label": "mcla_028_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-left.png",
+  "racer_label": "Racer v1-street-day-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_029_dusk.jpg",
+  "ref_label": "mcla_029_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-dusk-rear.png",
+  "racer_label": "Racer v2-street-dusk-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_030_skyline_horizon.jpg",
+  "ref_label": "mcla_030_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_031_smoke_skid.jpg",
+  "ref_label": "mcla_031_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-brake-day-left.png",
+  "racer_label": "Racer v1-brake-day-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_032_headlights_lamps.jpg",
+  "ref_label": "mcla_032_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-night-rear.png",
+  "racer_label": "Racer v2-closeup-night-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_033_headlights_lamps.jpg",
+  "ref_label": "mcla_033_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-night-rear.png",
+  "racer_label": "Racer v3-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_034_night_street.jpg",
+  "ref_label": "mcla_034_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-rear.png",
+  "racer_label": "Racer v3-street-night-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_035_motion_blur.jpg",
+  "ref_label": "mcla_035_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-speed-day-10s.png",
+  "racer_label": "Racer v1-speed-day-10s"
+ },
+ {
+  "group": "w2-other",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_036_other.jpg",
+  "ref_label": "mcla_036_other",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_037_smoke_skid.jpg",
+  "ref_label": "mcla_037_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-brake-day-left.png",
+  "racer_label": "Racer v2-brake-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_038_night_street.jpg",
+  "ref_label": "mcla_038_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-rear.png",
+  "racer_label": "Racer v4-street-night-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_039_dusk.jpg",
+  "ref_label": "mcla_039_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-dusk-rear.png",
+  "racer_label": "Racer v3-street-dusk-rear"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_001_cockpit_dash.jpg",
+  "ref_label": "gt4_001_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_002_motion_blur.jpg",
+  "ref_label": "gt4_002_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-speed-day-10s.png",
+  "racer_label": "Racer v2-speed-day-10s"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_003_buildings_facade.jpg",
+  "ref_label": "gt4_003_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_004_skyline_horizon.jpg",
+  "ref_label": "gt4_004_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_005_trees_vegetation.jpg",
+  "ref_label": "gt4_005_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_006_smoke_skid.jpg",
+  "ref_label": "gt4_006_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-brake-day-left.png",
+  "racer_label": "Racer v3-brake-day-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_007_motion_blur.jpg",
+  "ref_label": "gt4_007_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-speed-day-10s.png",
+  "racer_label": "Racer v3-speed-day-10s"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_008_day_street.jpg",
+  "ref_label": "gt4_008_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-left.png",
+  "racer_label": "Racer v2-street-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_009_day_street.jpg",
+  "ref_label": "gt4_009_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-left.png",
+  "racer_label": "Racer v3-street-day-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_010_dusk.jpg",
+  "ref_label": "gt4_010_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-dusk-rear.png",
+  "racer_label": "Racer v4-street-dusk-rear"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_011_crowd_props.jpg",
+  "ref_label": "gt4_011_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_012_smoke_skid.jpg",
+  "ref_label": "gt4_012_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-brake-day-left.png",
+  "racer_label": "Racer v4-brake-day-left"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_013_smoke_skid.jpg",
+  "ref_label": "gt4_013_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-day-rear.png",
+  "racer_label": "Racer brake-day-rear"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_014_garage.jpg",
+  "ref_label": "gt4_014_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/garage-ui.png",
+  "racer_label": "Racer garage-ui"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_015_garage.jpg",
+  "ref_label": "gt4_015_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_016_night_street.jpg",
+  "ref_label": "gt4_016_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-front.png",
+  "racer_label": "Racer street-night-front"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_017_night_street.jpg",
+  "ref_label": "gt4_017_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-left.png",
+  "racer_label": "Racer street-night-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_018_headlights_lamps.jpg",
+  "ref_label": "gt4_018_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-night-rear.png",
+  "racer_label": "Racer v4-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_019_night_street.jpg",
+  "ref_label": "gt4_019_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-left.png",
+  "racer_label": "Racer v1-street-night-left"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_020_trees_vegetation.jpg",
+  "ref_label": "gt4_020_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_021_trees_vegetation.jpg",
+  "ref_label": "gt4_021_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_022_trees_vegetation.jpg",
+  "ref_label": "gt4_022_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_023_day_street.jpg",
+  "ref_label": "gt4_023_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-left.png",
+  "racer_label": "Racer v4-street-day-left"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_024_buildings_facade.jpg",
+  "ref_label": "gt4_024_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_025_buildings_facade.jpg",
+  "ref_label": "gt4_025_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_026_buildings_facade.jpg",
+  "ref_label": "gt4_026_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_027_skyline_horizon.jpg",
+  "ref_label": "gt4_027_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_028_buildings_facade.jpg",
+  "ref_label": "gt4_028_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_029_night_street.jpg",
+  "ref_label": "gt4_029_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-left.png",
+  "racer_label": "Racer v2-street-night-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_030_motion_blur.jpg",
+  "ref_label": "gt4_030_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-speed-day-10s.png",
+  "racer_label": "Racer v4-speed-day-10s"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_031_skyline_horizon.jpg",
+  "ref_label": "gt4_031_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_032_dusk.jpg",
+  "ref_label": "gt4_032_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-left.png",
+  "racer_label": "Racer street-dusk-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_033_headlights_lamps.jpg",
+  "ref_label": "gt4_033_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-front.png",
+  "racer_label": "Racer neon-night-front"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_034_headlights_lamps.jpg",
+  "ref_label": "gt4_034_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-front.png",
+  "racer_label": "Racer street-night-front"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_035_night_street.jpg",
+  "ref_label": "gt4_035_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-left.png",
+  "racer_label": "Racer v3-street-night-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_036_motion_blur.jpg",
+  "ref_label": "gt4_036_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-6s.png",
+  "racer_label": "Racer speed-day-6s"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_037_dusk.jpg",
+  "ref_label": "gt4_037_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-dusk-left.png",
+  "racer_label": "Racer v1-street-dusk-left"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_038_trees_vegetation.jpg",
+  "ref_label": "gt4_038_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_039_night_street.jpg",
+  "ref_label": "gt4_039_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-left.png",
+  "racer_label": "Racer v4-street-night-left"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_040_skyline_horizon.jpg",
+  "ref_label": "gt4_040_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_041_night_street.jpg",
+  "ref_label": "gt4_041_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-right.png",
+  "racer_label": "Racer street-night-right"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_042_crowd_props.jpg",
+  "ref_label": "gt4_042_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_043_cockpit_dash.jpg",
+  "ref_label": "gt4_043_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_044_trees_vegetation.jpg",
+  "ref_label": "gt4_044_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_045_buildings_facade.jpg",
+  "ref_label": "gt4_045_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-left.png",
+  "racer_label": "Racer v1-street-day-left"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_046_buildings_facade.jpg",
+  "ref_label": "gt4_046_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-left.png",
+  "racer_label": "Racer v2-street-day-left"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_047_crowd_props.jpg",
+  "ref_label": "gt4_047_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_048_skyline_horizon.jpg",
+  "ref_label": "gt4_048_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-left.png",
+  "racer_label": "Racer v1-street-day-left"
+ },
+ {
+  "group": "w2-wheel_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_049_wheel_closeup.jpg",
+  "ref_label": "gt4_049_wheel_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-day-left.png",
+  "racer_label": "Racer v1-closeup-day-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_050_dusk.jpg",
+  "ref_label": "gt4_050_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-dusk-left.png",
+  "racer_label": "Racer v2-street-dusk-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_051_night_street.jpg",
+  "ref_label": "gt4_051_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-elevated.png",
+  "racer_label": "Racer street-night-elevated"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_052_headlights_lamps.jpg",
+  "ref_label": "gt4_052_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-rear.png",
+  "racer_label": "Racer closeup-dusk-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_053_headlights_lamps.jpg",
+  "ref_label": "gt4_053_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_054_headlights_lamps.jpg",
+  "ref_label": "gt4_054_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_055_buildings_facade.jpg",
+  "ref_label": "gt4_055_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-left.png",
+  "racer_label": "Racer v3-street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_056_night_street.jpg",
+  "ref_label": "gt4_056_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-front.png",
+  "racer_label": "Racer neon-night-front"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_057_night_street.jpg",
+  "ref_label": "gt4_057_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-left.png",
+  "racer_label": "Racer neon-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_058_night_street.jpg",
+  "ref_label": "gt4_058_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_059_headlights_lamps.jpg",
+  "ref_label": "gt4_059_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-rear.png",
+  "racer_label": "Racer v2-street-night-rear"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_060_crowd_props.jpg",
+  "ref_label": "gt4_060_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_061_crowd_props.jpg",
+  "ref_label": "gt4_061_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_062_smoke_skid.jpg",
+  "ref_label": "gt4_062_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-night-rear.png",
+  "racer_label": "Racer brake-night-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_063_car_closeup.jpg",
+  "ref_label": "gt4_063_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-day-left.png",
+  "racer_label": "Racer v3-closeup-day-left"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_064_cockpit_dash.jpg",
+  "ref_label": "gt4_064_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_065_motion_blur.jpg",
+  "ref_label": "gt4_065_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-night-14s.png",
+  "racer_label": "Racer speed-night-14s"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_066_night_street.jpg",
+  "ref_label": "gt4_066_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-rear.png",
+  "racer_label": "Racer closeup-night-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_067_motion_blur.jpg",
+  "ref_label": "gt4_067_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-night-10s.png",
+  "racer_label": "Racer speed-night-10s"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_068_car_closeup.jpg",
+  "ref_label": "gt4_068_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-day-left.png",
+  "racer_label": "Racer v4-closeup-day-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_069_car_closeup.jpg",
+  "ref_label": "gt4_069_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-day-rear.png",
+  "racer_label": "Racer closeup-day-rear"
+ },
+ {
+  "group": "w2-wheel_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_070_wheel_closeup.jpg",
+  "ref_label": "gt4_070_wheel_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-day-left.png",
+  "racer_label": "Racer v2-closeup-day-left"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_071_crowd_props.jpg",
+  "ref_label": "gt4_071_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_072_day_street.jpg",
+  "ref_label": "gt4_072_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-right.png",
+  "racer_label": "Racer street-day-right"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_073_buildings_facade.jpg",
+  "ref_label": "gt4_073_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-left.png",
+  "racer_label": "Racer v4-street-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_074_day_street.jpg",
+  "ref_label": "gt4_074_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-elevated.png",
+  "racer_label": "Racer street-day-elevated"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_001_night_street.jpg",
+  "ref_label": "j2hin_001_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-night-rear.png",
+  "racer_label": "Racer v1-closeup-night-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_002_motion_blur.jpg",
+  "ref_label": "j2hin_002_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-night-6s.png",
+  "racer_label": "Racer speed-night-6s"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_003_night_street.jpg",
+  "ref_label": "j2hin_003_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-night-rear.png",
+  "racer_label": "Racer v2-closeup-night-rear"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_004_crowd_props.jpg",
+  "ref_label": "j2hin_004_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_005_night_street.jpg",
+  "ref_label": "j2hin_005_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-night-rear.png",
+  "racer_label": "Racer v3-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_006_night_street.jpg",
+  "ref_label": "j2hin_006_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-night-rear.png",
+  "racer_label": "Racer v4-closeup-night-rear"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_007_buildings_facade.jpg",
+  "ref_label": "j2hin_007_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-right.png",
+  "racer_label": "Racer street-day-right"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_008_night_street.jpg",
+  "ref_label": "j2hin_008_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-wheel_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_009_wheel_closeup.jpg",
+  "ref_label": "j2hin_009_wheel_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-day-left.png",
+  "racer_label": "Racer v3-closeup-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_010_night_street.jpg",
+  "ref_label": "j2hin_010_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_011_smoke_skid.jpg",
+  "ref_label": "j2hin_011_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-night-left.png",
+  "racer_label": "Racer brake-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_012_night_street.jpg",
+  "ref_label": "j2hin_012_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-rear.png",
+  "racer_label": "Racer v2-street-night-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_013_motion_blur.jpg",
+  "ref_label": "j2hin_013_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-14s.png",
+  "racer_label": "Racer speed-day-14s"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_014_night_street.jpg",
+  "ref_label": "j2hin_014_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-rear.png",
+  "racer_label": "Racer v3-street-night-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_015_motion_blur.jpg",
+  "ref_label": "j2hin_015_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-10s.png",
+  "racer_label": "Racer speed-day-10s"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_016_motion_blur.jpg",
+  "ref_label": "j2hin_016_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-speed-day-10s.png",
+  "racer_label": "Racer v1-speed-day-10s"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_017_smoke_skid.jpg",
+  "ref_label": "j2hin_017_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/launch-day-left.png",
+  "racer_label": "Racer launch-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_018_night_street.jpg",
+  "ref_label": "j2hin_018_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-rear.png",
+  "racer_label": "Racer v4-street-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_019_night_street.jpg",
+  "ref_label": "j2hin_019_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-front.png",
+  "racer_label": "Racer street-night-front"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_020_day_street.jpg",
+  "ref_label": "j2hin_020_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-elevated.png",
+  "racer_label": "Racer v1-street-day-elevated"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_021_night_street.jpg",
+  "ref_label": "j2hin_021_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-left.png",
+  "racer_label": "Racer street-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_022_night_street.jpg",
+  "ref_label": "j2hin_022_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-left.png",
+  "racer_label": "Racer v1-street-night-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_023_motion_blur.jpg",
+  "ref_label": "j2hin_023_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-speed-day-10s.png",
+  "racer_label": "Racer v2-speed-day-10s"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_024_crowd_props.jpg",
+  "ref_label": "j2hin_024_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-left.png",
+  "racer_label": "Racer v1-street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_025_night_street.jpg",
+  "ref_label": "j2hin_025_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-left.png",
+  "racer_label": "Racer v2-street-night-left"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_026_skyline_horizon.jpg",
+  "ref_label": "j2hin_026_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-left.png",
+  "racer_label": "Racer v2-street-day-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_027_motion_blur.jpg",
+  "ref_label": "j2hin_027_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-speed-day-10s.png",
+  "racer_label": "Racer v3-speed-day-10s"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_028_smoke_skid.jpg",
+  "ref_label": "j2hin_028_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-day-left.png",
+  "racer_label": "Racer brake-day-left"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_029_smoke_skid.jpg",
+  "ref_label": "j2hin_029_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-brake-day-left.png",
+  "racer_label": "Racer v1-brake-day-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_030_car_closeup.jpg",
+  "ref_label": "j2hin_030_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-left.png",
+  "racer_label": "Racer closeup-dusk-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_031_headlights_lamps.jpg",
+  "ref_label": "j2hin_031_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-rear.png",
+  "racer_label": "Racer v3-street-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_032_night_street.jpg",
+  "ref_label": "j2hin_032_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-left.png",
+  "racer_label": "Racer v3-street-night-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_033_car_closeup.jpg",
+  "ref_label": "j2hin_033_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-rear.png",
+  "racer_label": "Racer closeup-night-rear"
+ },
+ {
+  "group": "w2-crowd_props",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_034_crowd_props.jpg",
+  "ref_label": "j2hin_034_crowd_props",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-left.png",
+  "racer_label": "Racer v2-street-day-left"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_035_headlights_lamps.jpg",
+  "ref_label": "j2hin_035_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-rear.png",
+  "racer_label": "Racer v4-street-night-rear"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_036_garage.jpg",
+  "ref_label": "j2hin_036_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-black-left.png",
+  "racer_label": "Racer paint-black-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_037_dusk.jpg",
+  "ref_label": "j2hin_037_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-dusk-left.png",
+  "racer_label": "Racer v3-street-dusk-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_038_dusk.jpg",
+  "ref_label": "j2hin_038_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-dusk-left.png",
+  "racer_label": "Racer v4-street-dusk-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_039_dusk.jpg",
+  "ref_label": "j2hin_039_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-right.png",
+  "racer_label": "Racer street-dusk-right"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_040_dusk.jpg",
+  "ref_label": "j2hin_040_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-front.png",
+  "racer_label": "Racer street-dusk-front"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_041_night_street.jpg",
+  "ref_label": "j2hin_041_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-left.png",
+  "racer_label": "Racer v4-street-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_042_night_street.jpg",
+  "ref_label": "j2hin_042_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-right.png",
+  "racer_label": "Racer street-night-right"
+ },
+ {
+  "group": "w2-replay",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_043_replay.jpg",
+  "ref_label": "j2hin_043_replay",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_044_night_street.jpg",
+  "ref_label": "j2hin_044_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-elevated.png",
+  "racer_label": "Racer street-night-elevated"
+ },
+ {
+  "group": "w2-replay",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_045_replay.jpg",
+  "ref_label": "j2hin_045_replay",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_046_motion_blur.jpg",
+  "ref_label": "j2hin_046_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-speed-day-10s.png",
+  "racer_label": "Racer v4-speed-day-10s"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_047_headlights_lamps.jpg",
+  "ref_label": "j2hin_047_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-rear.png",
+  "racer_label": "Racer closeup-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_048_day_street.jpg",
+  "ref_label": "j2hin_048_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-elevated.png",
+  "racer_label": "Racer v2-street-day-elevated"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_049_car_closeup.jpg",
+  "ref_label": "j2hin_049_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-night-rear.png",
+  "racer_label": "Racer v1-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_050_night_street.png",
+  "ref_label": "j2hin_050_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-front.png",
+  "racer_label": "Racer neon-night-front"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_051_cockpit_dash.png",
+  "ref_label": "j2hin_051_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_052_night_street.png",
+  "ref_label": "j2hin_052_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-left.png",
+  "racer_label": "Racer neon-night-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_001_day_street.jpg",
+  "ref_label": "slrr_001_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-elevated.png",
+  "racer_label": "Racer v3-street-day-elevated"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_002_headlights_lamps.jpg",
+  "ref_label": "slrr_002_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-night-rear.png",
+  "racer_label": "Racer v1-closeup-night-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_003_dusk.jpg",
+  "ref_label": "slrr_003_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-elevated.png",
+  "racer_label": "Racer street-dusk-elevated"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_004_day_street.jpg",
+  "ref_label": "slrr_004_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-elevated.png",
+  "racer_label": "Racer v4-street-day-elevated"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_005_day_street.jpg",
+  "ref_label": "slrr_005_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-day-rear.png",
+  "racer_label": "Racer closeup-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_006_night_street.jpg",
+  "ref_label": "slrr_006_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_007_skyline_horizon.jpg",
+  "ref_label": "slrr_007_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-left.png",
+  "racer_label": "Racer v3-street-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_008_day_street.jpg",
+  "ref_label": "slrr_008_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-rear.png",
+  "racer_label": "Racer street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_009_night_street.jpg",
+  "ref_label": "slrr_009_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-rear.png",
+  "racer_label": "Racer closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_010_night_street.jpg",
+  "ref_label": "slrr_010_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-closeup-night-rear.png",
+  "racer_label": "Racer v1-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_011_night_street.jpg",
+  "ref_label": "slrr_011_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-night-rear.png",
+  "racer_label": "Racer v2-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_012_night_street.jpg",
+  "ref_label": "slrr_012_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-night-rear.png",
+  "racer_label": "Racer v3-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_013_night_street.jpg",
+  "ref_label": "slrr_013_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-night-rear.png",
+  "racer_label": "Racer v4-closeup-night-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_014_headlights_lamps.jpg",
+  "ref_label": "slrr_014_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-night-rear.png",
+  "racer_label": "Racer v2-closeup-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_015_day_street.jpg",
+  "ref_label": "slrr_015_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_016_night_street.jpg",
+  "ref_label": "slrr_016_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_017_smoke_skid.jpg",
+  "ref_label": "slrr_017_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-brake-day-left.png",
+  "racer_label": "Racer v2-brake-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_018_night_street.jpg",
+  "ref_label": "slrr_018_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_019_dusk.jpg",
+  "ref_label": "slrr_019_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-left.png",
+  "racer_label": "Racer closeup-dusk-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_020_day_street.jpg",
+  "ref_label": "slrr_020_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-rear.png",
+  "racer_label": "Racer v2-street-day-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_021_skyline_horizon.jpg",
+  "ref_label": "slrr_021_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-left.png",
+  "racer_label": "Racer v4-street-day-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_022_car_closeup.jpg",
+  "ref_label": "slrr_022_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-closeup-night-rear.png",
+  "racer_label": "Racer v2-closeup-night-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_023_headlights_lamps.jpg",
+  "ref_label": "slrr_023_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-night-rear.png",
+  "racer_label": "Racer v3-closeup-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_024_night_street.jpg",
+  "ref_label": "slrr_024_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-rear.png",
+  "racer_label": "Racer v2-street-night-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_025_smoke_skid.jpg",
+  "ref_label": "slrr_025_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-brake-day-left.png",
+  "racer_label": "Racer v3-brake-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_026_day_street.jpg",
+  "ref_label": "slrr_026_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-rear.png",
+  "racer_label": "Racer v3-street-day-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_027_dusk.jpg",
+  "ref_label": "slrr_027_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-rear.png",
+  "racer_label": "Racer closeup-dusk-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_028_dusk.jpg",
+  "ref_label": "slrr_028_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-rear.png",
+  "racer_label": "Racer street-dusk-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_029_night_street.jpg",
+  "ref_label": "slrr_029_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-rear.png",
+  "racer_label": "Racer v3-street-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_030_day_street.jpg",
+  "ref_label": "slrr_030_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-rear.png",
+  "racer_label": "Racer v4-street-day-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_031_headlights_lamps.jpg",
+  "ref_label": "slrr_031_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-night-rear.png",
+  "racer_label": "Racer v4-closeup-night-rear"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_032_skyline_horizon.jpg",
+  "ref_label": "slrr_032_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-right.png",
+  "racer_label": "Racer street-day-right"
+ },
+ {
+  "group": "w2-skyline_horizon",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_033_skyline_horizon.jpg",
+  "ref_label": "slrr_033_skyline_horizon",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-elevated.png",
+  "racer_label": "Racer street-day-elevated"
+ },
+ {
+  "group": "w2-trees_vegetation",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_034_trees_vegetation.jpg",
+  "ref_label": "slrr_034_trees_vegetation",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_035_night_street.jpg",
+  "ref_label": "slrr_035_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-rear.png",
+  "racer_label": "Racer v4-street-night-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_036_night_street.jpg",
+  "ref_label": "slrr_036_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-front.png",
+  "racer_label": "Racer street-night-front"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_037_day_street.jpg",
+  "ref_label": "slrr_037_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-front.png",
+  "racer_label": "Racer street-day-front"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_038_dusk.jpg",
+  "ref_label": "slrr_038_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-dusk-rear.png",
+  "racer_label": "Racer v1-street-dusk-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_039_day_street.jpg",
+  "ref_label": "slrr_039_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-left.png",
+  "racer_label": "Racer street-day-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_040_day_street.jpg",
+  "ref_label": "slrr_040_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-left.png",
+  "racer_label": "Racer v1-street-day-left"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_041_garage.jpg",
+  "ref_label": "slrr_041_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-red-left.png",
+  "racer_label": "Racer paint-red-left"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_042_garage.jpg",
+  "ref_label": "slrr_042_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/garage-ui.png",
+  "racer_label": "Racer garage-ui"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_043_garage.jpg",
+  "ref_label": "slrr_043_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_044_dusk.jpg",
+  "ref_label": "slrr_044_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-dusk-rear.png",
+  "racer_label": "Racer v2-street-dusk-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_045_car_closeup.jpg",
+  "ref_label": "slrr_045_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-closeup-night-rear.png",
+  "racer_label": "Racer v3-closeup-night-rear"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_046_day_street.jpg",
+  "ref_label": "slrr_046_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-left.png",
+  "racer_label": "Racer v2-street-day-left"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_047_smoke_skid.jpg",
+  "ref_label": "slrr_047_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-brake-day-left.png",
+  "racer_label": "Racer v4-brake-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_048_night_street.jpg",
+  "ref_label": "slrr_048_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-left.png",
+  "racer_label": "Racer street-night-left"
+ },
+ {
+  "group": "w2-cockpit_dash",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_049_cockpit_dash.jpg",
+  "ref_label": "slrr_049_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_001_headlights_lamps.jpg",
+  "ref_label": "mc3_001_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/neon-night-front.png",
+  "racer_label": "Racer neon-night-front"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_002_night_street.jpg",
+  "ref_label": "mc3_002_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-left.png",
+  "racer_label": "Racer v1-street-night-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_003_dusk.jpg",
+  "ref_label": "mc3_003_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-dusk-rear.png",
+  "racer_label": "Racer v3-street-dusk-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_004_dusk.jpg",
+  "ref_label": "mc3_004_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-dusk-rear.png",
+  "racer_label": "Racer v4-street-dusk-rear"
+ },
+ {
+  "group": "w2-other",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_005_other.jpg",
+  "ref_label": "mc3_005_other",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-rear.png",
+  "racer_label": "Racer v1-street-day-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_006_car_closeup.jpg",
+  "ref_label": "mc3_006_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-closeup-night-rear.png",
+  "racer_label": "Racer v4-closeup-night-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_007_dusk.jpg",
+  "ref_label": "mc3_007_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-left.png",
+  "racer_label": "Racer street-dusk-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_008_car_closeup.jpg",
+  "ref_label": "mc3_008_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-red-left.png",
+  "racer_label": "Racer paint-red-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_009_dusk.jpg",
+  "ref_label": "mc3_009_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-dusk-left.png",
+  "racer_label": "Racer v1-street-dusk-left"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_010_buildings_facade.jpg",
+  "ref_label": "mc3_010_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-day-elevated.png",
+  "racer_label": "Racer street-day-elevated"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_011_buildings_facade.jpg",
+  "ref_label": "mc3_011_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-day-elevated.png",
+  "racer_label": "Racer v1-street-day-elevated"
+ },
+ {
+  "group": "w2-buildings_facade",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_012_buildings_facade.jpg",
+  "ref_label": "mc3_012_buildings_facade",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-day-elevated.png",
+  "racer_label": "Racer v2-street-day-elevated"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_013_dusk.jpg",
+  "ref_label": "mc3_013_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-dusk-left.png",
+  "racer_label": "Racer v2-street-dusk-left"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_014_day_street.jpg",
+  "ref_label": "mc3_014_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-day-left.png",
+  "racer_label": "Racer v3-street-day-left"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_015_motion_blur.jpg",
+  "ref_label": "mc3_015_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-6s.png",
+  "racer_label": "Racer speed-day-6s"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_016_headlights_lamps.jpg",
+  "ref_label": "mc3_016_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-front.png",
+  "racer_label": "Racer street-night-front"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_017_dusk.jpg",
+  "ref_label": "mc3_017_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-dusk-left.png",
+  "racer_label": "Racer v3-street-dusk-left"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_018_smoke_skid.jpg",
+  "ref_label": "mc3_018_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-day-rear.png",
+  "racer_label": "Racer brake-day-rear"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_019_night_street.jpg",
+  "ref_label": "mc3_019_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-night-left.png",
+  "racer_label": "Racer v2-street-night-left"
+ },
+ {
+  "group": "w2-wet_road",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_020_wet_road.jpg",
+  "ref_label": "mc3_020_wet_road",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-day-10s.png",
+  "racer_label": "Racer speed-day-10s"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_021_night_street.jpg",
+  "ref_label": "mc3_021_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v3-street-night-left.png",
+  "racer_label": "Racer v3-street-night-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_022_night_street.jpg",
+  "ref_label": "mc3_022_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-night-left.png",
+  "racer_label": "Racer v4-street-night-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_023_car_closeup.jpg",
+  "ref_label": "mc3_023_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-blue-left.png",
+  "racer_label": "Racer paint-blue-left"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_024_car_closeup.jpg",
+  "ref_label": "mc3_024_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-black-left.png",
+  "racer_label": "Racer paint-black-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_025_dusk.jpg",
+  "ref_label": "mc3_025_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-dusk-left.png",
+  "racer_label": "Racer v4-street-dusk-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_026_dusk.jpg",
+  "ref_label": "mc3_026_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-right.png",
+  "racer_label": "Racer street-dusk-right"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_027_dusk.jpg",
+  "ref_label": "mc3_027_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-front.png",
+  "racer_label": "Racer street-dusk-front"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_028_headlights_lamps.jpg",
+  "ref_label": "mc3_028_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-rear.png",
+  "racer_label": "Racer closeup-dusk-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_029_smoke_skid.jpg",
+  "ref_label": "mc3_029_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-night-rear.png",
+  "racer_label": "Racer brake-night-rear"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_030_car_closeup.jpg",
+  "ref_label": "mc3_030_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_031_dusk.jpg",
+  "ref_label": "mc3_031_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-elevated.png",
+  "racer_label": "Racer street-dusk-elevated"
+ },
+ {
+  "group": "w2-car_closeup",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_032_car_closeup.jpg",
+  "ref_label": "mc3_032_car_closeup",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-day-left.png",
+  "racer_label": "Racer closeup-day-left"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_033_night_street.jpg",
+  "ref_label": "mc3_033_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-right.png",
+  "racer_label": "Racer street-night-right"
+ },
+ {
+  "group": "w2-motion_blur",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_034_motion_blur.jpg",
+  "ref_label": "mc3_034_motion_blur",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/speed-night-14s.png",
+  "racer_label": "Racer speed-night-14s"
+ },
+ {
+  "group": "w2-day_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_035_day_street.jpg",
+  "ref_label": "mc3_035_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v4-street-day-left.png",
+  "racer_label": "Racer v4-street-day-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_036_dusk.jpg",
+  "ref_label": "mc3_036_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-left.png",
+  "racer_label": "Racer closeup-dusk-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_037_dusk.jpg",
+  "ref_label": "mc3_037_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-dusk-rear.png",
+  "racer_label": "Racer closeup-dusk-rear"
+ },
+ {
+  "group": "w2-smoke_skid",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_038_smoke_skid.jpg",
+  "ref_label": "mc3_038_smoke_skid",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/brake-night-left.png",
+  "racer_label": "Racer brake-night-left"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_039_garage.jpg",
+  "ref_label": "mc3_039_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-black-left.png",
+  "racer_label": "Racer paint-black-left"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_040_dusk.jpg",
+  "ref_label": "mc3_040_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-dusk-rear.png",
+  "racer_label": "Racer street-dusk-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_041_headlights_lamps.jpg",
+  "ref_label": "mc3_041_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-rear.png",
+  "racer_label": "Racer street-night-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_042_dusk.jpg",
+  "ref_label": "mc3_042_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-dusk-rear.png",
+  "racer_label": "Racer v1-street-dusk-rear"
+ },
+ {
+  "group": "w2-dusk",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_043_dusk.jpg",
+  "ref_label": "mc3_043_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v2-street-dusk-rear.png",
+  "racer_label": "Racer v2-street-dusk-rear"
+ },
+ {
+  "group": "w2-headlights_lamps",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_044_headlights_lamps.jpg",
+  "ref_label": "mc3_044_headlights_lamps",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/v1-street-night-rear.png",
+  "racer_label": "Racer v1-street-night-rear"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_045_garage.webp",
+  "ref_label": "mc3_045_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/paint-red-left.png",
+  "racer_label": "Racer paint-red-left"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_046_garage.webp",
+  "ref_label": "mc3_046_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/garage-ui.png",
+  "racer_label": "Racer garage-ui"
+ },
+ {
+  "group": "w2-night_street",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_047_night_street.webp",
+  "ref_label": "mc3_047_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/street-night-elevated.png",
+  "racer_label": "Racer street-night-elevated"
+ },
+ {
+  "group": "w2-garage",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_3_dub_edition/mc3_048_garage.webp",
+  "ref_label": "mc3_048_garage",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/closeup-night-left.png",
+  "racer_label": "Racer closeup-night-left"
+ }
+]

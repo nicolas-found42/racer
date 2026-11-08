@@ -1,0 +1,632 @@
+#pragma once
+#include <bgfx/bgfx.h>
+#include <cstdint>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
+
+namespace racer {
+// Metal source packaged for the pinned bgfx v12 container. Layout follows
+// shaderc_metal.cpp writeUniformArray and renderer_mtl.cpp ShaderMtl::create.
+// This is authored Racer shading, not a recovered donor shader.
+inline std::vector<uint8_t> visualShader(bool fragment, bool shadow = false) {
+  constexpr std::string_view vertex = R"MSL(#include <metal_stdlib>
+using namespace metal;
+struct Globals { float4x4 u_modelViewProj; float4x4 u_model; };
+struct Input {
+ float3 a_position [[attribute(0)]]; float4 a_color0 [[attribute(1)]];
+ float2 a_texcoord0 [[attribute(2)]]; float3 a_normal [[attribute(3)]];
+ float2 a_texcoord1 [[attribute(4)]];
+ float4 a_tangent [[attribute(5)]];
+};
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]];
+ float3 normal [[user(locn3)]];
+ float occlusion [[user(locn4)]];
+ float4 tangent [[user(locn5)]];
+ float3 bitangent [[user(locn6)]];
+};
+vertex Varying xlatMtlMain(Input in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]]) {
+ Varying o; o.position=_mtl_u.u_modelViewProj*float4(in.a_position,1);
+ o.world=(_mtl_u.u_model*float4(in.a_position,1)).xyz;
+ o.normal=(_mtl_u.u_model*float4(in.a_normal,0)).xyz;
+ o.color=in.a_color0; o.color.a*=in.a_texcoord1.y;
+ o.uv=in.a_texcoord0; o.occlusion=in.a_texcoord1.x;
+ float handed=determinant(float3x3(_mtl_u.u_model[0].xyz,_mtl_u.u_model[1].xyz,_mtl_u.u_model[2].xyz))<0?-1.0:1.0;
+ o.tangent=float4((_mtl_u.u_model*float4(in.a_tangent.xyz,0)).xyz,in.a_tangent.w*handed);
+ o.bitangent=cross(o.tangent.xyz,o.normal)*o.tangent.w;return o;
+}
+)MSL";
+  constexpr std::string_view pixel = R"MSL(#include <metal_stdlib>
+using namespace metal;
+constant uint bgfx_sampleMask [[function_constant(0)]];
+constant bool bgfx_sampleMaskEnabled=is_function_constant_defined(bgfx_sampleMask);
+struct Globals { float4 u_visualCamera; float4 u_visualMaterial; float4x4 u_shadowMatrix; float4 u_reflectionState; float4 u_visualCoat; float4 u_headlight; };
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]];
+ float3 normal [[user(locn3)]];
+ float occlusion [[user(locn4)]];
+ float4 tangent [[user(locn5)]];
+ float3 bitangent [[user(locn6)]];
+};
+struct Output {
+ uint mask [[sample_mask, function_constant(bgfx_sampleMaskEnabled)]];
+ float4 color [[color(0)]];
+ float4 depth [[color(1)]]; // eye distance in metres for depth of field; ignored by single-target passes
+};
+float displayToLinear(float channel) { return pow(max(channel,0.0),2.2); }
+float3 linearDisplay(float3 rgb) { return float3(displayToLinear(rgb.r),displayToLinear(rgb.g),displayToLinear(rgb.b)); }
+float hash(float2 p) { return fract(sin(dot(p,float2(127.1,311.7)))*43758.5453); }
+float noise(float2 p) {
+ float2 i=floor(p),f=fract(p); f=f*f*(3-2*f);
+ return mix(mix(hash(i),hash(i+float2(1,0)),f.x),mix(hash(i+float2(0,1)),hash(i+1),f.x),f.y);
+}
+// Stars and moon for the night sky (radiance). The moon sits where the day sun does so shadows agree.
+// disc scales the sharp moon disc: rough surfaces smear it, so their reflection passes 0 (the direct
+// lobe already supplies the highlight). Authored.
+float3 nightSkyExtras(float3 ray,float disc=1.0) {
+ float3 moonDir=normalize(float3(-.55,.34,.70)); float d=dot(ray,moonDir);
+ float2 sp=ray.xz/max(ray.y,.08)*70.0;
+ float star=step(.9972,hash(floor(sp)))*(.4+.6*hash(floor(sp)+7.3))*smoothstep(.0,.2,ray.y);
+ float moon=(smoothstep(.99955,.99985,d)*7.0+pow(max(d,0.0),500.0)*.5)*disc+pow(max(d,0.0),30.0)*.03;
+ return float3(.8,.85,1.0)*star*3.0+float3(.78,.84,1.0)*moon;
+}
+float3 daySky(float3 ray,float disc=1.0) {
+ float h=max(ray.y,0.0); float3 c=mix(float3(.72,.77,.78),float3(.18,.36,.57),pow(h,.42));
+ float3 sun=normalize(float3(-.55,.34,.70)); float d=max(dot(ray,sun),0.0);
+ float2 p=ray.xz/max(.16,ray.y+.26)*2.3;
+ float cloud=noise(p)*.55+noise(p*2.1)*.28+noise(p*4.3)*.17;
+ float cover=smoothstep(.54,.76,cloud)*smoothstep(0.0,.15,ray.y)*.60;
+ c=mix(c,float3(.90,.87,.81),cover);
+ // The sun is added after the clouds so it is never painted over; cloud only dims it.
+ c+=float3(1,.77,.44)*(pow(d,350.0)*2.0*disc+pow(d,14.0)*.12)*(1-.7*cover);
+ // Authored display-RGB sky convention converted to linear radiance.
+ return linearDisplay(c)*2.0;
+}
+// night in [0,1]: 0 day, ~.45 dusk (warm horizon, dimmer sky), 1 night (stars and moon). Authored.
+float3 sky(float3 ray,float night,float disc=1.0) {
+ float3 day=daySky(ray,disc);
+ if(night<.01) return day;
+ float h=max(ray.y,0.0);
+ float t=smoothstep(.3,.9,night),dusk=night*(1-night)*4.0;
+ float3 ns=mix(float3(.012,.018,.036),float3(.003,.006,.020),pow(h,.5))+nightSkyExtras(ray,disc);
+ float3 horizon=float3(1.0,.42,.16)*dusk*pow(1-h,5.0)*1.6;
+ return mix(day*mix(1.0,.35,night)*mix(float3(1),float3(1.0,.78,.62),dusk),ns,t)+horizon;
+}
+float filteredShadow(texture2d<float> depth, sampler smp, float2 uv, float reference, float2 gradient) {
+ float2 p=uv*2048.0-.5,base=floor(p),f=fract(p);
+ float2 aUV=(base+float2(.5,.5))/2048.0,bUV=(base+float2(1.5,.5))/2048.0;
+ float2 cUV=(base+float2(.5,1.5))/2048.0,dUV=(base+float2(1.5,1.5))/2048.0;
+ float a=reference+dot(aUV-uv,gradient)<=depth.sample(smp,aUV).r?1.0:0.0;
+ float b=reference+dot(bUV-uv,gradient)<=depth.sample(smp,bUV).r?1.0:0.0;
+ float c=reference+dot(cUV-uv,gradient)<=depth.sample(smp,cUV).r?1.0:0.0;
+ float d=reference+dot(dUV-uv,gradient)<=depth.sample(smp,dUV).r?1.0:0.0;
+ return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+}
+// Authored lighting weights, not a recovered donor BRDF. Keep the direct
+// lobe colored by the same interface reflectance as the environment lobe.
+float fresnelWeight(float cosine) { return pow(1-clamp(cosine,0.0,1.0),5.0); }
+float directLobe(float rough,float nDotH,float nDotL) {
+ return pow(clamp(nDotH,0.0,1.0),mix(180.0,6.0,rough))*mix(3.6,.10,rough)*max(nDotL,0.0);
+}
+float diffuseWeight(float metal) { return 1-clamp(metal,0.0,1.0); }
+// 256px cube has levels0..8. This box-mip roughness curve is authored,
+// not a GGX convolution or native material formula.
+float reflectionLod(float rough) {
+ float r=clamp(rough,0.0,1.0);return r*(1.7-.7*r)*8.0;
+}
+// Projection spans399m along the light axis. Receiver-plane PCF already
+// compensates sampled depth gradients; keep the remaining safety offset at
+// about8..24mm rather than the former200..400mm that erased low shadows.
+float shadowBias(float nDotL) {
+ return max(.00002,.00006*(1-clamp(nDotL,0.0,1.0)));
+}
+float hazeAmount(float distance) {
+ // Preserve near-field material contrast; distant silhouettes still converge.
+ return 1-exp(-max(distance-40.0,0.0)*.00065);
+}
+// Selected CityBumpSpec VS/PS kernel, normal channel only. Packed G/B stay
+// unmodified in the texture; original specular composition is not implemented.
+float3 sourceBumpNormal(float3 N,float3 T,float3 B,float R,float A) {
+ float3 result=N-(2*A-1)*B-(2*R-1)*T;
+ float squared=dot(result,result),baseSquared=dot(N,N);
+ // Racer robustness for degenerate interpolation; native zero-RSQ is unknown.
+ return isfinite(squared)&&squared>1e-20?result*rsqrt(squared):
+   isfinite(baseSquared)&&baseSquared>1e-20?N*rsqrt(baseSquared):float3(0,1,0);
+}
+float3 detailNormal(float3 world,float2 uv,float3 normal,float4 authored,float3 encoded,float scale) {
+ float3 tangent,bitangent;
+ if(abs(authored.w)>.5) {
+  tangent=authored.xyz-normal*dot(normal,authored.xyz);float squared=dot(tangent,tangent);
+  if(!isfinite(squared)||squared<1e-20)return normal;
+  tangent*=rsqrt(squared);bitangent=cross(normal,tangent)*(authored.w<0?-1.0:1.0);
+ }else {
+ float3 px=dfdx(world),py=dfdy(world);float2 tx=dfdx(uv),ty=dfdy(uv);
+ float uvScale=max(max(abs(tx.x),abs(tx.y)),max(abs(ty.x),abs(ty.y)));
+ float worldScale=max(max(max(abs(px.x),abs(px.y)),abs(px.z)),max(max(abs(py.x),abs(py.y)),abs(py.z)));
+ if(!isfinite(uvScale)||!isfinite(worldScale)||uvScale<1e-30||worldScale<1e-30)return normal;
+ tx/=uvScale;ty/=uvScale;px/=worldScale;py/=worldScale;
+ float determinant=tx.x*ty.y-tx.y*ty.x;
+ if(!isfinite(determinant)||abs(determinant)<1e-8)return normal;
+ tangent=(px*ty.y-py*tx.y)/determinant;
+ bitangent=(py*tx.x-px*ty.x)/determinant;
+ tangent-=normal*dot(normal,tangent);float squared=dot(tangent,tangent);
+ if(!isfinite(squared)||squared<1e-12||!all(isfinite(bitangent)))return normal;
+ tangent*=rsqrt(squared);
+ float3 crossAxis=cross(normal,tangent);
+ bitangent=crossAxis*(dot(crossAxis,bitangent)<0?-1.0:1.0);
+ }
+ float3 mapped=encoded*2-1;mapped.xy*=scale;
+ float3 result=tangent*mapped.x+bitangent*mapped.y+normal*mapped.z;
+ float lengthSquared=dot(result,result);
+ return isfinite(lengthSquared)&&lengthSquared>1e-12?result*rsqrt(lengthSquared):normal;
+}
+// Night street lighting: lamps follow the 100 m street grid (poles at +-7.7 m from road centres,
+// every 25 m, none within 12.5 m of an intersection, only within +-200 m); the same table builds the
+// lamp meshes in world_scene.h. Analytic, unshadowed point lights. Colour and gain follow the
+// recovered MCLA tune/lighting template (1/.652/.482, intensity ~55) and GlowTuning prop glow
+// intensity 4.3; the attenuation model is Racer's own.
+void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread float3& spec,thread float3& streak) {
+ const float3 color=float3(1.0,.652,.482)*4.3;
+ // The lamp lattice repeats with the 400 m scenery tile (posts are drawn at the same offsets), out to the
+ // edge of the road grid; q is p wrapped into the central tile and shift maps lamp positions back.
+ if(max(abs(p.x),abs(p.z))>620.0) return;
+ float3 q=float3(p.x-400.0*round(p.x/400.0),p.y,p.z-400.0*round(p.z/400.0));
+ float3 shift=p-q;
+ for(int axis=0;axis<2;++axis) {
+  float lat=axis==0?q.x:q.z,along=axis==0?q.z:q.x;
+  float road=round(lat/100.0)*100.0;
+  if(abs(road)>200.0||abs(lat-road)>34.0) continue;
+  float k0=floor((along-12.5)/25.0);
+  for(int dk=-1;dk<=2;++dk) {
+   float k=k0+float(dk),m=k-4.0*floor(k/4.0),s=25.0*k+12.5;
+   if(m<.5||abs(s)>200.0) continue;
+   for(int side=-1;side<=1;side+=2) {
+    float latPos=road+float(side)*7.7;
+    float3 lamp=(axis==0?float3(latPos,7.9,s):float3(s,7.9,latPos))+float3(shift.x,0,shift.z);
+    float3 L=lamp-p;float d2=dot(L,L);float3 l=L*rsqrt(d2);
+    float atten=1.0/(1.0+d2/30.0)*(1-smoothstep(700.0,1400.0,d2));
+    float cone=smoothstep(.2,.7,l.y);
+    float ndl=max(dot(n,l),0.0);
+    diff+=color*(ndl*atten*cone);
+    float3 h=normalize(l+v);
+    spec+=color*directLobe(rough,dot(n,h),ndl)*(atten*cone*.12);
+    // Wet-road streak reflection: the puddle film mirrors the lamp as a soft
+    // column around the lamp's ground point, seen stretched vertically at
+    // grazing angles by perspective. Radial falloff in the lamp column;
+    // masked by puddle wetness and Fresnel at the call site.
+    streak+=color*(exp(-(L.x*L.x+L.z*L.z)*.35)*atten*cone*.5);
+   }
+  }
+ }
+}
+// Light cast by the corner neon pylons (world_scene.h neonPylon): same intersection table
+// (25 corners, +-10 m from the crossing, colour palette by (ix*5+iz*3) mod 3). Unshadowed.
+// The palette is desaturated 30% toward white and the gain is held at 2.4: measured against the
+// MCLA night references, full-strength pink/green cast pushed wall saturation to .49 vs MCLA's .35.
+void neonLight(float3 p,float3 n,thread float3& diff) {
+ if(max(abs(p.x),abs(p.z))>620.0) return;
+ float2 wrapped=p.xz-400.0*round(p.xz/400.0),tileShift=p.xz-wrapped;
+ float2 cell=round(wrapped/100.0);
+ if(abs(cell.x)>2.0||abs(cell.y)>2.0) return;
+ float v=(cell.x+3.0)*5.0+(cell.y+3.0)*3.0;
+ for(int i=0;i<2;++i) {
+  float s=i==0?1.0:-1.0,vv=v+float(i),pal=vv-3.0*floor(vv/3.0);
+  float3 col=pal<.5?float3(1.0,.16,.67):(pal<1.5?float3(1.0,.59,.12):float3(.24,1.0,.63));
+  col=mix(col,float3(1.0),0.3);
+  float3 L=float3(cell.x*100.0+s*10.0+tileShift.x,5.0,cell.y*100.0+s*10.0+tileShift.y)-p;
+  float d2=dot(L,L);
+  diff+=col*(2.4*max(dot(n,L*rsqrt(d2)),0.0)/(1.0+d2/60.0))*(1-smoothstep(900.0,1600.0,d2));
+ }
+}
+// Player headlights: a forward cone from the car's nose, lighting road, kerbs and facades ahead.
+// Beam colour and nominal intensity follow the recovered MCLA LightList city lights (1/.863/.427,
+// intensity 20); cone shape stays Racer's authored beam.
+void headLight(float3 p,float3 n,float4 hl,thread float3& diff) {
+ float2 rel=p.xz-hl.xy;float2 fwd=float2(sin(hl.z),cos(hl.z)),right=float2(cos(hl.z),-sin(hl.z));
+ float along=dot(rel,fwd),lateral=dot(rel,right);
+ if(along<-1.0||along>55.0) return;
+ float width=1.4+.36*max(along,0.0);
+ float cone=smoothstep(width,width*.4,abs(lateral))*smoothstep(1.0,5.0,along)*(1-smoothstep(28.0,55.0,along));
+ float3 lp=float3(hl.x+fwd.x*2.2,.75,hl.y+fwd.y*2.2);
+ float3 L=lp-p;float d2=dot(L,L);float ndl=max(dot(n,L*rsqrt(d2)),0.0);
+ diff+=float3(1.0,.863,.427)*(20.0*ndl*cone/(1.0+d2/90.0));
+}
+fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
+ texture2d<float> s_texColor [[texture(0)]], sampler smp [[sampler(0)]],
+ texture2d<float> s_shadow [[texture(1)]], sampler shadowSampler [[sampler(1)]],
+ texture2d<float> s_surfaces [[texture(2)]], sampler surfaceSampler [[sampler(2)]],
+ texturecube<float> s_environment [[texture(3)]], sampler environmentSampler [[sampler(3)]],
+ texture2d<float> s_normal [[texture(4)]], sampler normalSampler [[sampler(4)]]) {
+ Output o={}; if(bgfx_sampleMaskEnabled) o.mask=bgfx_sampleMask;
+ o.depth=float4(length(_mtl_u.u_visualCamera.xyz-in.world),0,0,1);
+ float mode=_mtl_u.u_visualMaterial.w;
+ if(mode>4.5) {
+  float4 overlay=s_texColor.sample(smp,in.uv)*in.color;
+  o.color=float4(linearDisplay(overlay.rgb),overlay.a);return o;
+ }
+ // The photographic sky has the same authored decode/exposure as procedural sky.
+ if(mode>3.5) {
+  // Photographic sky has no sun at the authored light direction; add the same sun lobe so the
+  // visible disc agrees with shadows and the road highlight. Authored, not recovered.
+  float3 ray=normalize(in.world-_mtl_u.u_visualCamera.xyz);
+  float d=max(dot(ray,normalize(float3(-.55,.34,.70))),0.0);
+  float3 sun=float3(1,.77,.44)*(pow(d,700.0)*2.4+pow(d,60.0)*.10+pow(d,10.0)*.04);
+  float3 dayColor=linearDisplay(s_texColor.sample(smp,in.uv).rgb)*2.0+linearDisplay(sun)*2.0;
+  if(_mtl_u.u_headlight.w>.01) {
+   float nt=_mtl_u.u_headlight.w,t=smoothstep(.3,.9,nt),dusk=nt*(1-nt)*4.0;
+   float3 nightCol=linearDisplay(s_texColor.sample(smp,in.uv).rgb)*float3(.010,.016,.040)+nightSkyExtras(ray);
+   float3 dim=dayColor*mix(1.0,.35,nt)*mix(float3(1),float3(1.0,.78,.62),dusk);
+   float3 horizon=float3(1.0,.42,.16)*dusk*pow(1-max(ray.y,0.0),5.0)*1.6;
+   o.color=float4(mix(dim,nightCol,t)+horizon,1); return o;
+  }
+  o.color=float4(dayColor,1); return o;
+ }
+ if(mode>1.5 && mode<2.5) { o.color=float4(sky(normalize(in.world-_mtl_u.u_visualCamera.xyz),_mtl_u.u_headlight.w),1); return o; }
+ if(mode>2.5) { o.color=float4(linearDisplay(in.color.rgb),in.color.a); return o; }
+ if(mode>.5 && in.uv.y<-1.5) { // lamp head: display colour by day, hot emitter at night
+  float3 emitColor=linearDisplay(in.color.rgb);
+  if(_mtl_u.u_visualMaterial.z>1.5) {
+   // Neon blades carry sign artwork (SLRR sign sheet, tile 6) mapped by world position, kept in the
+   // blade's own hue so the cast-light palette still matches. Authored mapping.
+   float3 en=normalize(in.normal);
+   float2 suv=(abs(en.x)>.5?in.world.zy:in.world.xy)/float2(1.9,2.2);
+   float2 w=fract(suv);
+   float3 art=linearDisplay(s_surfaces.sample(surfaceSampler,float2((w.x*254+1)/256,(6*256+(1-w.y)*254+1)/4096),level(clamp(log2(max(length(_mtl_u.u_visualCamera.xyz-in.world),1.0)/5.0),0.0,5.0))).rgb);
+   emitColor=mix(emitColor,art*1.1+emitColor*.28,.88);
+  }
+  o.color=float4(emitColor*mix(1.0,_mtl_u.u_visualMaterial.z>1.5?2.4:6.0,_mtl_u.u_headlight.w),1);return o; // emitter: sign artwork in the blade's own hue (lamps warm, neon coloured)
+ }
+ float night=_mtl_u.u_headlight.w;
+ float4 sampled=_mtl_u.u_visualMaterial.z>.5?s_texColor.sample(smp,in.uv):float4(1);
+ float4 base=in.color*sampled;
+ bool foliage=mode>.5 && in.uv.y>5.5 && in.uv.y<7.5; // ids 8-10 are facade surfaces, not foliage
+ bool leaf=mode>.5 && in.uv.y<-.5 && in.uv.y>-1.5;
+ if(foliage) {
+  float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
+    .1875+(clamp(in.uv.y-6,0.0,1.0)*254+1)/4096);
+  base=in.color*s_surfaces.sample(surfaceSampler,uv);
+  if(base.a<.4) discard_fragment();
+ }
+ if(leaf) {
+  // Street-tree leaf card: clumped cut-out from world-space noise, denser toward the card centre.
+  float r=length(in.tangent.xy-.5)*2;
+  float cluster=noise(in.world.xz*3.1+in.world.y*2.3)*.55+noise(in.world.xz*8.7-in.world.y*5.9)*.45;
+  if(cluster<.14+.46*r) discard_fragment();
+  base=float4(in.color.rgb*(.62+.9*cluster),1);
+ }
+ if(base.a<_mtl_u.u_visualCamera.w) discard_fragment();
+ float3 n=normalize(in.normal); float3 v=normalize(_mtl_u.u_visualCamera.xyz-in.world);
+ bool reverseNormal=dot(n,v)<0;
+ if(mode<.5 && _mtl_u.u_visualCoat.z>1.5) {
+  float4 packed=s_normal.sample(normalSampler,in.uv);
+  n=sourceBumpNormal(in.normal,in.tangent.xyz,in.bitangent,packed.r,packed.a);
+ } else if(mode<.5 && _mtl_u.u_visualCoat.z>.5)
+  n=detailNormal(in.world,in.uv,n,in.tangent,s_normal.sample(normalSampler,in.uv).rgb,_mtl_u.u_visualCoat.w);
+ if(reverseNormal) n=-n;
+ float3 l=normalize(float3(-.55,.34,.70)); float3 h=normalize(l+v);
+ float rough=clamp(_mtl_u.u_visualMaterial.x,.08,1.0),metal=clamp(_mtl_u.u_visualMaterial.y,0.0,1.0);
+ if(mode>.5) { rough=in.uv.x>.01?clamp(in.uv.x,.08,1.0):.95; metal=(in.uv.y>4.5 && in.uv.y<5.5)?.18:0.0; }
+ if(foliage || leaf) { rough=1;metal=0; }
+ // glTF factors are linear; decoded base-color texture bytes are sRGB.
+ // Authored world vertex colors use the usual display RGB convention.
+ float3 facadeGlow=float3(0);
+ float wet=0.0; // puddle film factor, set by the wet-road branch; drives streak reflections
+ float reflector=0.0; // road-stud emission, set by the wet-road branch
+ float3 albedo=mode<.5?in.color.rgb*linearDisplay(sampled.rgb):
+   linearDisplay(base.rgb);
+ if(mode>.5) {
+  float surface=round(in.uv.y);
+  if(surface>0 && surface<4.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface-1,scale=surface<1.5?2.0:3.0;
+   float2 uv=abs(n.y)>.5?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   // Keep the atlas selection inside its tile while retaining correct mip
+   // gradients across wrap seams. These are authored mappings, not donor UVs.
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 tex=s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb;
+   float3 textured=linearDisplay(tex);
+   albedo=surface<1.5?textured*.24:mix(albedo,textured,.68);
+  }
+  // Facade surfaces (ids 8 siding, 9 storefront, 10 concrete): SLRR textures mapped by world position
+  // (no donor UVs), top of the image up on vertical faces. Storefronts glow at night. Authored mapping.
+  if(surface>7.5 && surface<10.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface<8.5?4.0:(surface<9.5?5.0:7.0);
+   float2 scale=surface<8.5?float2(3.2,3.2):(surface<9.5?float2(6.0,2.6):float2(4.0,4.0));
+   bool top=abs(n.y)>.5;
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured*(surface<9.5?.9:1.0),surface<9.5?.78:.92);
+   if(surface>8.5 && surface<9.5) facadeGlow=textured;
+  }
+  // Window-grid walls (ids 11/12): SLRR window sheets mapped by world position with one storey per
+  // 3.15 m so the rows line up with the authored floors. Dark glass cells light up at night in hashed
+  // groups, the wall-level equivalent of the authored skyline window hash. Authored mapping.
+  if(surface>10.5 && surface<12.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   // Tile 8 is a one-storey white sheet (three bays); tile 9 a six-by-six curtain-wall grid. The
+   // world scales below give roughly 2.2 m window pitch and 3.15 m storeys for both.
+   float tile=surface<11.5?8.0:9.0;
+   bool top=abs(n.y)>.5;
+   float2 scale=surface<11.5?float2(7.0,3.15):float2(13.2,18.9);
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured,.9);
+   if(!top) {
+    float glass=clamp(1.0-max(textured.r,max(textured.g,textured.b))*3.2,0.0,1.0);
+    float lit=step(.46,hash(floor(uv)+float2(surface*7.0,3.0)));
+    facadeGlow=float3(1.0,.74,.45)*lit*glass*.9;
+   }
+  }
+  // Wall sign boards (id 13): the SLRR long sign sheet placed with the board's own tangent UV so the
+  // artwork reads once per board; self-lit at night like a backlit shop sign. Authored mapping.
+  if(surface>12.5 && surface<13.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float2 uv=float2(clamp(in.tangent.x,0.0,1.0),clamp(in.tangent.y,0.0,1.0));
+   float2 atlasUV=float2((uv.x*254+1)/256,(10*256+(1-uv.y)*254+1)/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV).rgb);
+   albedo=mix(albedo,textured,.95);
+   facadeGlow=textured*.6;
+  }
+  // Shop glazing (id 14): SLRR kirakat sheet, warm interior light at night; curtain glass (id 15) is
+  // a cool office sheet with a faint interior glow. Authored mapping.
+  if(surface>13.5 && surface<15.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface<14.5?12.0:14.0;
+   bool top=abs(n.y)>.5;
+   float2 scale=surface<14.5?float2(5.2,2.6):float2(3.6,3.6);
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured,.9);
+   facadeGlow=textured*(surface<14.5?float3(1.0,.8,.55)*.85:float3(.35,.42,.55)*.4);
+  }
+  float2 p=in.world.xz*38.0,q=in.world.xy*29.0;
+  float fade=1-smoothstep(.25,1.0,max(length(dfdx(p)),length(dfdy(p))));
+  float grain=mix(.5,noise(p)*.5+noise(q)*.5,fade);
+  albedo*=.87+.26*grain;
+  if(n.y>.85 && in.world.y<.08) {
+   float wear=noise(in.world.xz*.35);
+   albedo*=.82+.35*wear;
+  }
+  // Authored wet-road model after the parameter set seen in the MCLA road shader (REA names only:
+  // grime, puddle and reflection samplers, Fresnel/specular exponents, water parameters). Wheel-track
+  // grime and polish follow the 3 m lane grid; puddles come from low-frequency noise; this is not
+  // the native formula.
+  if(surface>.5 && surface<1.5 && n.y>.85 && in.world.y<.1) {
+   float ax=abs(in.world.x-100.0*round(in.world.x/100.0)),az=abs(in.world.z-100.0*round(in.world.z/100.0));
+   float lateral=(ax<6.0 && az>=6.0)?ax:((az<6.0 && ax>=6.0)?az:99.0);
+   float d=abs(fmod(lateral,3.0)-1.5);
+   float tracks=exp(-pow((d-.85)/.28,2.0))*step(lateral,6.0);
+   float pn=noise(in.world.xz*.11)*.6+noise(in.world.xz*.37)*.4;
+   float puddle=smoothstep(.64,.82,pn)*.85;
+   albedo*=1-.20*tracks*(1-puddle);
+   // Hairline cracks: thin zero-crossings of two noise octaves, sparse by a low-frequency mask,
+   // faded with screen-space derivatives so distant asphalt does not shimmer.
+   float2 cp=in.world.xz*.85;
+   float ridge=abs(noise(cp)*.65+noise(cp*2.3)*.35-.5);
+   float crackFade=1-smoothstep(.15,.6,max(length(dfdx(cp)),length(dfdy(cp))));
+   float crack=(1-smoothstep(.0,.03,ridge))*smoothstep(.40,.58,noise(in.world.xz*.06))*crackFade;
+   albedo*=1-.5*crack*(1-puddle);
+   albedo=mix(albedo,albedo*.5,puddle);
+   rough=mix(rough,.52,tracks*.55*(1-puddle));
+   rough=mix(rough,.06,puddle);
+   wet=max(puddle,tracks*.5); // polished tracks sheen plus standing water
+   // Road stud reflectors (MC3 names roadreflectors/fx_reflector): paired
+   // emissive markers along the lane lines, authored spacing; retroreflective
+   // punch is faked with a flat night emission.
+   float alongRoad=(ax<6.0&&az>=6.0)?in.world.z:in.world.x;
+   float studBand=exp(-pow((lateral-3.0)/.14,2.0))+exp(-pow((lateral+3.0)/.14,2.0));
+   float studS=fract(alongRoad/12.0);
+   reflector=studBand*smoothstep(.02,.06,studS)*(1.0-smoothstep(.30,.36,studS))*(1-puddle);
+  }
+ }
+ // Optional saturated paint for clear-coated exterior sections: keeps the texture's luminance
+ // (panel gaps, shading) and replaces its hue. u_reflectionState.z = hue (<0 black), .w = strength.
+ if(mode<.5 && _mtl_u.u_visualCoat.x>0 && _mtl_u.u_reflectionState.w>.01) {
+  float lum=dot(albedo,float3(.2126,.7152,.0722));
+  float hue=_mtl_u.u_reflectionState.z;
+  float3 rgb=clamp(abs(fract(hue+float3(0,2.0/3.0,1.0/3.0))*6.0-3.0)-1.0,0.0,1.0);
+  float3 painted=hue<0?float3(lum*.22):rgb*rgb*(lum*3.0+.03);
+  albedo=mix(albedo,painted,_mtl_u.u_reflectionState.w);
+ }
+ float ndl=max(dot(n,l),0.0),ndv=max(dot(n,v),0.0);
+ float3 f0=mix(float3(.04),albedo,metal);
+ float3 fresnel=f0+(1-f0)*fresnelWeight(ndv);
+ // Roughness-limited grazing boost (Lagarde): a rough surface such as asphalt must not turn the sun
+ // lobe into a bright disc at grazing view angles. Authored, not a native formula.
+ float3 directFresnel=f0+(max(float3(1.0-rough),f0)-f0)*fresnelWeight(max(dot(v,h),0.0));
+ float3 reflected=sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough));
+ if(_mtl_u.u_reflectionState.x>.5 && (mode<.5 || rough<.3)) {
+  float3 local=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(rough))).rgb,float3(0));
+  reflected=local;
+ }
+ // Diffuse skylight, warm sun, Fresnel environment and a broad clearcoat lobe.
+ float3 ambient=mix(float3(.045,.055,.070),float3(.14,.19,.27),n.y*.5+.5);
+ float3 sunColor=float3(1,.86,.66)*2.2,specColor=float3(1,.87,.69);
+ // World geometry only: ground-bounced light and sky fill on vertical faces, so shaded walls are
+ // not near-black. Authored; cars keep their hemispheric ambient.
+ if(mode>.5 || mode<-.5) ambient+=float3(.080,.072,.066)*(1-abs(n.y));
+ // Night: moonlight replaces the sun, ambient collapses to a deep blue floor.
+ ambient=mix(ambient,mix(float3(.004,.006,.012),float3(.010,.016,.036),n.y*.5+.5),night);
+ float dusk=night*(1-night)*4.0;
+ sunColor=mix(sunColor,float3(1.0,.50,.26)*1.6,dusk*.85);
+ sunColor=mix(sunColor,float3(.28,.38,.80)*.85,smoothstep(.3,.9,night));specColor=mix(specColor,float3(.10,.13,.24),night);
+ float4 light=_mtl_u.u_shadowMatrix*float4(in.world,1);
+ float3 coord=light.xyz/light.w;
+ float2 shadowUV=float2(coord.x*.5+.5,.5-coord.y*.5);
+ // Compare against the receiver plane at each sampled texel, not the depth
+ // at the pixel center. Constant-depth PCF self-shadows sloping streets.
+ float2 dx=dfdx(shadowUV),dy=dfdy(shadowUV);
+ float zx=dfdx(coord.z),zy=dfdy(coord.z),det=dx.x*dy.y-dx.y*dy.x;
+ float2 gradient=float2(0);
+ if(abs(det)>1e-12) {
+  float2 candidate=float2(zx*dy.y-zy*dx.y,zy*dx.x-zx*dy.x)/det;
+  if(all(isfinite(candidate))) gradient=clamp(candidate,float2(-16),float2(16));
+ }
+ float visibility=1.0;
+ if(all(shadowUV>float2(0)) && all(shadowUV<float2(1)) && coord.z>0 && coord.z<1) {
+  float bias=shadowBias(ndl),sum=0;
+  for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x) {
+   float2 offset=float2(x,y)*1.5/2048.0;
+   sum+=filteredShadow(s_shadow,shadowSampler,shadowUV+offset,coord.z+dot(offset,gradient)-bias,gradient);
+  }
+  float edge=min(min(shadowUV.x,shadowUV.y),min(1-shadowUV.x,1-shadowUV.y));
+  visibility=mix(1.0,sum/9.0,smoothstep(0.0,.06,edge));
+ }
+ float3 lit=albedo*(ambient*clamp(in.occlusion,0.0,1.0)+sunColor*ndl*visibility)*diffuseWeight(metal);
+ float spec=directLobe(rough,dot(n,h),ndl);
+ lit+=fresnel*reflected*mix(1.1,.20,rough)+directFresnel*spec*specColor*visibility;
+ if(night>.01) {
+  float3 lampDiffuse=float3(0),lampSpec=float3(0),lampStreak=float3(0);
+  lampLight(in.world,n,v,rough,lampDiffuse,lampSpec,lampStreak);
+  neonLight(in.world,n,lampDiffuse);
+  headLight(in.world,n,_mtl_u.u_headlight,lampDiffuse);
+  lit+=night*(albedo*lampDiffuse*diffuseWeight(metal)+fresnel*(lampSpec+wet*lampStreak));
+  // Lit windows on the authored skyline (surface 5): hashed per window cell.
+  if(mode>.5 && round(in.uv.y)==5) {
+   float2 cell=floor(float2((abs(n.x)>.5?in.world.z:in.world.x)/2.6,in.world.y/3.7));
+   lit+=night*float3(1.0,.75,.42)*(hash(cell)>.42?1.6:0.0);
+  }
+  lit+=night*facadeGlow*1.15; // lit shop windows (storefront texture as emission)
+  lit+=night*reflector*float3(1.0,.85,.5)*1.8; // road stud reflectors
+ }
+ if(mode<.5 && _mtl_u.u_visualCoat.x>0) {
+  float coat=_mtl_u.u_visualCoat.x,coatRough=clamp(_mtl_u.u_visualCoat.y,.05,1.0);
+  float coatF=.04+.96*fresnelWeight(ndv);
+  float coatDirectF=.04+.96*fresnelWeight(max(dot(v,h),0.0));
+  // Orange peel: a fine, low-amplitude noise perturbation of the coat normal (u_reflectionState.y < 0
+  // carries the strength; positive values mark wheel ghosts). Authored. Breaks up mirror-perfect reflections.
+  float peel=max(-_mtl_u.u_reflectionState.y,0.0);
+  float2 peelUV=in.uv*150.0;
+  float3 peelNormal=normalize(n+(float3(noise(peelUV),noise(peelUV+17.3),noise(peelUV+41.7))-.5)*.05*peel);
+  float3 coatReflect=reflect(-v,peelNormal);
+  float3 coatEnvironment=sky(coatReflect,_mtl_u.u_headlight.w);
+  if(_mtl_u.u_reflectionState.x>.5)
+   coatEnvironment=max(s_environment.sample(environmentSampler,coatReflect,level(reflectionLod(coatRough))).rgb,float3(0));
+  float coatHighlight=pow(max(dot(peelNormal,h),0.0),mix(500.0,8.0,coatRough))*2.0*ndl*visibility;
+  // Metallic flake: per-texel random micro-normals sparkle where they catch the half vector. Authored.
+  float2 flakeCell=floor(in.uv*260.0);
+  float3 flakeRnd=float3(hash(flakeCell),hash(flakeCell+3.1),hash(flakeCell+7.7))-.5;
+  float3 flakeNormal=normalize(n+flakeRnd*.9);
+  coatHighlight+=pow(max(dot(flakeNormal,h),0.0),90.0)*step(.55,hash(flakeCell+11.3))*ndl*visibility*2.2;
+  lit=lit*(1-coat*coatF)+coat*(coatF*coatEnvironment+coatDirectF*coatHighlight*specColor);
+ }
+ if(foliage) lit+=albedo*.12;
+ float distance=length(_mtl_u.u_visualCamera.xyz-in.world);
+ float fog=hazeAmount(distance);
+ lit=mix(lit,mix(linearDisplay(float3(.67,.73,.77)),float3(.006,.010,.022),night),fog);
+ // Preserve linear HDR through blending, capture and bloom; display mapping is final-only.
+ // u_reflectionState.y > 0 marks a motion-blur ghost of a spinning wheel: fixed translucent alpha.
+ float ghostAlpha=_mtl_u.u_reflectionState.y;
+ o.color=float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a); return o;
+}
+)MSL";
+  constexpr std::string_view shadowPixel = R"MSL(#include <metal_stdlib>
+using namespace metal;
+struct Globals { float4 u_visualCamera; float4 u_visualMaterial; };
+struct Varying {
+ float4 position [[position]]; float4 color [[user(locn0)]];
+ float2 uv [[user(locn1)]]; float3 world [[user(locn2)]]; float3 normal [[user(locn3)]];
+ float4 tangent [[user(locn5)]];
+ float3 bitangent [[user(locn6)]];
+};
+float hash(float2 p) { return fract(sin(dot(p,float2(127.1,311.7)))*43758.5453); }
+float noise(float2 p) {
+ float2 i=floor(p),f=fract(p); f=f*f*(3-2*f);
+ return mix(mix(hash(i),hash(i+float2(1,0)),f.x),mix(hash(i+float2(0,1)),hash(i+1),f.x),f.y);
+}
+fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
+ texture2d<float> s_texColor [[texture(0)]], sampler smp [[sampler(0)]],
+ texture2d<float> s_surfaces [[texture(2)]], sampler surfaceSampler [[sampler(2)]]) {
+ float alpha=in.color.a;
+ if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y<-.5 && in.uv.y>-1.5) {
+  float r=length(in.tangent.xy-.5)*2;
+  float cluster=noise(in.world.xz*3.1+in.world.y*2.3)*.55+noise(in.world.xz*8.7-in.world.y*5.9)*.45;
+  if(cluster<.14+.46*r) discard_fragment();
+ } else if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y>5.5 && in.uv.y<7.5) {
+  float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
+    .1875+(clamp(in.uv.y-6,0.0,1.0)*254+1)/4096);
+  alpha*=s_surfaces.sample(surfaceSampler,uv).a;
+  if(alpha<.4) discard_fragment();
+ } else if(_mtl_u.u_visualMaterial.z>.5 && _mtl_u.u_visualMaterial.w<.5) alpha*=s_texColor.sample(smp,in.uv).a;
+ if(alpha<_mtl_u.u_visualCamera.w) discard_fragment();
+ return float4(in.position.z,0,0,1);
+}
+)MSL";
+  std::vector<uint8_t> b;
+  auto u8 = [&](uint8_t n) { b.push_back(n); };
+  auto u16 = [&](uint16_t n) {
+    u8(uint8_t(n));
+    u8(uint8_t(n >> 8));
+  };
+  auto u32 = [&](uint32_t n) {
+    u16(uint16_t(n));
+    u16(uint16_t(n >> 16));
+  };
+  auto uniform = [&](std::string_view name, uint8_t type, uint16_t offset,
+                     uint16_t registers) {
+    u8(uint8_t(name.size()));
+    b.insert(b.end(), name.begin(), name.end());
+    u8(type | (fragment ? 0x10 : 0));
+    u8(1);
+    u16(offset);
+    u16(registers);
+    u16(0);
+    u16(0);
+  };
+  u8(fragment ? 'F' : 'V');
+  u8('S');
+  u8('H');
+  u8(12);
+  constexpr uint32_t interface = 0x52414345;
+  u32(fragment ? interface : 0);
+  u32(fragment ? 0 : interface);
+  u32(0);
+  u32(0);
+  u16(fragment ? (shadow ? 4 : 11) : 2);
+  if (fragment) {
+    uniform("u_visualCamera", bgfx::UniformType::Vec4, 0, 1);
+    uniform("u_visualMaterial", bgfx::UniformType::Vec4, 16, 1);
+    uniform("s_texColor", bgfx::UniformType::Sampler | 0x20, 0, 1);
+    if (shadow)
+      uniform("s_surfaces", bgfx::UniformType::Sampler | 0x20, 2, 1);
+    if (!shadow) {
+      uniform("u_shadowMatrix", bgfx::UniformType::Mat4, 32, 4);
+      uniform("s_shadow", bgfx::UniformType::Sampler | 0x20, 1, 1);
+      uniform("s_surfaces", bgfx::UniformType::Sampler | 0x20, 2, 1);
+      uniform("u_reflectionState", bgfx::UniformType::Vec4, 96, 1);
+      uniform("u_visualCoat", bgfx::UniformType::Vec4, 112, 1);
+      uniform("u_headlight", bgfx::UniformType::Vec4, 128, 1);
+      uniform("s_environment", bgfx::UniformType::Sampler | 0x20, 3, 1);
+      uniform("s_normal", bgfx::UniformType::Sampler | 0x20, 4, 1);
+    }
+  } else {
+    uniform("u_modelViewProj", bgfx::UniformType::Mat4, 0, 4);
+    uniform("u_model", bgfx::UniformType::Mat4, 64, 4);
+  }
+  const auto source = fragment ? (shadow ? shadowPixel : pixel) : vertex;
+  u32(uint32_t(source.size()));
+  b.insert(b.end(), source.begin(), source.end());
+  u8(0);
+  u8(fragment ? 0 : 6);
+  if (!fragment) {
+    u16(0x0001);
+    u16(0x0005);
+    u16(0x0010);
+    u16(0x0002);
+    u16(0x0011);
+    u16(0x0003);
+  }
+  u16(fragment ? (shadow ? 48 : 128) : 128);
+  return b;
+}
+} // namespace racer

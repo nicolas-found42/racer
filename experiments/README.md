@@ -1,5 +1,24 @@
 # Experiments
 
+Latest: [facade-v4 close-out: night lighting, smoke/sparks, streaks, reflectors](2026-11-08-facade-v4/README.md): sparks, stronger wet-road streaks, dusk-gated day green trim, night road studs; measured night saturation .492→.427 (city .405), day G−R +.054→+.012 vs MCLA; adversarial re-review gate exits 0. Console parity remains unmet; world density is the dominant residual.
+
+Earlier: [comparison matrix and console-reference catalog](2026-11-07-comparison-matrix/README.md): 262 named reference crops from MCLA/GT4/MC3/Juiced 2 paired against 82 Racer frames with before/after and category sheets; still-substantial gaps catalogued per category.
+
+Earlier: [asset mining: road, wheels, tyre marks/smoke, trees, night](2026-11-07-asset-mining/README.md); earlier: [visual resume, lens finish pass](2026-11-07-visual-resume/README.md): sun-anchored glare, filmic grade, vignette; in-game glare unverified; visual goal remains unmet.
+
+Active source-backed material continuation: [native materials](2026-11-07-native-materials/README.md). Selected signed R/A normal kernel and actual curb comparisons; visual goal remains unmet.
+
+- [Source streets, HDR and graded placement, active resume](2026-11-07-source-street/README.md): three qualified source blocks, exact façade restoration, shared texture admission, linear HDR and four-wheel visual placement. Fresh actual MCLA comparisons still show substantial visual gaps.
+
+- [Rough reflection and streetscape, current resume](2026-11-07-reflection-street/README.md): source-qualified four-house city, static signals, filtered reflections, guarded paint/trim and actual reference comparisons. Console visual target remains unmet.
+
+- [City art, current resume](2026-11-07-city-art/README.md): source-derived residential props, renderer slope correction and actual assembled-town comparisons; console visual target remains unmet.
+
+- [Visual calibration, current resume](2026-11-07-visual-calibration/README.md): source-bound sky, exact alpha/material fixes, isolated native shadow regression, lighting/filtering review. Console visual parity remains unmet.
+- [Native world visual fidelity](2026-11-07-world-visual-fidelity/README.md): shared MCLA textures and source road-marking overlays; opt-in tile-boundary pilot with missing adjacent world.
+
+- [Visual fidelity, active](2026-11-07-visual-fidelity/README.md): all six raw inputs inspected with REA; actual source-game screenshot comparisons, authored city/material/lighting/HUD changes, local source surfaces, native fix-and-compare evidence. Console visual parity remains unresolved; review ledger stays active.
+
 ## 2026-11-06 follow-up
 
 - [Car source coverage](2026-11-06-car-coverage/README.md): active corpus inventory, held geometry defects and eleven installed players.
@@ -15,7 +34,12 @@
 - [SLRR rest fit](2026-11-06-slrr-rest-fit/README.md): exact source spring audit, rejected compression poses and independently checked fixed-pose clearance.
 - [Observability coverage delta](2026-11-06-observability-delta/README.md): career/parts/livery save-state identities, failure/retry/restart reconstruction and explicit coverage limits.
 
+Main-side additions (links resolve when `main` merges; directories exist only on `main` today): [car pipeline stages](2026-11-06-car-stages/README.md), [Juiced2 wheel args](2026-11-06-juiced2-wheel-args/README.md), [verification pass](2026-11-06-verification-pass/README.md), [held GLB publication](2026-11-06-held-glb-publication/README.md), [Juiced 2 native sizing trace](2026-11-06-juiced2-native-sizing/README.md), [adversarial code review](2026-11-07-adversarial-code-review/README.md).
+
 Every investigation, including a small one-off probe, starts at `<id>/README.md`. Use the hub's templates/experiment/README.md; name IDs YYYY-MM-DD-short-question, adding a suffix when repeated. Keep commands, observations, evidence, retention, and next action together. Larger outputs may stay at established tool-required paths, linked from this record and counted in the same resource budget.
+
+- [Current lighting/material finish](2026-11-07-lighting-finish/README.md): actual lamp-cover failure/fix, source-qualified rim finish, bounded authored LDR postprocessing and continuous terrain. Six-reference screenshot comparisons still show substantial unresolved quality gaps; no completion gate.
+- [Current responsive HUD and surface detail](2026-11-07-hud-surface/README.md): actual small/wide window failure/fix, source secondary-map qualification, authored packed-normal preview, supplied tangents and native orientation fixtures; visual goal remains unmet.
 
 - [2026-11-05-car-models](2026-11-05-car-models/README.md): active car extraction/import/runtime/physics checklist; real default cars and native integration verification.
 - [2026-11-05-city-scale](2026-11-05-city-scale/README.md): city-driving reference images, canonical manufacturer/source dimensions, shared metric fixtures and seven-car native review.
@@ -62,16 +86,6 @@ Every investigation, including a small one-off probe, starts at `<id>/README.md`
 
 - [Juiced2 wheel consumer](2026-11-06-juiced2-wheel-consumer/README.md): current ISO/XEX pairing, pre-import memory-layout qualification, native12-anchor profile scan and setter/matrix/material/input bridge; bounded audit/kernel, four research evidence annotations,71tests,174-source inventory. No model promotion or new GPU acceptance.
 
-- [Car pipeline stages](2026-11-06-car-stages/README.md): all52curated rows reconciled into discovered/extracted/prepared/validated/integrated/runtime-reviewed/blocked with per-row provenance;13players integrated,15runtime-reviewed,919public rows discovered-not-extracted.
-
-- [Juiced2 wheel args](2026-11-06-juiced2-wheel-args/README.md): per-car stock TyreCode from the retained94-record handling archive;all five held cars (350Z/ChargerRT/Koenigsegg/Z4M/MINI) attributed against sourced factory specs — MINI via an R56 gearbox-ratio match (4 of 6 ratios identical, all within 0.003); committed generator imports the audited kernel; f4 origin and multiplier-writer bounded traces; four retained negative joins; no geometry or inventory change.
-
-- [Verification pass](2026-11-06-verification-pass/README.md): current-build matrix —71tests, controls, keyboard/gamepad garage loops, three120FPS no-capture scene samples, vehicle_validate, hub checker PASS, fresh reviewed pixels, retained-evidence retrieval spot checks; capture overhead excluded from performance.
-
-- [Held GLB publication](2026-11-06-held-glb-publication/README.md): storage limits doubled on user instruction; Z4, Cooper S, Charger R/T and CCX published (17-car library) with Racer-authored stock tyre fits; native views, motion/carrier, 37-capture 1080p garage loops and new-process selection reload passed; human lap and physical controller pending.
-
-- [Juiced 2 native sizing trace](2026-11-06-juiced2-native-sizing/README.md): static PPC trace shows wheel context+684 is the 9672-byte car object whose +176/+192 default to 1.0 in its constructor; a later pass shows f4 is data-driven per car record (defaults 1.0/0.5), so f4=1 is an unverified assumption; authored tyre fit unchanged.
-
-- [Adversarial code review](2026-11-07-adversarial-code-review/README.md): 19 findings in the new stage/wheel/fit/reload scripts and 17-player docs repaired (never-failing radius check, empty-evidence acceptance, prefix SHA pins, MINI 4/6 gear overclaim); five new CTest suites (76 pass); the Jev semantic checkpoints were blocked by an unconfigured provider at that pass (see the second pass below).
-
-- [Adversarial code review, second pass](2026-11-07-adversarial-code-review/README.md): a CI-operator persona found a further series of defects, mostly low severity (exact tally in the review record), in the same stage/wheel/fit/reload scripts, trace tools, tests and docs — truncated-capture sweep abort, malformed or empty handling archives, cross-car tyre fit, an unreproducible multiplier-scan claim, a mislabelled attribution confidence/unit, stale counts, suite-wide skips on a clean checkout, a non-atomic manifest — all repaired with targeted regression tests across the five suites (76/76 CTest); `jev_verify`/`jev_gate` checkpoints now ran (typesafe/jev-1.14 via OpenRouter) with limits stated in the record.
+- [MCLA tuning data](2026-11-08-mcla-city-textures/README.md): REA extraction of 941 tune files (lighting, post-processing, glow, cameras, sky) from the retail disc; recovered colorcorrect applied as a day-weighted colour balance, measured against 21+4+5 MCLA reference frames. World textures were not found by name.
+- [Juiced 2 / GT4 / MC3 effect strings](2026-11-08-juiced2-rea/README.md): XEX decoded to a PPC carrier and searched with REA; GT4 ELF searched; MC3 XBE rejected by REA (string scan only). Names and addresses of the effect systems each game ships; no numeric defaults found.
+- [Facade window grids and sign boards](2026-11-08-facade-windows/README.md): 16-tile RCRSURF4 atlas with procedural window grids, curtain glass and sign artwork on mid/high-rise walls; near <3-storey facades and world density remain the dominant residuals.

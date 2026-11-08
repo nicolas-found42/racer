@@ -1,0 +1,177 @@
+[
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_001_cockpit_dash.jpg",
+  "ref_label": "mcla_001_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-day.png",
+  "racer_label": "Racer hood-day"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_009_cockpit_dash.jpg",
+  "ref_label": "mcla_009_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-dusk.png",
+  "racer_label": "Racer hood-dusk"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_001_cockpit_dash.jpg",
+  "ref_label": "gt4_001_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-night.png",
+  "racer_label": "Racer hood-night"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_043_cockpit_dash.jpg",
+  "ref_label": "gt4_043_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-day.png",
+  "racer_label": "Racer hood-day"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_064_cockpit_dash.jpg",
+  "ref_label": "gt4_064_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-dusk.png",
+  "racer_label": "Racer hood-dusk"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/juiced_2_hot_import_nights/j2hin_051_cockpit_dash.png",
+  "ref_label": "j2hin_051_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-night.png",
+  "racer_label": "Racer hood-night"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/street_legal_racing_redline/slrr_049_cockpit_dash.jpg",
+  "ref_label": "slrr_049_cockpit_dash",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-day.png",
+  "racer_label": "Racer hood-day"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-asset-mining/references/web/gran_turismo_4/gt4_hood_view_stone_wall_hud.jpg",
+  "ref_label": "gt4_hood_view_stone_wall_hud",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-dusk.png",
+  "racer_label": "Racer hood-dusk"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-asset-mining/references/web/forza_horizon/fh1_cockpit_race_start.png",
+  "ref_label": "fh1_cockpit_race_start",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-night.png",
+  "racer_label": "Racer hood-night"
+ },
+ {
+  "group": "hood",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-asset-mining/references/web/grid/grid_cockpit_tokyo_sunset.jpg",
+  "ref_label": "grid_cockpit_tokyo_sunset",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/hood-day.png",
+  "racer_label": "Racer hood-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_006_day_street.jpg",
+  "ref_label": "mcla_006_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-a-day.png",
+  "racer_label": "Racer loc-a-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_014_dusk.jpg",
+  "ref_label": "mcla_014_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-a-dusk.png",
+  "racer_label": "Racer loc-a-dusk"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_004_night_street.jpg",
+  "ref_label": "mcla_004_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-a-night.png",
+  "racer_label": "Racer loc-a-night"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_007_day_street.jpg",
+  "ref_label": "mcla_007_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-b-day.png",
+  "racer_label": "Racer loc-b-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_017_dusk.jpg",
+  "ref_label": "mcla_017_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-b-dusk.png",
+  "racer_label": "Racer loc-b-dusk"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_010_night_street.jpg",
+  "ref_label": "mcla_010_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-b-night.png",
+  "racer_label": "Racer loc-b-night"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_011_day_street.jpg",
+  "ref_label": "mcla_011_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-c-day.png",
+  "racer_label": "Racer loc-c-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_029_dusk.jpg",
+  "ref_label": "mcla_029_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-c-dusk.png",
+  "racer_label": "Racer loc-c-dusk"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_021_night_street.jpg",
+  "ref_label": "mcla_021_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-c-night.png",
+  "racer_label": "Racer loc-c-night"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_018_day_street.jpg",
+  "ref_label": "mcla_018_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-d-day.png",
+  "racer_label": "Racer loc-d-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_039_dusk.jpg",
+  "ref_label": "mcla_039_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-d-dusk.png",
+  "racer_label": "Racer loc-d-dusk"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_034_night_street.jpg",
+  "ref_label": "mcla_034_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-d-night.png",
+  "racer_label": "Racer loc-d-night"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_019_day_street.jpg",
+  "ref_label": "mcla_019_day_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-e-day.png",
+  "racer_label": "Racer loc-e-day"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/gran_turismo_4/gt4_010_dusk.jpg",
+  "ref_label": "gt4_010_dusk",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-e-dusk.png",
+  "racer_label": "Racer loc-e-dusk"
+ },
+ {
+  "group": "locations",
+  "ref": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/references/web2/midnight_club_los_angeles/mcla_038_night_street.jpg",
+  "ref_label": "mcla_038_night_street",
+  "racer": "/Users/nicolas/.codex/worktrees/4314/racer/experiments/2026-11-07-comparison-matrix/output/matrix/loc-e-night.png",
+  "racer_label": "Racer loc-e-night"
+ }
+]
