@@ -115,6 +115,31 @@ int main() try {
     writeLarge("RCRSURF3", largeBytes - 1);
     reject(path, "world_surface_input");
   }
+  {
+    // RCRSURF4: sixteen tiles (256x4096), palms and every facade/sign/window
+    // tile available.
+    constexpr size_t xlargeBytes = 256 * 4096 * 4;
+    std::vector<uint8_t> xlarge(xlargeBytes);
+    for (size_t i = 0; i < xlarge.size(); ++i)
+      xlarge[i] = uint8_t(i * 31 + i / 239);
+    auto writeXlarge = [&](const std::string &magic, size_t bytes) {
+      std::ofstream output(path, std::ios::binary | std::ios::trunc);
+      output.write(magic.data(), std::streamsize(magic.size()));
+      output.write(reinterpret_cast<const char *>(xlarge.data()),
+                   std::streamsize(bytes));
+      require(bool(output), "write xlarge surface fixture");
+    };
+    writeXlarge("RCRSURF4", xlargeBytes);
+    foliage = false;
+    require(racer::readWorldSurfaces(path, &foliage) == xlarge && foliage,
+            "version4 returns the 256x4096 payload and enables palms");
+    writeXlarge("RCRSURF3", xlargeBytes);
+    reject(path, "world_surface_read");
+    writeXlarge("RCRSURF4", 256 * 2048 * 4);
+    reject(path, "world_surface_read");
+    writeXlarge("RCRSURF4", xlargeBytes - 1);
+    reject(path, "world_surface_input");
+  }
   write("RCRSURF1", payloadBytes - 1);
   reject(path, "world_surface_input");
   write("RCRSURF1", 0);

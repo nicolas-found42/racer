@@ -22,11 +22,16 @@ for required in ('directFresnel*spec*','*diffuseWeight(metal)',
                  'coatDirectF*coatHighlight*','*2.0*ndl*visibility','float fog=hazeAmount(distance)',
                  'level(reflectionLod(rough))','level(reflectionLod(coatRough))'):
     if required not in source: raise AssertionError('lighting integration missing: '+required)
-# Facade atlas: ids 8-10 sample tiles 4/5/7 of the 2048-high atlas, signs use tile 6, foliage stays 6-7.
-for required in ('in.uv.y>5.5 && in.uv.y<7.5', 'surface>7.5 && surface<10.5', '(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/2048',
-                 '(6*256+(1-w.y)*254+1)/2048', '.375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048', 'lit+=night*facadeGlow*1.15'):
+# Facade atlas: ids 8-10 sample tiles 4/5/7 of the 4096-high atlas, window walls use tiles 8/9,
+# sign boards tile 10, shop glazing tiles 12/14, signs use tile 6, foliage stays 6-7.
+for required in ('in.uv.y>5.5 && in.uv.y<7.5', 'surface>7.5 && surface<10.5', 'surface>10.5 && surface<12.5',
+                 '(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096',
+                 '(6*256+(1-w.y)*254+1)/4096', '.1875+(clamp(in.uv.y-6,0.0,1.0)*254+1)/4096',
+                 'lit+=night*facadeGlow*1.15', '(10*256+(1-uv.y)*254+1)/4096'):
     if required not in source: raise AssertionError('facade atlas integration missing: '+required)
 if '/1024' in surface: raise AssertionError('stale 1024-high atlas addressing remains in the surface shader')
+if '/2048' in surface.replace('uv*2048.0','').replace('/2048.0',''):
+    raise AssertionError('stale 2048-high atlas addressing remains in the surface shader')
 # Daylight colour balance from the recovered MCLA colorcorrect, faded by night amount carried in u_post.x.
 if 'float3(1.072,1.072,.943)/1.063' not in post or 'config.x-3.0' not in post or not re.search(r'\{\s*3\.f\s*\+\s*night_', post):
     raise AssertionError('day colour balance / night fade missing from the post pass')

@@ -16,12 +16,13 @@ with tempfile.TemporaryDirectory(prefix="racer-surfaces-") as folder:
     source = root / "source"
     source.mkdir()
     pins = {}
-    # Eight tiles; tiles 5 and 7 are non-square sources that must be resampled to 256x256.
-    sizes = [(256, 256)] * 5 + [(512, 256)] + [(256, 256)] + [(512, 512)]
+    # Sixteen tiles; the non-square sources must be resampled to 256x256.
+    sizes = [(256, 256)] * 5 + [(512, 256)] + [(256, 256)] + [(512, 512)] + [(256, 256)] * 2 + \
+        [(2048, 128)] + [(64, 256)] + [(256, 128)] + [(256, 256)] + [(512, 512)] + [(256, 256)]
     for i, size in enumerate(sizes):
         name = str(i) + ".dds"
         path = source / name
-        Image.new("RGB", size, (40 + i * 20, 30, 20)).save(path, "PNG")
+        Image.new("RGB", size, (40 + i * 10, 30, 20)).save(path, "PNG")
         pins[name] = (hashlib.sha256(path.read_bytes()).hexdigest(), size)
     output = root / "prepared"
 
@@ -44,10 +45,10 @@ with tempfile.TemporaryDirectory(prefix="racer-surfaces-") as folder:
     run()
     assert stamps == (atlas.stat().st_mtime_ns, manifest.stat().st_mtime_ns), "identical outputs were rewritten"
     assert json.loads(original[1])["sha256"] == hashlib.sha256(original[0]).hexdigest()
-    assert original[0][:8] == b"RCRSURF3" and len(original[0]) == 8 + 256 * 2048 * 4, "eight-tile RCRSURF3 payload"
+    assert original[0][:8] == b"RCRSURF4" and len(original[0]) == 8 + 256 * 4096 * 4, "sixteen-tile RCRSURF4 payload"
     pixels = original[0][8:]
-    for i in range(8):  # every tile is filled (resampled tiles keep their flat colour)
-        assert pixels[(i * 256 + 128) * 256 * 4:(i * 256 + 128) * 256 * 4 + 3] == bytes((40 + i * 20, 30, 20)), "tile " + str(i)
+    for i in range(16):  # every tile is filled (resampled tiles keep their flat colour)
+        assert pixels[(i * 256 + 128) * 256 * 4:(i * 256 + 128) * 256 * 4 + 3] == bytes((40 + i * 10, 30, 20)), "tile " + str(i)
     manifest.write_bytes(b"retained provenance")
     rejected()
     assert manifest.read_bytes() == b"retained provenance" and atlas.read_bytes() == original[0]

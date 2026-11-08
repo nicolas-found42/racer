@@ -48,7 +48,7 @@ void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured) {
     for (float component : {v.x, v.y, v.z, v.u, v.v, v.nx, v.ny, v.nz})
       finite &= std::isfinite(component);
     if (v.v >= 7.5f)
-      facadeDomain &= (v.v == 8 || v.v == 9 || v.v == 10);
+      facadeDomain &= (v.v >= 8 && v.v <= 15);
     const double norm =
         double(v.nx) * v.nx + double(v.ny) * v.ny + double(v.nz) * v.nz;
     unit &= std::abs(norm - 1) < .0001;
@@ -103,7 +103,7 @@ void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured) {
   check(noRoadBridges, "no scenery face bridges a road or the world boundary");
   check(occupiedBlocks.size() >= 16 && tallest >= 15,
         "district contains distributed buildings and a skyline");
-  check(facadeDomain, "facade vertices use only the atlas surface ids 8-10");
+  check(facadeDomain, "facade vertices use only the atlas surface ids 8-15");
   check(foliageDomain,
         "foliage vertices use the dedicated complete-image UV domain");
   check(foliageColor,

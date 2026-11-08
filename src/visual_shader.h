@@ -165,9 +165,11 @@ float3 detailNormal(float3 world,float2 uv,float3 normal,float4 authored,float3 
 }
 // Night street lighting: lamps follow the 100 m street grid (poles at +-7.7 m from road centres,
 // every 25 m, none within 12.5 m of an intersection, only within +-200 m); the same table builds the
-// lamp meshes in world_scene.h. Analytic, unshadowed point lights; authored values.
-void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread float3& spec) {
- const float3 color=float3(1.0,.66,.32)*4.2;
+// lamp meshes in world_scene.h. Analytic, unshadowed point lights. Colour and gain follow the
+// recovered MCLA tune/lighting template (1/.652/.482, intensity ~55) and GlowTuning prop glow
+// intensity 4.3; the attenuation model is Racer's own.
+void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread float3& spec,thread float3& streak) {
+ const float3 color=float3(1.0,.652,.482)*4.3;
  // The lamp lattice repeats with the 400 m scenery tile (posts are drawn at the same offsets), out to the
  // edge of the road grid; q is p wrapped into the central tile and shift maps lamp positions back.
  if(max(abs(p.x),abs(p.z))>620.0) return;
@@ -191,12 +193,19 @@ void lampLight(float3 p,float3 n,float3 v,float rough,thread float3& diff,thread
     diff+=color*(ndl*atten*cone);
     float3 h=normalize(l+v);
     spec+=color*directLobe(rough,dot(n,h),ndl)*(atten*cone*.12);
+    // Wet-road streak reflection: the puddle film mirrors the lamp as a soft
+    // column around the lamp's ground point, seen stretched vertically at
+    // grazing angles by perspective. Radial falloff in the lamp column;
+    // masked by puddle wetness and Fresnel at the call site.
+    streak+=color*(exp(-(L.x*L.x+L.z*L.z)*.35)*atten*cone*.5);
    }
   }
  }
 }
 // Light cast by the corner neon pylons (world_scene.h neonPylon): same intersection table
-// (25 corners, +-10 m from the crossing, colour palette by (ix*5+iz*3) mod 3). Unshadowed; authored.
+// (25 corners, +-10 m from the crossing, colour palette by (ix*5+iz*3) mod 3). Unshadowed.
+// The palette is desaturated 30% toward white and the gain is held at 2.4: measured against the
+// MCLA night references, full-strength pink/green cast pushed wall saturation to .49 vs MCLA's .35.
 void neonLight(float3 p,float3 n,thread float3& diff) {
  if(max(abs(p.x),abs(p.z))>620.0) return;
  float2 wrapped=p.xz-400.0*round(p.xz/400.0),tileShift=p.xz-wrapped;
@@ -206,12 +215,15 @@ void neonLight(float3 p,float3 n,thread float3& diff) {
  for(int i=0;i<2;++i) {
   float s=i==0?1.0:-1.0,vv=v+float(i),pal=vv-3.0*floor(vv/3.0);
   float3 col=pal<.5?float3(1.0,.16,.67):(pal<1.5?float3(1.0,.59,.12):float3(.24,1.0,.63));
+  col=mix(col,float3(1.0),0.3);
   float3 L=float3(cell.x*100.0+s*10.0+tileShift.x,5.0,cell.y*100.0+s*10.0+tileShift.y)-p;
   float d2=dot(L,L);
-  diff+=col*(3.4*max(dot(n,L*rsqrt(d2)),0.0)/(1.0+d2/60.0))*(1-smoothstep(900.0,1600.0,d2));
+  diff+=col*(2.4*max(dot(n,L*rsqrt(d2)),0.0)/(1.0+d2/60.0))*(1-smoothstep(900.0,1600.0,d2));
  }
 }
 // Player headlights: a forward cone from the car's nose, lighting road, kerbs and facades ahead.
+// Beam colour and nominal intensity follow the recovered MCLA LightList city lights (1/.863/.427,
+// intensity 20); cone shape stays Racer's authored beam.
 void headLight(float3 p,float3 n,float4 hl,thread float3& diff) {
  float2 rel=p.xz-hl.xy;float2 fwd=float2(sin(hl.z),cos(hl.z)),right=float2(cos(hl.z),-sin(hl.z));
  float along=dot(rel,fwd),lateral=dot(rel,right);
@@ -220,7 +232,7 @@ void headLight(float3 p,float3 n,float4 hl,thread float3& diff) {
  float cone=smoothstep(width,width*.4,abs(lateral))*smoothstep(1.0,5.0,along)*(1-smoothstep(28.0,55.0,along));
  float3 lp=float3(hl.x+fwd.x*2.2,.75,hl.y+fwd.y*2.2);
  float3 L=lp-p;float d2=dot(L,L);float ndl=max(dot(n,L*rsqrt(d2)),0.0);
- diff+=float3(1.0,.95,.82)*(20.0*ndl*cone/(1.0+d2/90.0));
+ diff+=float3(1.0,.863,.427)*(20.0*ndl*cone/(1.0+d2/90.0));
 }
 fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[buffer(0)]],
  texture2d<float> s_texColor [[texture(0)]], sampler smp [[sampler(0)]],
@@ -262,7 +274,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    float3 en=normalize(in.normal);
    float2 suv=(abs(en.x)>.5?in.world.zy:in.world.xy)/float2(1.9,2.2);
    float2 w=fract(suv);
-   float3 art=linearDisplay(s_surfaces.sample(surfaceSampler,float2((w.x*254+1)/256,(6*256+(1-w.y)*254+1)/2048),level(clamp(log2(max(length(_mtl_u.u_visualCamera.xyz-in.world),1.0)/5.0),0.0,5.0))).rgb);
+   float3 art=linearDisplay(s_surfaces.sample(surfaceSampler,float2((w.x*254+1)/256,(6*256+(1-w.y)*254+1)/4096),level(clamp(log2(max(length(_mtl_u.u_visualCamera.xyz-in.world),1.0)/5.0),0.0,5.0))).rgb);
    emitColor=mix(emitColor,art*1.1+emitColor*.28,.88);
   }
   o.color=float4(emitColor*mix(1.0,_mtl_u.u_visualMaterial.z>1.5?2.4:6.0,_mtl_u.u_headlight.w),1);return o; // emitter: sign artwork in the blade's own hue (lamps warm, neon coloured)
@@ -274,7 +286,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  bool leaf=mode>.5 && in.uv.y<-.5 && in.uv.y>-1.5;
  if(foliage) {
   float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
-    .375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048);
+    .1875+(clamp(in.uv.y-6,0.0,1.0)*254+1)/4096);
   base=in.color*s_surfaces.sample(surfaceSampler,uv);
   if(base.a<.4) discard_fragment();
  }
@@ -301,6 +313,8 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  // glTF factors are linear; decoded base-color texture bytes are sRGB.
  // Authored world vertex colors use the usual display RGB convention.
  float3 facadeGlow=float3(0);
+ float wet=0.0; // puddle film factor, set by the wet-road branch; drives streak reflections
+ float reflector=0.0; // road-stud emission, set by the wet-road branch
  float3 albedo=mode<.5?in.color.rgb*linearDisplay(sampled.rgb):
    linearDisplay(base.rgb);
  if(mode>.5) {
@@ -311,8 +325,8 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    // Keep the atlas selection inside its tile while retaining correct mip
    // gradients across wrap seams. These are authored mappings, not donor UVs.
    float2 wrapped=fract(uv);
-   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/2048);
-   float2 dx=dfdx(uv)*float2(254.0/256,254.0/2048),dy=dfdy(uv)*float2(254.0/256,254.0/2048);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
    float3 tex=s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb;
    float3 textured=linearDisplay(tex);
    albedo=surface<1.5?textured*.24:mix(albedo,textured,.68);
@@ -325,11 +339,55 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    bool top=abs(n.y)>.5;
    float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
    float2 wrapped=fract(uv);
-   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/2048);
-   float2 dx=dfdx(uv)*float2(254.0/256,254.0/2048),dy=dfdy(uv)*float2(254.0/256,254.0/2048);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
    float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
    albedo=mix(albedo,textured*(surface<9.5?.9:1.0),surface<9.5?.78:.92);
    if(surface>8.5 && surface<9.5) facadeGlow=textured;
+  }
+  // Window-grid walls (ids 11/12): SLRR window sheets mapped by world position with one storey per
+  // 3.15 m so the rows line up with the authored floors. Dark glass cells light up at night in hashed
+  // groups, the wall-level equivalent of the authored skyline window hash. Authored mapping.
+  if(surface>10.5 && surface<12.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   // Tile 8 is a one-storey white sheet (three bays); tile 9 a six-by-six curtain-wall grid. The
+   // world scales below give roughly 2.2 m window pitch and 3.15 m storeys for both.
+   float tile=surface<11.5?8.0:9.0;
+   bool top=abs(n.y)>.5;
+   float2 scale=surface<11.5?float2(7.0,3.15):float2(13.2,18.9);
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured,.9);
+   if(!top) {
+    float glass=clamp(1.0-max(textured.r,max(textured.g,textured.b))*3.2,0.0,1.0);
+    float lit=step(.46,hash(floor(uv)+float2(surface*7.0,3.0)));
+    facadeGlow=float3(1.0,.74,.45)*lit*glass*.9;
+   }
+  }
+  // Wall sign boards (id 13): the SLRR long sign sheet placed with the board's own tangent UV so the
+  // artwork reads once per board; self-lit at night like a backlit shop sign. Authored mapping.
+  if(surface>12.5 && surface<13.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float2 uv=float2(clamp(in.tangent.x,0.0,1.0),clamp(in.tangent.y,0.0,1.0));
+   float2 atlasUV=float2((uv.x*254+1)/256,(10*256+(1-uv.y)*254+1)/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV).rgb);
+   albedo=mix(albedo,textured,.95);
+   facadeGlow=textured*.6;
+  }
+  // Shop glazing (id 14): SLRR kirakat sheet, warm interior light at night; curtain glass (id 15) is
+  // a cool office sheet with a faint interior glow. Authored mapping.
+  if(surface>13.5 && surface<15.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface<14.5?12.0:14.0;
+   bool top=abs(n.y)>.5;
+   float2 scale=surface<14.5?float2(5.2,2.6):float2(3.6,3.6);
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/4096);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/4096),dy=dfdy(uv)*float2(254.0/256,254.0/4096);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured,.9);
+   facadeGlow=textured*(surface<14.5?float3(1.0,.8,.55)*.85:float3(.35,.42,.55)*.4);
   }
   float2 p=in.world.xz*38.0,q=in.world.xy*29.0;
   float fade=1-smoothstep(.25,1.0,max(length(dfdx(p)),length(dfdy(p))));
@@ -361,6 +419,14 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    albedo=mix(albedo,albedo*.5,puddle);
    rough=mix(rough,.52,tracks*.55*(1-puddle));
    rough=mix(rough,.06,puddle);
+   wet=max(puddle,tracks*.5); // polished tracks sheen plus standing water
+   // Road stud reflectors (MC3 names roadreflectors/fx_reflector): paired
+   // emissive markers along the lane lines, authored spacing; retroreflective
+   // punch is faked with a flat night emission.
+   float alongRoad=(ax<6.0&&az>=6.0)?in.world.z:in.world.x;
+   float studBand=exp(-pow((lateral-3.0)/.14,2.0))+exp(-pow((lateral+3.0)/.14,2.0));
+   float studS=fract(alongRoad/12.0);
+   reflector=studBand*smoothstep(.02,.06,studS)*(1.0-smoothstep(.30,.36,studS))*(1-puddle);
   }
  }
  // Optional saturated paint for clear-coated exterior sections: keeps the texture's luminance
@@ -420,17 +486,18 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  float spec=directLobe(rough,dot(n,h),ndl);
  lit+=fresnel*reflected*mix(1.1,.20,rough)+directFresnel*spec*specColor*visibility;
  if(night>.01) {
-  float3 lampDiffuse=float3(0),lampSpec=float3(0);
-  lampLight(in.world,n,v,rough,lampDiffuse,lampSpec);
+  float3 lampDiffuse=float3(0),lampSpec=float3(0),lampStreak=float3(0);
+  lampLight(in.world,n,v,rough,lampDiffuse,lampSpec,lampStreak);
   neonLight(in.world,n,lampDiffuse);
   headLight(in.world,n,_mtl_u.u_headlight,lampDiffuse);
-  lit+=night*(albedo*lampDiffuse*diffuseWeight(metal)+fresnel*lampSpec);
+  lit+=night*(albedo*lampDiffuse*diffuseWeight(metal)+fresnel*(lampSpec+wet*lampStreak));
   // Lit windows on the authored skyline (surface 5): hashed per window cell.
   if(mode>.5 && round(in.uv.y)==5) {
    float2 cell=floor(float2((abs(n.x)>.5?in.world.z:in.world.x)/2.6,in.world.y/3.7));
    lit+=night*float3(1.0,.75,.42)*(hash(cell)>.42?1.6:0.0);
   }
   lit+=night*facadeGlow*1.15; // lit shop windows (storefront texture as emission)
+  lit+=night*reflector*float3(1.0,.85,.5)*1.8; // road stud reflectors
  }
  if(mode<.5 && _mtl_u.u_visualCoat.x>0) {
   float coat=_mtl_u.u_visualCoat.x,coatRough=clamp(_mtl_u.u_visualCoat.y,.05,1.0);
@@ -487,7 +554,7 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   if(cluster<.14+.46*r) discard_fragment();
  } else if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y>5.5 && in.uv.y<7.5) {
   float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
-    .375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048);
+    .1875+(clamp(in.uv.y-6,0.0,1.0)*254+1)/4096);
   alpha*=s_surfaces.sample(surfaceSampler,uv).a;
   if(alpha<.4) discard_fragment();
  } else if(_mtl_u.u_visualMaterial.z>.5 && _mtl_u.u_visualMaterial.w<.5) alpha*=s_texColor.sample(smp,in.uv).a;

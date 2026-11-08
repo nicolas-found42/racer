@@ -40,7 +40,8 @@ target_link_libraries(racer PRIVATE "-framework CoreGraphics" "-framework CoreTe
 target_compile_definitions(racer PRIVATE RACER_BUILD_ID="${RACER_BUILD_ID}")
 target_compile_definitions(racer PRIVATE RACER_VEHICLE_LIBRARY="${CMAKE_SOURCE_DIR}/assets/local/vehicles/catalog.racer")
 target_compile_definitions(racer PRIVATE RACER_WORLD_SURFACES="${CMAKE_SOURCE_DIR}/assets/visual-local/v2/surfaces.rgba"
-  RACER_WORLD_SURFACES_V3="${CMAKE_SOURCE_DIR}/assets/visual-local/v3/surfaces.rgba")
+  RACER_WORLD_SURFACES_V3="${CMAKE_SOURCE_DIR}/assets/visual-local/v3/surfaces.rgba"
+  RACER_WORLD_SURFACES_V4="${CMAKE_SOURCE_DIR}/assets/visual-local/v4/surfaces.rgba")
 target_compile_definitions(racer PRIVATE RACER_SKY_MESH="${CMAKE_SOURCE_DIR}/assets/visual-local/sky/sky.glb")
 target_compile_definitions(racer PRIVATE RACER_CITY_SCENERY="${CMAKE_SOURCE_DIR}/assets/visual-local/city/city.glb")
 target_link_libraries(racer PRIVATE racer_input racer_assets SDL3::SDL3 bgfx bx)

@@ -147,6 +147,9 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  // Racer's night is already warmer than MCLA's. The sensor value is carried in config.x - 3 (pass index 3).
  float dayWeight=1.0-clamp(config.x-3.0,0.0,1.0);
  display*=mix(float3(1.0),float3(1.072,1.072,.943)/1.063,dayWeight);
+ // Measured trim: Racer day frames still read G>R against the web2 MCLA day references
+ // (+.054 G-R vs MCLA -.013), while dusk already matches. Trim green only in full daylight.
+ display*=float3(1.0,mix(1.0,.93,smoothstep(.55,.95,dayWeight)),1.0);
  display=mix(float3(luminance),display,1.16);
  // Filmic S-curve, cool shadows and warm highlights, then a restrained edge vignette.
  display=display*display*(3-2*display)*.38+display*.62;

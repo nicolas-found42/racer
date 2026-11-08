@@ -109,14 +109,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double worldHeading = 0;
   double inspectionDistance = 0;
   bool postNeutral = false;
-  bool hideHud = false, followGround = false;
+  bool hideHud = false, followGround = false, hideGuides = false;
   int windowWidth = 1920, windowHeight = 1080;
-  // Prefer the eight-tile RCRSURF3 atlas (adds facade/sign tiles) when it has
-  // been prepared locally; otherwise the four-tile file; --world-surfaces
-  // overrides both.
-  std::string surfacePath = std::filesystem::exists(RACER_WORLD_SURFACES_V3)
-                                ? RACER_WORLD_SURFACES_V3
-                                : RACER_WORLD_SURFACES;
+  // Prefer the sixteen-tile RCRSURF4 atlas (window grids, sign sheets, shop
+  // glazing), then the eight-tile RCRSURF3 file, then the four-tile one;
+  // --world-surfaces overrides all.
+  std::string surfacePath =
+      std::filesystem::exists(RACER_WORLD_SURFACES_V4)
+          ? RACER_WORLD_SURFACES_V4
+          : (std::filesystem::exists(RACER_WORLD_SURFACES_V3)
+                 ? RACER_WORLD_SURFACES_V3
+                 : RACER_WORLD_SURFACES);
   skyMesh = RACER_SKY_MESH;
   if (!std::filesystem::exists(skyMesh))
     skyMesh.clear();
@@ -196,6 +199,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       skyMesh = argv[++i];
     else if (a == "--scenery-mesh" && i + 1 < argc)
       sceneryMesh = argv[++i];
+    else if (a == "--no-scenery")
+      sceneryMesh.clear(); // render the procedural authored district instead of
+                           // the baked city.glb
+    else if (a == "--hide-guides")
+      hideGuides = true; // suppress green event-marker beacons (clean captures)
     else if (a == "--world-origin" && i + 3 < argc) {
       for (float &component : worldOrigin) {
         component = std::stof(argv[++i]);
@@ -301,7 +309,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                    "index|id|name] [--preview-gltf local-path]\n";
       std::cerr
           << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh "
-             "local.glb] [--sky-mesh local.glb] [--world-origin x y z] "
+             "local.glb] [--no-scenery] [--sky-mesh local.glb] [--world-origin "
+             "x y z] [--hide-guides] "
              "[--world-heading degrees] [--follow-ground] [--camera-distance "
              "metres] [--world-surfaces surfaces.rgba]\n";
       std::cerr
@@ -496,14 +505,16 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   const bool sourceSurfaces = !surfacePixels.empty();
   bgfx::TextureHandle surfaceTexture = whiteTexture;
   if (sourceSurfaces) {
-    // The shader addresses an eight-tile 256x2048 atlas. Older four-tile files
-    // (RCRSURF1/2) are padded with mid-grey so the new facade/sign surface ids
-    // stay defined (they just look plain grey).
+    // The shader addresses a sixteen-tile 256x4096 atlas. Older four/eight-tile
+    // files are padded with mid-grey so the newer surface ids stay defined
+    // (they just look plain grey).
     if (surfacePixels.size() == size_t(256) * 1024 * 4)
-      surfacePixels.resize(size_t(256) * 2048 * 4, uint8_t(128));
-    surfaceTexture = bgfx::createTexture2D(256, 2048, true, 1,
+      surfacePixels.resize(size_t(256) * 4096 * 4, uint8_t(128));
+    if (surfacePixels.size() == size_t(256) * 2048 * 4)
+      surfacePixels.resize(size_t(256) * 4096 * 4, uint8_t(128));
+    surfaceTexture = bgfx::createTexture2D(256, 4096, true, 1,
                                            bgfx::TextureFormat::RGBA8, 0);
-    unsigned w = 256, h = 2048;
+    unsigned w = 256, h = 4096;
     for (uint8_t level = 0;; ++level) {
       bgfx::updateTexture2D(
           surfaceTexture, 0, level, 0, 0, uint16_t(w), uint16_t(h),
@@ -996,9 +1007,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   // smoke but no formula was recovered.
   struct Puff {
     float x, y, z, vx, vy, vz, age, life, size, seed;
+    int kind; // 0 tyre smoke, 1 exhaust wisp, 2 chassis spark
   };
   std::vector<Puff> puffs;
-  double puffCarry[2] = {0, 0}, exhaustCarry = 0;
+  double puffCarry[2] = {0, 0}, exhaustCarry = 0, sparkCarry[2] = {0, 0};
   uint32_t puffCounter = 0;
   bgfx::TextureHandle puffTexture = BGFX_INVALID_HANDLE;
   {
@@ -1512,7 +1524,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         if (marking)
           track.valid = true;
         if ((marking || launching) && tyreSmoke && puffs.size() < 900) {
-          puffCarry[k] += dt * (launching ? 26.0 : 110.0);
+          puffCarry[k] += dt * (launching ? 34.0 : 130.0);
           while (puffCarry[k] >= 1.0) {
             puffCarry[k] -= 1.0;
             ++puffCounter;
@@ -1524,12 +1536,38 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
               return float(h & 0xffff) / 65535.f - .5f;
             };
             const float back = -float(std::copysign(1.0, shown.speed));
+            // Tyre-attached wisp: rises slowly from the contact patch and is
+            // dragged backward with the car's travel, with slip lateral spread
+            // (Juiced 2 names: smoke_tarmac / SKID_TARMAC emit at the contact
+            // patch; parameters authored, not recovered constants).
             puffs.push_back(
-                {float(wx), .15f, float(wz),
-                 float(sn) * back * .6f + rnd(1) * .9f, .5f + rnd(2) * .4f,
-                 float(c) * back * .6f + rnd(3) * .9f, 0, 1.6f + rnd(4) * .6f,
-                 (launching ? .45f : .75f) + rnd(5) * .2f,
-                 rnd(6) + (launching ? 2.f : 0.f)});
+                {float(wx), .12f, float(wz),
+                 float(sn) * back * (launching ? .3f : 1.1f) + rnd(1) * 1.2f,
+                 .30f + rnd(2) * .30f,
+                 float(c) * back * (launching ? .3f : 1.1f) + rnd(3) * 1.2f, 0,
+                 1.5f + rnd(4) * .6f, (launching ? .38f : .60f) + rnd(5) * .18f,
+                 rnd(6) + (launching ? 2.f : 0.f), 0});
+          }
+        }
+        // Chassis sparks while the tyres are locked in a hard stop (Juiced 2
+        // names chassis_sparks / small_sparks; triggers authored).
+        if (marking && selectedInput.brake > .7 && tyreSmoke &&
+            puffs.size() < 900) {
+          sparkCarry[k] += dt * 22.0;
+          while (sparkCarry[k] >= 1.0) {
+            sparkCarry[k] -= 1.0;
+            ++puffCounter;
+            auto rnd = [&](unsigned salt) {
+              uint32_t h = (puffCounter * 2654435761u) ^ (salt * 40503u);
+              h ^= h >> 13;
+              h *= 1274126177u;
+              h ^= h >> 16;
+              return float(h & 0xffff) / 65535.f - .5f;
+            };
+            puffs.push_back({float(wx), .08f, float(wz), rnd(21) * 3.2f,
+                             1.2f + rnd(22) * 2.f, rnd(23) * 3.2f, 0,
+                             .28f + rnd(24) * .18f, .05f + rnd(25) * .05f,
+                             rnd(26), 2});
           }
         }
       }
@@ -1555,7 +1593,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                float(shown.z + c * rz - sn * .35),
                float(sn) * -.9f + rnd(11) * .25f, .12f + rnd(12) * .1f,
                float(c) * -.9f + rnd(13) * .25f, 0, .9f + rnd(14) * .3f,
-               .2f + rnd(15) * .08f, 4.f + rnd(16)});
+               .2f + rnd(15) * .08f, 4.f + rnd(16), 1});
         }
       }
       for (auto &puff : puffs) {
@@ -1563,9 +1601,16 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         puff.x += puff.vx * float(dt);
         puff.y += puff.vy * float(dt);
         puff.z += puff.vz * float(dt);
-        puff.vx *= 1 - float(dt) * .9f;
-        puff.vz *= 1 - float(dt) * .9f;
-        puff.vy *= 1 - float(dt) * .6f;
+        if (puff.kind == 2) {
+          puff.vy -=
+              9.8f * float(dt); // sparks fall; smoke and wisps stay buoyant
+          puff.y = std::max(puff.y, .02f); // ground bounce, kept simple
+          puff.vy = puff.y <= .03f ? std::abs(puff.vy) * .35f : puff.vy;
+        } else {
+          puff.vx *= 1 - float(dt) * .9f;
+          puff.vz *= 1 - float(dt) * .9f;
+          puff.vy *= 1 - float(dt) * .6f;
+        }
       }
       puffs.erase(std::remove_if(puffs.begin(), puffs.end(),
                                  [](const Puff &p) { return p.age >= p.life; }),
@@ -1988,7 +2033,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           bgfx::submit(1, visualProgram);
         }
     bx::mtxIdentity(model);
-    if (!flow.session.active() && scene != "scale") {
+    if (!hideGuides && !flow.session.active() && scene != "scale") {
       for (const auto &marker : flow.career.markers()) {
         racer::worldTransform(model, 0, marker.x, marker.z);
         bgfx::setTransform(model);
@@ -2505,15 +2550,20 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::vector<const Puff *> order;
       order.reserve(puffs.size());
       for (const auto &p : puffs)
-        order.push_back(&p);
+        if (p.kind != 2)
+          order.push_back(&p);
+      const size_t smokeCount = order.size();
+      for (const auto &p : puffs)
+        if (p.kind == 2)
+          order.push_back(&p);
       auto dist2 = [&](const Puff *p) {
         const double dx = p->x - cameraX, dy = p->y - cameraY,
                      dz = p->z - cameraZ;
         return dx * dx + dy * dy + dz * dz;
       };
-      std::sort(order.begin(), order.end(), [&](const Puff *a, const Puff *b) {
-        return dist2(a) > dist2(b);
-      });
+      std::sort(
+          order.begin(), order.begin() + ptrdiff_t(smokeCount),
+          [&](const Puff *a, const Puff *b) { return dist2(a) > dist2(b); });
       bgfx::TransientVertexBuffer puffBuffer;
       bgfx::allocTransientVertexBuffer(&puffBuffer, uint32_t(order.size() * 6),
                                        layout);
@@ -2521,28 +2571,43 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const float rx = view[0], ry = view[4], rz = view[8], ux = view[1],
                   uy = view[5], uz = view[9];
       size_t n = 0;
-      for (const Puff *p : order) {
+      for (size_t pi = 0; pi < order.size(); ++pi) {
+        const Puff *p = order[pi];
         const float t = p->age / p->life;
-        const float size = p->size * (1 + 3.2f * t);
-        const float fade = std::min(1.f, t * 8.f) * (1 - t) * (1 - t);
-        const uint32_t a = uint32_t(
-            255 * std::clamp((p->seed > 3.f   ? .26f
-                              : p->seed > 1.f ? .42f
-                                              : .62f) *
-                                 fade,
-                             0.f,
-                             1.f)); // seed>1 launch, seed>3 exhaust: thinner
-        // Start-to-end colour ramp (MCLA exposes smokeStartColor/smokeEndColor;
-        // values authored).
-        const float ramp = std::clamp(t * 1.6f, 0.f, 1.f);
-        auto lerp8 = [&](float from, float to) {
-          return uint32_t(from + (to - from) * ramp);
-        };
-        const uint32_t color = nightAmount > .5f
-                                   ? ((a << 24) | (lerp8(120, 80) << 16) |
-                                      (lerp8(95, 64) << 8) | lerp8(86, 60))
-                                   : ((a << 24) | (lerp8(232, 150) << 16) |
-                                      (lerp8(228, 148) << 8) | lerp8(226, 146));
+        const bool spark = p->kind == 2;
+        const float size =
+            spark ? p->size * (1 - .5f * t) : p->size * (1 + 3.2f * t);
+        const float fade = spark ? (1 - t) * (1 - t)
+                                 : std::min(1.f, t * 8.f) * (1 - t) * (1 - t);
+        uint32_t a, color;
+        if (spark) {
+          // Hot yellow-orange, cooling as the spark dies; additive pass.
+          a = uint32_t(255 * std::clamp(fade * 1.4f, 0.f, 1.f));
+          const uint32_t r = uint32_t(255 - 140 * t),
+                         g = uint32_t(230 - 150 * t), b = uint32_t(90 - 60 * t);
+          color = (a << 24) | (r << 16) | (g << 8) | b;
+        } else {
+          a = uint32_t(
+              255 * std::clamp((p->seed > 3.f   ? .26f
+                                : p->seed > 1.f ? .42f
+                                                : .62f) *
+                                   fade,
+                               0.f,
+                               1.f)); // seed>1 launch, seed>3 exhaust: thinner
+          // Start-to-end colour ramp (MCLA exposes
+          // smokeStartColor/smokeEndColor; values authored), lit by time of
+          // day: daylight smoke is pale grey, night smoke picks up the warm
+          // sodium lamp cast.
+          const float ramp = std::clamp(t * 1.6f, 0.f, 1.f);
+          auto lerp8 = [&](float from, float to) {
+            return uint32_t(from + (to - from) * ramp);
+          };
+          const uint32_t dayCol = (a << 24) | (lerp8(232, 150) << 16) |
+                                  (lerp8(228, 148) << 8) | lerp8(226, 146);
+          const uint32_t nightCol = (a << 24) | (lerp8(150, 96) << 16) |
+                                    (lerp8(116, 74) << 8) | lerp8(84, 58);
+          color = nightAmount > .5f ? nightCol : dayCol;
+        }
         const float cx[4] = {-1, 1, 1, -1}, cy[4] = {-1, -1, 1, 1};
         Vertex v[4];
         // Each puff is rotated by its seed so the lumpy texture does not repeat
@@ -2564,12 +2629,24 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           out[n++] = v[idx];
       }
       bgfx::setTransform(nullptr);
-      bgfx::setVertexBuffer(0, &puffBuffer, 0, uint32_t(n));
-      bindUnlit(5, puffTexture);
-      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-                     BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA |
-                     BGFX_STATE_MSAA);
-      bgfx::submit(1, visualProgram);
+      if (smokeCount > 0) {
+        bgfx::setVertexBuffer(0, &puffBuffer, 0, uint32_t(smokeCount * 6));
+        bindUnlit(5, puffTexture);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                       BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA |
+                       BGFX_STATE_MSAA);
+        bgfx::submit(1, visualProgram);
+      }
+      if (smokeCount < order.size()) {
+        // Sparks: additive emissive pass, order-independent.
+        bgfx::setVertexBuffer(0, &puffBuffer, uint32_t(smokeCount * 6),
+                              uint32_t((order.size() - smokeCount) * 6));
+        bindUnlit(5, whiteTexture);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                       BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ADD |
+                       BGFX_STATE_MSAA);
+        bgfx::submit(1, visualProgram);
+      }
     }
     if (!vehicles.empty() && !liveryState.layers.empty()) {
       for (const auto &section : graphics->sections) {

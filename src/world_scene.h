@@ -250,6 +250,20 @@ inline void streetlight(std::vector<AssetVertex> &m, float x, float z,
   box(m, end.x, 7.95f, end.z, alongX ? .72f : .3f, .025f, alongX ? .3f : .72f,
       rgb(239, 224, 177));
 }
+// Wall sign board: a thin raised panel carrying the SLRR long-logo sheet
+// (surface id 13). The shader reads the board UV from tangent.xy, so tx,ty
+// are set per vertex here; v stays the surface id and u the roughness.
+inline void signBoard(std::vector<AssetVertex> &m, Point a, Point b, Point c,
+                      Point d) {
+  const size_t first = m.size();
+  quad(m, a, b, c, d, rgb(212, 207, 197), .8f, 13);
+  const std::array<std::array<float, 2>, 6> uv{
+      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {1, 1}, {0, 1}}};
+  for (size_t vertex = 0; vertex < uv.size(); ++vertex) {
+    m[first + vertex].tx = uv[vertex][0];
+    m[first + vertex].ty = uv[vertex][1];
+  }
+}
 inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
                      float d, int floors, unsigned style) {
   const float h = 3.9f + float(floors) * 3.15f;
@@ -258,11 +272,13 @@ inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
                                       rgb(162, 137, 117), rgb(190, 182, 163)};
   const auto wall = walls[style % walls.size()], trim = rgb(117, 115, 106),
              glass = rgb(54 + style % 13, 77 + style % 15, 86 + style % 17);
+  // Mid/high-rise walls use the SLRR window-grid sheets (one storey per 3.15 m
+  // in the shader) with the curtain grid on alternating styles; low-rise keeps
+  // the stone / siding / concrete atlas tiles.
+  const bool windowGrid = floors >= 3;
   box(m, x, .16f, z, w, h, d, wall, .9f,
-      style % 3 == 0
-          ? 3.f
-          : (style % 3 == 1 ? 8.f
-                            : 10.f)); // stone / siding / concrete atlas tiles
+      windowGrid ? (style % 2 == 0 ? 11.f : 12.f)
+                 : (style % 3 == 0 ? 3.f : (style % 3 == 1 ? 8.f : 10.f)));
   box(m, x, .16f, z, w + .35f, .55f, d + .35f, rgb(110, 108, 99));
   box(m, x, h + .16f, z, w + .6f, .32f, d + .6f, trim);
   box(m, x, h + .48f, z, w - .9f, .14f, d - .9f, rgb(94, 96, 92));
@@ -275,8 +291,9 @@ inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
   }
   // Windows are inset panels with one projecting sill per bay, rather than
   // freestanding luminous cubes; opaque glass keeps the single world pass
-  // simple.
-  for (int floor = 0; floor < floors; ++floor) {
+  // simple. Window-grid facades skip them: the wall sheet already carries the
+  // glazing and the shader lights hashed cells at night.
+  for (int floor = 0; floor < floors && !windowGrid; ++floor) {
     const float y = 4.7f + float(floor) * 3.15f;
     const int columns = std::clamp(int(w / 4.1f), 2, 6),
               rows = std::clamp(int(d / 4.1f), 2, 6);
@@ -321,7 +338,9 @@ inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
   for (float side : {-1.f, 1.f}) {
     const float front = z + side * (d * .5f + .045f);
     box(m, x, .8f, front, w * .76f, 2.15f, .08f, rgb(45, 66, 71), .18f,
-        9); // storefront atlas tile (lit at night)
+        windowGrid && style % 2 == 1
+            ? 14.f
+            : 9.f); // storefront atlas tile, or the SLRR kirakat shop window
     for (int i = -1; i <= 1; ++i)
       box(m, x + float(i) * w * .25f, .6f, front + side * .065f, .12f, 2.45f,
           .12f, trim);
@@ -329,6 +348,19 @@ inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
         (style % 2) ? rgb(114, 66, 46) : rgb(59, 88, 79));
     box(m, x, 2.9f, front + side * .6f, w * .9f, .12f, 1.35f,
         (style % 2) ? rgb(155, 114, 77) : rgb(87, 115, 102));
+    // Backlit shop sign board above the awning on wide enough fronts.
+    if (style % 3 == 1 && w >= 6) {
+      const float signW = std::min(w * .62f, 7.2f), signH = signW / 16.f,
+                  signY = 3.75f;
+      const Point a{x - signW * .5f, signY, front},
+          b{x + signW * .5f, signY, front},
+          c{x + signW * .5f, signY + signH, front},
+          e{x - signW * .5f, signY + signH, front};
+      if (side > 0)
+        signBoard(m, a, b, c, e);
+      else
+        signBoard(m, b, a, e, c);
+    }
   }
 }
 inline float terrainNoise(float x, float z) {
@@ -511,9 +543,13 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
     const float x = float(gx) * 100 + 45, z = float(gz) * 100 + 48;
     const float h = 18 + float((i * 13) % 49), w = 21 + float(i % 4) * 4,
                 d = 25 + float(i % 3) * 5;
+    // Tower walls sample the SLRR window-grid sheets world-space (the shader
+    // lights hashed glass cells at night), alternating the dense and curtain
+    // grids so the far district reads as mixed construction.
     box(m, x, .05f, z, w, h, d,
         rgb(127 + unsigned(i % 3) * 13, 135 + unsigned(i % 4) * 6,
-            135 + unsigned(i % 2) * 10));
+            135 + unsigned(i % 2) * 10),
+        .9f, i % 2 == 0 ? 11.f : 12.f);
     box(m, x, h, z, w + 1, .5f, d + 1, rgb(109, 119, 121));
     box(m, x, h + .5f, z, w * .48f, 2.5f, d * .48f, rgb(113, 124, 126));
     for (int f = 0; f < int(h / 4); ++f) {
