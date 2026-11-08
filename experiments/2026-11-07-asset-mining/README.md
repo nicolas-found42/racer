@@ -76,6 +76,12 @@ Ran the protocol for real (ledger and artifacts outside the repo): generated per
 - Clear-coated sections perturb the coat normal with fine noise (`src/visual_shader.h`, strength carried in `u_reflectionState.y < 0`, `--no-orange-peel` disables), which feeds both the environment reflection and the highlight. A first strength (.16) made the paint look dirty/scratched and was cut to .05. `before-after/orange-peel-crop.png` (same build, `--no-orange-peel` vs default, `--paint red`, close side view): the sky reflection on the door picks up a fine texture. The effect is **subtle and arguably marginal**; reflection richness is still far below the reference cars (no real car-body environment, probe resolution unchanged).
 - **Review status:** the formal adversarial review gate (exit 0) was for head `2aa6f76`. This change edits `src/`, which invalidates it; it has not been re-reviewed.
 
+## Terrain on all horizons (follow-up 6)
+- The authored foothills existed only on the +z side; the other three horizons were flat plain. `terrain()` now takes a quarter-turn count and grid size (`src/world_scene.h`); `buildCityScene` adds three coarse rotated patches (48x12, flat face normals; the fine 120x30 patch is unchanged, so its test is unchanged). +~12k vertices (authored fallback 263,562 of the 300,000 budget).
+- Evidence is isolated (same build with and without only this change, `--no-dof`, distance 9; `before-after/terrain-{front,side,rear}.png`): the after frames show a faint hazy ridge on the horizon behind the street where the before frames show only cloud. **The change is modest**: the hills are low and heavily hazed, nothing like the GT4/MCLA mountain and hillside silhouettes. A first comparison against the older `day-v3` capture was unreadable because depth of field blurred the whole street at 9 m, which also shows DoF is strong at that camera distance (not retuned).
+- Patch overlap at the corners is not handled (coincident same-colour geometry).
+- The formal review gate (head `2aa6f76`) is stale for this and the orange-peel commit.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 

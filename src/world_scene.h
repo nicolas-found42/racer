@@ -232,23 +232,32 @@ inline float terrainHeight(float x,float z) {
   const float detail=terrainNoise(x*.009f,z*.009f);
   return -1+rise*(18+55*broad+25*ridge+8*detail);
 }
-inline void terrain(std::vector<AssetVertex>& m) {
+inline void terrain(std::vector<AssetVertex>& m,int quarterTurns=0,int columns=120,int rows=30) {
   // Authored continuous foothills outside the driving boundary. Shared grid
   // points and derivative normals remove the old repeating pyramid silhouettes.
-  constexpr int columns=120,rows=30;
-  auto point=[](int x,int z){const float px=-1600+float(x)*(3200.f/columns),pz=560+float(z)*(880.f/rows);return Point{px,terrainHeight(px,pz),pz};};
-  auto emit=[&](Point a,Point b,Point c) {
-    const size_t first=m.size();triangle(m,a,b,c,rgb(112,119,96),.98f,3);
+  // quarterTurns rotates the whole patch about the origin so the other three horizons get relief
+  // too (coarser grids there: they are only seen as distant silhouettes).
+  const float sx=3200.f/float(columns),sz=880.f/float(rows);
+  const float c=std::cos(float(quarterTurns)*1.5707963f),sn=std::sin(float(quarterTurns)*1.5707963f);
+  auto point=[&](int x,int z){const float px=-1600+float(x)*sx,pz=560+float(z)*sz;return Point{px,terrainHeight(px,pz),pz};};
+  auto emit=[&](Point a,Point b,Point cc) {
+    const size_t first=m.size();triangle(m,a,b,cc,rgb(112,119,96),.98f,3);
     for(size_t i=first;i<m.size();++i) {
-      auto& v=m[i];constexpr float sx=3200.f/columns,sz=880.f/rows;
-      const float dx=(terrainHeight(v.x+sx,v.z)-terrainHeight(v.x-sx,v.z))/(2*sx);
-      const float dz=(terrainHeight(v.x,v.z+sz)-terrainHeight(v.x,v.z-sz))/(2*sz);
-      const float length=std::sqrt(dx*dx+1+dz*dz);v.nx=-dx/length;v.ny=1/length;v.nz=-dz/length;
+      auto& v=m[i];
+      if(columns>=120) { // fine patch: derivative normals; coarse patches keep their flat face normals
+        const float dx=(terrainHeight(v.x+sx,v.z)-terrainHeight(v.x-sx,v.z))/(2*sx);
+        const float dz=(terrainHeight(v.x,v.z+sz)-terrainHeight(v.x,v.z-sz))/(2*sz);
+        const float length=std::sqrt(dx*dx+1+dz*dz);v.nx=-dx/length;v.ny=1/length;v.nz=-dz/length;
+      }
+      if(quarterTurns) { // rotate position and normal into place after the local derivatives are known
+        const float x=v.x,z=v.z,nx=v.nx,nz=v.nz;
+        v.x=x*c-z*sn;v.z=x*sn+z*c;v.nx=nx*c-nz*sn;v.nz=nx*sn+nz*c;
+      }
     }
   };
   for(int z=0;z<rows;++z)for(int x=0;x<columns;++x) {
-    const auto a=point(x,z),b=point(x+1,z),c=point(x+1,z+1),d=point(x,z+1);
-    emit(a,d,c);emit(a,c,b);
+    const auto a=point(x,z),b=point(x+1,z),cc=point(x+1,z+1),d=point(x,z+1);
+    emit(a,d,cc);emit(a,cc,b);
   }
 }
 } // namespace racer::city
@@ -325,6 +334,8 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms=false,bool aut
       box(m,x,y,z+d*.5f+.03f,w*.85f,1.05f,.06f,rgb(63,85,96),.22f,5);
     }
   }
+  // Foothills on the three other sides (the original +z patch is added below by terrain(m)).
+  for(int turn=1;turn<=3;++turn) terrain(m,turn,48,12);
   gridLamps(m);
   for(int ix=-2;ix<=2;++ix) for(int iz=-2;iz<=2;++iz) {
     const float cx=100.f*float(ix),cz=100.f*float(iz);
