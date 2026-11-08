@@ -9,8 +9,8 @@ namespace racer {
 // Metal source packaged for the pinned bgfx v12 container. Layout follows
 // shaderc_metal.cpp writeUniformArray and renderer_mtl.cpp ShaderMtl::create.
 // This is authored Racer shading, not a recovered donor shader.
-inline std::vector<uint8_t> visualShader(bool fragment, bool shadow=false) {
-  constexpr std::string_view vertex=R"MSL(#include <metal_stdlib>
+inline std::vector<uint8_t> visualShader(bool fragment, bool shadow = false) {
+  constexpr std::string_view vertex = R"MSL(#include <metal_stdlib>
 using namespace metal;
 struct Globals { float4x4 u_modelViewProj; float4x4 u_model; };
 struct Input {
@@ -38,7 +38,7 @@ vertex Varying xlatMtlMain(Input in [[stage_in]], constant Globals& _mtl_u [[buf
  o.bitangent=cross(o.tangent.xyz,o.normal)*o.tangent.w;return o;
 }
 )MSL";
-  constexpr std::string_view pixel=R"MSL(#include <metal_stdlib>
+  constexpr std::string_view pixel = R"MSL(#include <metal_stdlib>
 using namespace metal;
 constant uint bgfx_sampleMask [[function_constant(0)]];
 constant bool bgfx_sampleMaskEnabled=is_function_constant_defined(bgfx_sampleMask);
@@ -463,7 +463,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  o.color=float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a); return o;
 }
 )MSL";
-  constexpr std::string_view shadowPixel=R"MSL(#include <metal_stdlib>
+  constexpr std::string_view shadowPixel = R"MSL(#include <metal_stdlib>
 using namespace metal;
 struct Globals { float4 u_visualCamera; float4 u_visualMaterial; };
 struct Varying {
@@ -496,41 +496,70 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
 }
 )MSL";
   std::vector<uint8_t> b;
-  auto u8=[&](uint8_t n){b.push_back(n);};
-  auto u16=[&](uint16_t n){u8(uint8_t(n));u8(uint8_t(n>>8));};
-  auto u32=[&](uint32_t n){u16(uint16_t(n));u16(uint16_t(n>>16));};
-  auto uniform=[&](std::string_view name,uint8_t type,uint16_t offset,uint16_t registers){
-    u8(uint8_t(name.size()));b.insert(b.end(),name.begin(),name.end());
-    u8(type|(fragment?0x10:0));u8(1);u16(offset);u16(registers);u16(0);u16(0);
+  auto u8 = [&](uint8_t n) { b.push_back(n); };
+  auto u16 = [&](uint16_t n) {
+    u8(uint8_t(n));
+    u8(uint8_t(n >> 8));
   };
-  u8(fragment?'F':'V');u8('S');u8('H');u8(12);
-  constexpr uint32_t interface=0x52414345;
-  u32(fragment?interface:0);u32(fragment?0:interface);u32(0);u32(0);
-  u16(fragment?(shadow?4:11):2);
-  if(fragment) {
-    uniform("u_visualCamera",bgfx::UniformType::Vec4,0,1);
-    uniform("u_visualMaterial",bgfx::UniformType::Vec4,16,1);
-    uniform("s_texColor",bgfx::UniformType::Sampler|0x20,0,1);
-    if(shadow) uniform("s_surfaces",bgfx::UniformType::Sampler|0x20,2,1);
-    if(!shadow) {
-      uniform("u_shadowMatrix",bgfx::UniformType::Mat4,32,4);
-      uniform("s_shadow",bgfx::UniformType::Sampler|0x20,1,1);
-      uniform("s_surfaces",bgfx::UniformType::Sampler|0x20,2,1);
-      uniform("u_reflectionState",bgfx::UniformType::Vec4,96,1);
-      uniform("u_visualCoat",bgfx::UniformType::Vec4,112,1);
-      uniform("u_headlight",bgfx::UniformType::Vec4,128,1);
-      uniform("s_environment",bgfx::UniformType::Sampler|0x20,3,1);
-      uniform("s_normal",bgfx::UniformType::Sampler|0x20,4,1);
+  auto u32 = [&](uint32_t n) {
+    u16(uint16_t(n));
+    u16(uint16_t(n >> 16));
+  };
+  auto uniform = [&](std::string_view name, uint8_t type, uint16_t offset,
+                     uint16_t registers) {
+    u8(uint8_t(name.size()));
+    b.insert(b.end(), name.begin(), name.end());
+    u8(type | (fragment ? 0x10 : 0));
+    u8(1);
+    u16(offset);
+    u16(registers);
+    u16(0);
+    u16(0);
+  };
+  u8(fragment ? 'F' : 'V');
+  u8('S');
+  u8('H');
+  u8(12);
+  constexpr uint32_t interface = 0x52414345;
+  u32(fragment ? interface : 0);
+  u32(fragment ? 0 : interface);
+  u32(0);
+  u32(0);
+  u16(fragment ? (shadow ? 4 : 11) : 2);
+  if (fragment) {
+    uniform("u_visualCamera", bgfx::UniformType::Vec4, 0, 1);
+    uniform("u_visualMaterial", bgfx::UniformType::Vec4, 16, 1);
+    uniform("s_texColor", bgfx::UniformType::Sampler | 0x20, 0, 1);
+    if (shadow)
+      uniform("s_surfaces", bgfx::UniformType::Sampler | 0x20, 2, 1);
+    if (!shadow) {
+      uniform("u_shadowMatrix", bgfx::UniformType::Mat4, 32, 4);
+      uniform("s_shadow", bgfx::UniformType::Sampler | 0x20, 1, 1);
+      uniform("s_surfaces", bgfx::UniformType::Sampler | 0x20, 2, 1);
+      uniform("u_reflectionState", bgfx::UniformType::Vec4, 96, 1);
+      uniform("u_visualCoat", bgfx::UniformType::Vec4, 112, 1);
+      uniform("u_headlight", bgfx::UniformType::Vec4, 128, 1);
+      uniform("s_environment", bgfx::UniformType::Sampler | 0x20, 3, 1);
+      uniform("s_normal", bgfx::UniformType::Sampler | 0x20, 4, 1);
     }
   } else {
-    uniform("u_modelViewProj",bgfx::UniformType::Mat4,0,4);
-    uniform("u_model",bgfx::UniformType::Mat4,64,4);
+    uniform("u_modelViewProj", bgfx::UniformType::Mat4, 0, 4);
+    uniform("u_model", bgfx::UniformType::Mat4, 64, 4);
   }
-  const auto source=fragment?(shadow?shadowPixel:pixel):vertex;u32(uint32_t(source.size()));
-  b.insert(b.end(),source.begin(),source.end());u8(0);
-  u8(fragment?0:6);
-  if(!fragment){u16(0x0001);u16(0x0005);u16(0x0010);u16(0x0002);u16(0x0011);u16(0x0003);}
-  u16(fragment?(shadow?48:128):128);
+  const auto source = fragment ? (shadow ? shadowPixel : pixel) : vertex;
+  u32(uint32_t(source.size()));
+  b.insert(b.end(), source.begin(), source.end());
+  u8(0);
+  u8(fragment ? 0 : 6);
+  if (!fragment) {
+    u16(0x0001);
+    u16(0x0005);
+    u16(0x0010);
+    u16(0x0002);
+    u16(0x0011);
+    u16(0x0003);
+  }
+  u16(fragment ? (shadow ? 48 : 128) : 128);
   return b;
 }
-}
+} // namespace racer
