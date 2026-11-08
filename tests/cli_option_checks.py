@@ -9,6 +9,11 @@ cases = {
     "time_unknown": (["--time", "noon"], "--time must be day, dusk or night"),
     "time_missing_value": (["--time"], None),
     "paint_unknown": (["--paint", "chartreuse"], "--paint must be red"),
+    "start_at_not_numeric": (["--start-at", "a", "b", "c"], "--start-at needs x z heading_degrees"),
+    "start_at_nan": (["--start-at", "nan", "0", "0"], "--start-at needs x z heading_degrees"),
+    "start_at_far": (["--start-at", "5000", "0", "0"], "--start-at x and z must be within 600 m"),
+    "start_at_missing_values": (["--start-at", "1", "2"], None),
+    "camera_view_unknown": (["--camera-view", "cockpit"], None),
     "screenshot_parent_missing": (["--screenshot", "/nonexistent-dir-for-racer-check/never.ppm"], "--screenshot parent directory does not exist"),
 }
 for name, (extra, message) in cases.items():

@@ -94,6 +94,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   std::vector<std::string> worldMeshes;
   std::string vehicleLibrary=RACER_VEHICLE_LIBRARY,requestedVehicle;
   std::string cameraView="rear";
+  bool startAtGiven=false,startAtApplied=false;double startAt[3]={0,0,0}; // x, z (metres), heading (degrees)
   float worldOrigin[3]={0,0,0};
   double worldHeading=0;
   double inspectionDistance=0;
@@ -175,6 +176,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--vehicle-library" && i + 1 < argc) vehicleLibrary=argv[++i];
     else if (a == "--vehicle" && i + 1 < argc) requestedVehicle=argv[++i];
     else if (a == "--camera-view" && i + 1 < argc) cameraView=argv[++i];
+    else if (a == "--start-at" && i + 3 < argc) {
+      startAtGiven=true;
+      for(double &component:startAt) {
+        const std::string text=argv[++i];size_t used=0;
+        try {component=std::stod(text,&used);} catch(const std::exception&) {used=0;}
+        if(used!=text.size() || !std::isfinite(component)) {std::cerr<<"--start-at needs x z heading_degrees\n";return 1;}
+      }
+      if(std::abs(startAt[0])>600 || std::abs(startAt[1])>600) {std::cerr<<"--start-at x and z must be within 600 m of the origin\n";return 1;}
+    }
     // Retained pre-HDR capture argv may still provide external shader files.
     // Current scene/HUD programs are embedded; accept the old option.
     else if (a == "--shader-dir" && i + 1 < argc) ++i;
@@ -222,7 +232,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           << "Usage: racer [--smoke seconds] [--autodrive] [--benchmark] "
              "[--verify-controls] [--verify-garage keyboard|gamepad] "
              "[--profile path] [--capture-loop directory] [--scene "
-             "garage|course|scale] [--camera-view rear|front|left|right|elevated] [--screenshot path.ppm [--screenshot-delay 2..30]] [--window width height] "
+             "garage|course|scale] [--camera-view rear|front|left|right|elevated|hood] [--start-at x z heading_degrees] [--screenshot path.ppm [--screenshot-delay 2..30]] [--window width height] "
              "[--review-script path] [--course-driver] [--diagnostics-dir path] [--no-diagnostics]\n";
       std::cerr << "Cars: [--vehicle-library catalog.racer] [--vehicle index|id|name] [--preview-gltf local-path]\n";
       std::cerr << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh local.glb] [--sky-mesh local.glb] [--world-origin x y z] [--world-heading degrees] [--follow-ground] [--camera-distance metres] [--world-surfaces surfaces.rgba]\n";
@@ -249,7 +259,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       return 1;
     }
   }
-  if (cameraView!="rear" && cameraView!="front" && cameraView!="left" && cameraView!="right" && cameraView!="elevated")
+  if (cameraView!="rear" && cameraView!="front" && cameraView!="left" && cameraView!="right" && cameraView!="elevated" && cameraView!="hood")
     throw std::runtime_error("Unsupported --camera-view");
   if (windowWidth < 320 || windowHeight < 240 || windowWidth > 3840 || windowHeight > 2160) {
     diagnostics.event("configuration_rejected", {{"reason", "window_bounds"}});
@@ -918,6 +928,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         flow.vehicleSaveStatus="Car could not load; previous car retained.";
       }
     }
+    if (startAtGiven && !startAtApplied && flow.screen == racer::Screen::Drive) {
+      // Capture/inspection placement: put the car at another intersection of the 100 m road grid.
+      startAtApplied=true;
+      sim.car.x=startAt[0];sim.car.z=startAt[1];sim.car.heading=startAt[2]*3.14159265358979323846/180.0;
+      previous=sim.car;
+      cameraX=sim.car.x-std::sin(sim.car.heading)*cameraDistance();
+      cameraZ=sim.car.z-std::cos(sim.car.heading)*cameraDistance();
+      accumulator=0;
+    }
     if (poseRevision != flow.poseRevision) {
       poseRevision = flow.poseRevision;
       groundReference=0;
@@ -1085,6 +1104,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     double blend = 1 - std::exp(-8 * dt);
     cameraX += (targetX - cameraX) * blend;
     cameraZ += (targetZ - cameraZ) * blend;
+    if (cameraView=="hood") {
+      // Driver/bonnet view: fixed to the car, just ahead of the body centre and above the bonnet line
+      // (authored offsets, not a recovered cockpit camera; the model has no interior).
+      const double ahead=vehicles.empty()?1.0:std::min(1.6,vehicles[activeVehicle].geometry.body.maximum.z*.35);
+      cameraX=shown.x+std::sin(shown.heading)*ahead;
+      cameraZ=shown.z+std::cos(shown.heading)*ahead;
+      cameraY=bodyElevation+(vehicles.empty()?1.2:std::max(1.05,vehicles[activeVehicle].geometry.body.maximum.y*.82));
+    }
     int w, h;
     SDL_GetWindowSizeInPixels(window, &w, &h);
     if (!benchmark && w > 0 && h > 0 && (w != width || h != height)) {
@@ -1182,7 +1209,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_Z|BGFX_STATE_DEPTH_TEST_LESS);
       bgfx::submit(0,shadowProgram);
     }
-    const float lookAhead=scene=="scale"?0.f:cameraView=="rear"||inspectionDistance>0?2.f:0.f;
+    const float lookAhead=scene=="scale"?0.f:cameraView=="hood"?30.f:cameraView=="rear"||inspectionDistance>0?2.f:0.f;
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
                   {float(shown.x + std::sin(shown.heading)*lookAhead), float(bodyElevation+lookHeight()),
                    float(shown.z + std::cos(shown.heading)*lookAhead)});

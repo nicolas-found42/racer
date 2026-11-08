@@ -17,7 +17,8 @@ base = Path(sys.argv[1]).resolve()
 out = Path(sys.argv[2]).resolve()
 out.mkdir(parents=True, exist_ok=True)
 scripts = Path(__file__).resolve().parent / "review_scripts"
-racer = base / "racer"
+import os
+racer = Path(os.environ["RACER_BIN"]).resolve() if os.environ.get("RACER_BIN") else base / "racer"  # RACER_BIN: a newer build than the frozen one
 vehicle = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 only = set(sys.argv[4].split(",")) if len(sys.argv) > 4 else None
 if not 0 <= vehicle <= 4:
@@ -47,6 +48,13 @@ for t, targs in (("day", []), ("night", ["--time", "night"])):
     for v in ("rear", "left"):
         add(f"brake-{t}-{v}", "braking_" + t, f"Racer {t} hard braking from speed, {v} view (tyre marks, tyre smoke)", targs + ["--camera-view", v, "--camera-distance", "7"], delay=6.4, smoke=8, script="brake.review")
 add("launch-day-left", "braking_day", "Racer day launch from standstill, thin smoke at the rear wheels", ["--camera-view", "left", "--camera-distance", "8"], delay=2.1, smoke=5, script="full-throttle.review")
+# Hood (bonnet) camera and other intersections of the road grid (need a build with --camera-view hood / --start-at).
+for t, targs in TIMES.items():
+    add(f"hood-{t}", "hood_" + t, f"Racer {t} bonnet view looking down the street", targs + ["--camera-view", "hood"])
+LOCATIONS = {"a": (200, 100, 90), "b": (-200, -200, 180), "c": (100, 300, 270), "d": (-100, 100, 0), "e": (300, -100, 45)}
+for key, (x, z, heading) in LOCATIONS.items():
+    for t, targs in TIMES.items():
+        add(f"loc-{key}-{t}", f"location_{key}", f"Racer {t} rear view at x={x} z={z} heading {heading}", targs + ["--camera-view", "rear", "--camera-distance", "9", "--start-at", str(x), str(z), str(heading)])
 add("neon-night-front", "street_night", "Racer night near the corner neon pylons, front camera at 5 m", ["--time", "night", "--camera-view", "front", "--camera-distance", "5"])
 add("neon-night-left", "street_night", "Racer night near the corner neon pylons, side camera at 5 m", ["--time", "night", "--camera-view", "left", "--camera-distance", "5"])
 
@@ -58,7 +66,12 @@ if vehicle:
     for s in scenarios:
         s["name"] = f"v{vehicle}-" + s["name"]
 records = []
+DRY = bool(os.environ.get("DRYRUN"))  # DRYRUN=1: rebuild matrix.json entries from files already on disk, run nothing
 for i, s in enumerate(scenarios, 1):
+    if DRY:
+        present = (out / f"{s['name']}.png").exists()
+        records.append(dict(s, ok=present, exit=None, file=f"{s['name']}.png" if present else None))
+        continue
     ppm = out / f"{s['name']}.ppm"
     argv = [str(racer), "--background", "--smoke", str(s["smoke"]), "--window", "1280", "720",
             "--vehicle-library", str(base / "models/catalog.racer"), "--vehicle", str(vehicle),
@@ -77,5 +90,10 @@ for i, s in enumerate(scenarios, 1):
     (out / f"{s['name']}-profile.txt").unlink(missing_ok=True)
     records.append(dict(s, ok=ok, exit=result.returncode, file=f"{s['name']}.png" if ok else None))
     print(f"[{i}/{len(scenarios)}] {s['name']} ok={ok} exit={result.returncode}", flush=True)
-(out / ("matrix.json" if not vehicle else f"matrix-v{vehicle}.json")).write_text(json.dumps(records, indent=1))
-print("done:", sum(r["ok"] for r in records), "of", len(records))
+index_path = out / ("matrix.json" if not vehicle else f"matrix-v{vehicle}.json")
+merged = {}
+if index_path.exists():  # merge by scenario name so a partial run never drops earlier records
+    merged = {r["name"]: r for r in json.loads(index_path.read_text())}
+merged.update({r["name"]: r for r in records})
+index_path.write_text(json.dumps(list(merged.values()), indent=1))
+print("done:", sum(r["ok"] for r in records), "of", len(records), "| index now has", len(merged))
