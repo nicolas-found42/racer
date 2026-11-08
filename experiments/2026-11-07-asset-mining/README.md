@@ -69,6 +69,9 @@ Names only: no shader code, constants or parameter values were recovered. Sessio
 - Evidence: `before-after/depth-of-field.png` (same build, `--no-dof` vs default): car sharp, street/houses/trees softened. 1080p at 99-mph run: 120.0 FPS with and without DoF, 0/1322 frames over 16.7 ms (one machine, one run).
 - Edge behaviour not examined: foreground/background bleeding at high contrast edges, alpha-blended particles blending distance values, HUD, 4K.
 
+## Formal adversarial review (this pass)
+Ran the protocol for real (ledger and artifacts outside the repo): generated personas Dana (visual QA), Imran (CI operator) and Priya (maintainer); the seeded draw selected **Priya** (seed 1f8a802b…, candidates digest 314b495d…). Surfaces: post/lens effects; surface shader (night, road, DoF); vehicle effects; world scene; tooling/CLI. Iteration 1 found **one** LOW defect, ISS-1.01: the usage text omitted ten accepted flags (seven added by this work). Fixed in `src/main.cpp`; new `tests/usage_flags_checks.py` fails on the old text (ten flags reported) and passes now. Probes run for evidence: flag-vs-usage diff, eight option combinations (all exit 0, ~120 FPS), a 40 s throttle/brake soak (peak RSS 351.4 MiB vs 351.3 MiB at 6 s; 1/4680 frames at 18.2 ms), 1080p DoF on/off at 120 FPS. A separate clean iteration is required for the gate; see the final status in the PR comment thread, not here.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 
@@ -93,7 +96,7 @@ Observed: Racer's lighting, road finish, motion cues and post pipeline are now c
 `references/github-leads.md` (agent-verified): bgfx 45-bokeh, 38-bloom, 09-hdr; KinoStreak (MIT) anamorphic streak; blur-pro-urp (MIT) radial blur; Filament material guide (Apache-2.0) clearcoat; wet-road/puddle references (Lagarde "Observe rainy world"; an unlicensed gist is reference only); Forza Horizon 4 paint-calibration slides. No external code was copied into the project; none of these leads has been integrated yet beyond ideas already implemented independently (radial blur, streak, puddles).
 
 ## Retention
-Output reduced to ~192 MiB: PPMs with PNG gzipped; superseded frozen executables gzipped (SHA/mode in `binary-retention.txt`); identical frozen city/sky GLB copies removed except in `final-v1` (hashes recorded). `road-v1` (shader compile failure) was deleted earlier by me. Nothing committed or pushed.
+Output was reduced to ~192 MiB earlier and later grew past the 256 MiB leaf bound again (651 MiB) as captures accumulated; it was brought back to ~214 MiB by lossless/derived-only steps, all hash-logged in `binary-retention.txt` (local, `.gitignore`d): old frozen executables gzipped; byte-identical duplicate model files removed (first copy kept); 92 gzipped PPMs removed only after verifying each PNG is pixel-identical to its PPM; 52 regenerable `comparison-*.png` sheets removed (their frame PNGs and reference images remain). No canonical input, saved analysis or evidence image used in the PR was removed. `road-v1` (shader compile failure) was deleted earlier by me. Nothing committed or pushed.
 
 ## Checks
 ctest 94/94 pass (10 skipped, need local assets); hub `tools/check.py` PASS. `jev_review`: escalate, composite .62, safe_to_apply .17 overall (per file .17/.27/.25/.50), low confidence, no concrete defect named. No unit test covers road shading, ghosts or the star.

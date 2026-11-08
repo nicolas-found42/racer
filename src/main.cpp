@@ -222,6 +222,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
              "[--review-script path] [--course-driver] [--diagnostics-dir path] [--no-diagnostics]\n";
       std::cerr << "Cars: [--vehicle-library catalog.racer] [--vehicle index|id|name] [--preview-gltf local-path]\n";
       std::cerr << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh local.glb] [--sky-mesh local.glb] [--world-origin x y z] [--world-heading degrees] [--follow-ground] [--camera-distance metres] [--world-surfaces surfaces.rgba]\n";
+      std::cerr << "Look and effects: [--time day|dusk|night] [--paint red|orange|yellow|green|teal|blue|purple|black] "
+                   "[--no-wheel-blur] [--no-skid-marks] [--no-tyre-smoke] [--no-speed-fov] [--no-dof]\n";
+      std::cerr << "Capture/automation: [--background] [--shader-dir path] [--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
       std::cerr << "Asset inspection: [--hide-hud]\n";
       return 1;
