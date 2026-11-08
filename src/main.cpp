@@ -1717,6 +1717,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?.55f:0.f,bokeh?1.f:0.f);
     }
     postProcess.setMotion(std::clamp((float(std::abs(shown.speed))-15.f)/35.f,0.f,1.f)*.85f);
+    postProcess.setNight(nightAmount);
     postProcess.draw(postNeutral);
     bgfx::frame();
     if (elapsed > 1) {

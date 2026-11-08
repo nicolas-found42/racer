@@ -79,3 +79,5 @@ Every investigation, including a small one-off probe, starts at `<id>/README.md`
 - [Inventory capacity continuation](2026-11-06-inventory-capacity/README.md): shared bounded metadata across four readers, actual over256KiB acceptance, full-corpus-shaped in-memory fixtures, bounded four-model selection snapshot, retained read/write failure ownership,70tests and172-source inventory. Current13players unchanged.
 
 - [Juiced2 wheel consumer](2026-11-06-juiced2-wheel-consumer/README.md): current ISO/XEX pairing, pre-import memory-layout qualification, native12-anchor profile scan and setter/matrix/material/input bridge; bounded audit/kernel, four research evidence annotations,71tests,174-source inventory. No model promotion or new GPU acceptance.
+
+- [MCLA tuning data](2026-11-08-mcla-city-textures/README.md): REA extraction of 941 tune files (lighting, post-processing, glow, cameras, sky) from the retail disc; recovered colorcorrect applied as a day-weighted colour balance, measured against 21+4+5 MCLA reference frames. World textures were not found by name.

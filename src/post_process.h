@@ -141,6 +141,12 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  float3 display=float3(hdrDisplay(linear.r),hdrDisplay(linear.g),hdrDisplay(linear.b));
  if(config.w>.5) return float4(display,1); // Neutral still maps HDR; no bloom/grade.
  float luminance=dot(display,float3(.2126,.7152,.0722));
+ // Daylight colour balance. MCLA's shipped post-processing tune (tune/lighting, REA extract of the retail
+ // disc) sets colorcorrect .534/.534/.470 against a .498 neutral: x1.072, x1.072, x.943. Measured frames agree
+ // (MCLA day R>G>B; Racer was B>G>R). Applied luminance-normalised and faded out with night amount, because
+ // Racer's night is already warmer than MCLA's. The sensor value is carried in config.x - 3 (pass index 3).
+ float dayWeight=1.0-clamp(config.x-3.0,0.0,1.0);
+ display*=mix(float3(1.0),float3(1.072,1.072,.943)/1.063,dayWeight);
  display=mix(float3(luminance),display,1.16);
  // Filmic S-curve, cool shadows and warm highlights, then a restrained edge vignette.
  display=display*display*(3-2*display)*.38+display*.62;
@@ -281,6 +287,8 @@ public:
   bool depthOfFieldAvailable() const {return targets_ && bgfx::isValid(targets_->depthColor);}
   // Speed blur amount in [0,1]; ignored by neutral output.
   void setMotion(float amount) {motion_=std::clamp(amount,0.f,1.f);}
+  // Night amount 0..1 (day, dusk ~.45, night): fades the daylight colour balance. Rides in u_post.x (3 + night).
+  void setNight(float amount) {night_=std::clamp(amount,0.f,1.f);}
   void draw(bool neutral) {
     if(!targets_)throw std::logic_error("post_not_sized");
     const auto& t=*targets_;
@@ -292,7 +300,7 @@ public:
       pass(12,t.glowFrames[0],t.glowWidth,t.glowHeight,t.glow[1],t.scene,{2,0,1.f/t.glowHeight,0});
     }
     // Neutral does not read an uninitialized glow texture.
-    pass(13,BGFX_INVALID_HANDLE,t.width,t.height,t.scene,neutral?t.scene:t.glow[0],{3,float(frame_%61)*.0137f,motion_,neutral?1.f:0.f});++frame_;
+    pass(13,BGFX_INVALID_HANDLE,t.width,t.height,t.scene,neutral?t.scene:t.glow[0],{3.f+night_,float(frame_%61)*.0137f,motion_,neutral?1.f:0.f});++frame_;
   }
 private:
   std::unique_ptr<Targets> targets_;
@@ -300,7 +308,7 @@ private:
   bgfx::ProgramHandle program_=BGFX_INVALID_HANDLE;
   bgfx::UniformHandle sceneSampler_=BGFX_INVALID_HANDLE,glowSampler_=BGFX_INVALID_HANDLE,config_=BGFX_INVALID_HANDLE,sun_=BGFX_INVALID_HANDLE,depthSampler_=BGFX_INVALID_HANDLE,dof_=BGFX_INVALID_HANDLE;
   std::array<float,4> sun_value_{{0,0,0,1}},focus_value_{{8,0,0,0}};
-  float motion_=0;
+  float motion_=0,night_=0;
   uint32_t frame_=0; // Advances grain only; never affects neutral output.
   void pass(uint16_t view,bgfx::FrameBufferHandle frame,uint16_t width,uint16_t height,
             bgfx::TextureHandle input,bgfx::TextureHandle glow,const std::array<float,4>& config) {

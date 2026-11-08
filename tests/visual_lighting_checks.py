@@ -27,6 +27,9 @@ for required in ('in.uv.y>5.5 && in.uv.y<7.5', 'surface>7.5 && surface<10.5', '(
                  '(6*256+(1-w.y)*254+1)/2048', '.375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048', 'lit+=night*facadeGlow*1.15'):
     if required not in source: raise AssertionError('facade atlas integration missing: '+required)
 if '/1024' in surface: raise AssertionError('stale 1024-high atlas addressing remains in the surface shader')
+# Daylight colour balance from the recovered MCLA colorcorrect, faded by night amount carried in u_post.x.
+if 'float3(1.072,1.072,.943)/1.063' not in post or 'config.x-3.0' not in post or '{3.f+night_,' not in post:
+    raise AssertionError('day colour balance / night fade missing from the post pass')
 # Rough surfaces (asphalt) must not mirror the sun/moon disc, and grazing Fresnel is roughness-limited.
 for required in ('sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough))',
                  'max(float3(1.0-rough),f0)-f0'):
