@@ -22,6 +22,10 @@ for required in ('directFresnel*spec*','*diffuseWeight(metal)',
                  'coatDirectF*coatHighlight*','*2.0*ndl*visibility','float fog=hazeAmount(distance)',
                  'level(reflectionLod(rough))','level(reflectionLod(coatRough))'):
     if required not in source: raise AssertionError('lighting integration missing: '+required)
+# Rough surfaces (asphalt) must not mirror the sun/moon disc, and grazing Fresnel is roughness-limited.
+for required in ('sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough))',
+                 'max(float3(1.0-rough),f0)-f0'):
+    if required not in source: raise AssertionError('rough-surface sun reflection guard missing: '+required)
 for forbidden in ('lit=lit/(lit+.72)','float fog=1-exp(', 'pow(max(s_environment.sample'):
     if forbidden in surface: raise AssertionError('obsolete LDR scene path: '+forbidden)
 for required in ('float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a)', 'linearDisplay(overlay.rgb),overlay.a',

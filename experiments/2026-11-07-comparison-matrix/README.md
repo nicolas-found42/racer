@@ -56,13 +56,19 @@ Branch `feat/improve-racer-visual-fidelity`, executable built from the working t
 10. **Trees/vegetation:** references have varied dense foliage (maples, bamboo, pines); Racer's street trees are single leaf-card clusters that read as dark green clumps and show visible stair-stepping at the edges in several frames (`brake-day-left`, `speed-day-10s`).
 
 ### Inferred / unknown
-- Inferred: item 4(a) and 4(b) are defects of my own post-process and road shader (the ghost position is fixed by the flare construction; the patches are the wet-road puddle mask at distance). I have not yet confirmed this by toggling each effect on the same frame.
+- Inferred and then tested: 4(a) and 4(b) are defects of my own shaders. 4(a) turned out to be the sun/moon disc mirrored in the asphalt, not the lens ghost (see Artefact fix); 4(b) is the puddle mask.
 - Inferred: items 1, 3 and 8 need authored or extracted assets (window textures, sign atlases, garage interior), not shader work alone.
 - Unknown: whether the raw games' assets contain a recoverable facade/sign atlas that fits Racer's city mesh; the asset-mining notes record only names and authored values so far.
 - Unknown: how much the compression and 480x270 cell size understate reference detail and Racer's fine artefacts.
 
+### Artefact fix (same session, after the second round)
+- **Cause established (observed):** the soft yellow disc (day/dusk) and pale disc (night) survive `--no-dof` and `--post-neutral`, so they come from the scene shader, not from DoF or the lens flare. A mirror image of the sun/moon at the lower-left of the road: `reflected=sky(reflect(-v,n))` returned the sharp sun/moon disc for asphalt (rough .95), and the Fresnel term is large at the grazing view angle.
+- **Change (src/visual_shader.h):** `sky/daySky/nightSkyExtras` take a `disc` scale; the surface reflection passes `1-smoothstep(.25,.55,rough)` so rough surfaces no longer mirror the disc (the direct lobe still supplies the highlight); the direct Fresnel boost is roughness-limited (Lagarde form); the puddle mask edge is softer (`smoothstep(.64,.82)*.85` instead of `(.68,.74)*.9`).
+- **Evidence:** `output/artefact-fix/disc-and-puddle-before-after.jpg` (before = round-1 matrix frames at 28e7412, after = working tree, three scenarios, same arguments and build otherwise). The disc is gone in all three; puddles are softer but still present at speed. `ctest` 96/96 (10 skipped for missing local assets); `visual_lighting_checks` now pins both guards and fails when the `disc` argument is removed (mutation-checked).
+- **Not fixed:** puddles still read as flat dark patches with a blue tint at distance; the wet-road look is not at reference quality.
+
 ### Next actions
-1. Confirm and remove artefacts 4(a)-(d) with same-build before/after captures (cheapest visible gains).
+1. Artefacts 4(a) and 4(b) are fixed above (4(a) was the mirrored sun disc, not the lens ghost, so the Inferred note about the flare was wrong); 4(c) night-sky dashes at speed and 4(d) the opaque rear-braking smoke ball are still open.
 2. Add capture locations (more than one intersection) and a hood/cockpit camera so the matrix covers more than one view of one place.
 3. Mine facade/sign textures from the raw games with REA and test them on the existing buildings.
 

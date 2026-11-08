@@ -64,14 +64,16 @@ float noise(float2 p) {
  return mix(mix(hash(i),hash(i+float2(1,0)),f.x),mix(hash(i+float2(0,1)),hash(i+1),f.x),f.y);
 }
 // Stars and moon for the night sky (radiance). The moon sits where the day sun does so shadows agree.
-float3 nightSkyExtras(float3 ray) {
+// disc scales the sharp moon disc: rough surfaces smear it, so their reflection passes 0 (the direct
+// lobe already supplies the highlight). Authored.
+float3 nightSkyExtras(float3 ray,float disc=1.0) {
  float3 moonDir=normalize(float3(-.55,.34,.70)); float d=dot(ray,moonDir);
  float2 sp=ray.xz/max(ray.y,.08)*70.0;
  float star=step(.9972,hash(floor(sp)))*(.4+.6*hash(floor(sp)+7.3))*smoothstep(.0,.2,ray.y);
- float moon=smoothstep(.99955,.99985,d)*7.0+pow(max(d,0.0),500.0)*.5+pow(max(d,0.0),30.0)*.03;
+ float moon=(smoothstep(.99955,.99985,d)*7.0+pow(max(d,0.0),500.0)*.5)*disc+pow(max(d,0.0),30.0)*.03;
  return float3(.8,.85,1.0)*star*3.0+float3(.78,.84,1.0)*moon;
 }
-float3 daySky(float3 ray) {
+float3 daySky(float3 ray,float disc=1.0) {
  float h=max(ray.y,0.0); float3 c=mix(float3(.72,.77,.78),float3(.18,.36,.57),pow(h,.42));
  float3 sun=normalize(float3(-.55,.34,.70)); float d=max(dot(ray,sun),0.0);
  float2 p=ray.xz/max(.16,ray.y+.26)*2.3;
@@ -79,17 +81,17 @@ float3 daySky(float3 ray) {
  float cover=smoothstep(.54,.76,cloud)*smoothstep(0.0,.15,ray.y)*.60;
  c=mix(c,float3(.90,.87,.81),cover);
  // The sun is added after the clouds so it is never painted over; cloud only dims it.
- c+=float3(1,.77,.44)*(pow(d,350.0)*2.0+pow(d,14.0)*.12)*(1-.7*cover);
+ c+=float3(1,.77,.44)*(pow(d,350.0)*2.0*disc+pow(d,14.0)*.12)*(1-.7*cover);
  // Authored display-RGB sky convention converted to linear radiance.
  return linearDisplay(c)*2.0;
 }
 // night in [0,1]: 0 day, ~.45 dusk (warm horizon, dimmer sky), 1 night (stars and moon). Authored.
-float3 sky(float3 ray,float night) {
- float3 day=daySky(ray);
+float3 sky(float3 ray,float night,float disc=1.0) {
+ float3 day=daySky(ray,disc);
  if(night<.01) return day;
  float h=max(ray.y,0.0);
  float t=smoothstep(.3,.9,night),dusk=night*(1-night)*4.0;
- float3 ns=mix(float3(.012,.018,.036),float3(.003,.006,.020),pow(h,.5))+nightSkyExtras(ray);
+ float3 ns=mix(float3(.012,.018,.036),float3(.003,.006,.020),pow(h,.5))+nightSkyExtras(ray,disc);
  float3 horizon=float3(1.0,.42,.16)*dusk*pow(1-h,5.0)*1.6;
  return mix(day*mix(1.0,.35,night)*mix(float3(1),float3(1.0,.78,.62),dusk),ns,t)+horizon;
 }
@@ -322,7 +324,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    float d=abs(fmod(lateral,3.0)-1.5);
    float tracks=exp(-pow((d-.85)/.28,2.0))*step(lateral,6.0);
    float pn=noise(in.world.xz*.11)*.6+noise(in.world.xz*.37)*.4;
-   float puddle=smoothstep(.68,.74,pn)*.9;
+   float puddle=smoothstep(.64,.82,pn)*.85;
    albedo*=1-.20*tracks*(1-puddle);
    // Hairline cracks: thin zero-crossings of two noise octaves, sparse by a low-frequency mask,
    // faded with screen-space derivatives so distant asphalt does not shimmer.
@@ -348,8 +350,10 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  float ndl=max(dot(n,l),0.0),ndv=max(dot(n,v),0.0);
  float3 f0=mix(float3(.04),albedo,metal);
  float3 fresnel=f0+(1-f0)*fresnelWeight(ndv);
- float3 directFresnel=f0+(1-f0)*fresnelWeight(max(dot(v,h),0.0));
- float3 reflected=sky(reflect(-v,n),_mtl_u.u_headlight.w);
+ // Roughness-limited grazing boost (Lagarde): a rough surface such as asphalt must not turn the sun
+ // lobe into a bright disc at grazing view angles. Authored, not a native formula.
+ float3 directFresnel=f0+(max(float3(1.0-rough),f0)-f0)*fresnelWeight(max(dot(v,h),0.0));
+ float3 reflected=sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough));
  if(_mtl_u.u_reflectionState.x>.5 && (mode<.5 || rough<.3)) {
   float3 local=max(s_environment.sample(environmentSampler,reflect(-v,n),level(reflectionLod(rough))).rgb,float3(0));
   reflected=local;
