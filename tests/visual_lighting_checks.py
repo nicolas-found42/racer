@@ -39,6 +39,16 @@ if 'float3(1.072,1.072,.943)/1.063' not in post or 'config.x-3.0' not in post or
 for required in ('sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough))',
                  'max(float3(1.0-rough),f0)-f0'):
     if required not in source: raise AssertionError('rough-surface sun reflection guard missing: '+required)
+# Close-out round: streak reflections brightened, day green trim gated off dusk, night road studs.
+for required in ('exp(-(L.x*L.x+L.z*L.z)*.35)*atten*cone*.5',
+                 'reflector=studBand*smoothstep(.02,.06,studS)',
+                 'lit+=night*reflector*float3(1.0,.85,.5)*1.8'):
+    if required not in surface: raise AssertionError('close-out surface integration missing: '+required)
+if 'mix(1.0,.93,smoothstep(.55,.95,dayWeight))' not in post:
+    raise AssertionError('day green trim (dusk-gated) missing from the post pass')
+main_cpp=(root/'src/main.cpp').read_text()
+for required in ('2 chassis spark','sparkCarry'):
+    if required not in main_cpp: raise AssertionError('chassis spark emitter missing: '+required)
 for forbidden in ('lit=lit/(lit+.72)','float fog=1-exp(', 'pow(max(s_environment.sample'):
     if forbidden in surface: raise AssertionError('obsolete LDR scene path: '+forbidden)
 for required in ('float4(max(lit,float3(0)),ghostAlpha>0?ghostAlpha*base.a:base.a)', 'linearDisplay(overlay.rgb),overlay.a',
