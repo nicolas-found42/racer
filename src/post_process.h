@@ -33,7 +33,8 @@ float bloomWeight(float peak) { return smoothstep(1.0,2.0,peak); }
 // u_dof.y is the strength (0 disables), u_dof.w the in-focus half-range around it (m), and the radius is
 // capped at .010 of the frame height. Authored.
 float cocFor(float d,float4 dof) {
- return clamp(max(abs(d-dof.x)-dof.w,0.0)/max(d,.5)*.012*dof.y,0.0,.010);
+ // The sky dome (>80 m) fades back to sharp: a 12-tap gather turns tiny bright stars into flower patterns.
+ return clamp(max(abs(d-dof.x)-dof.w,0.0)/max(d,.5)*.012*dof.y,0.0,.010)*(1.0-.9*smoothstep(80.0,200.0,d));
 }
 float grainHash(float2 p) { return fract(sin(dot(p,float2(12.9898,78.233)))*43758.5453); }
 // Authored lens glare: strength comes from the radiance actually visible at the sun
@@ -111,7 +112,10 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
      float2 offset=float2(cos(angle)/_mtl_u.u_sun.w,sin(angle))*radius;
      float tapCoc=cocFor(s_postDepth.sample(depthSampler,in.uv+offset).r,_mtl_u.u_dof);
      float weight=clamp(tapCoc/max(radius,.0001),0.0,1.0);
-     sum+=max(s_postScene.sample(sceneSampler,in.uv+offset).rgb,float3(0))*weight;weightSum+=weight;
+     float3 tap=max(s_postScene.sample(sceneSampler,in.uv+offset).rgb,float3(0));
+     // Bokeh: bright taps weigh more, so defocused lamps and neon spread into discs (u_dof.z strength).
+     float bokeh=1.0+_mtl_u.u_dof.z*clamp(dot(tap,float3(.3,.59,.11))-1.0,0.0,6.0)*2.0;
+     sum+=tap*(weight*bokeh);weightSum+=weight*bokeh;
     }
     linear=mix(linear,sum/weightSum,smoothstep(.0004,.0025,centreCoc));
    }
@@ -269,7 +273,7 @@ public:
   // Screen-space sun anchor: uv.xy (top-origin), visibility weight, aspect. Zero hides glare.
   void setSun(float u,float v,float weight,float aspect) {sun_value_={u,v,weight,aspect};}
   // Focus distance (m) and strength; ignored (no depth of field) when the depth target is unavailable.
-  void setFocus(float distance,float strength) {focus_value_={std::max(distance,.5f),std::clamp(strength,0.f,4.f),0,2.6f};}
+  void setFocus(float distance,float strength,float bokeh=0) {focus_value_={std::max(distance,.5f),std::clamp(strength,0.f,4.f),std::clamp(bokeh,0.f,4.f),2.6f};}
   bool depthOfFieldAvailable() const {return targets_ && bgfx::isValid(targets_->depthColor);}
   // Speed blur amount in [0,1]; ignored by neutral output.
   void setMotion(float amount) {motion_=std::clamp(amount,0.f,1.f);}

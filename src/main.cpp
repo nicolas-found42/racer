@@ -88,7 +88,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool autoDrive = false, benchmark = false, verify = false;
   double shotDelay = 2;
   bool shotDelayExplicit = false;
-  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true, depthOfField = true, orangePeel = true;
+  bool wheelBlur = true, skidMarks = true, speedFov = true, tyreSmoke = true, depthOfField = true, orangePeel = true, bokeh = true;
   float nightAmount = 0, paintHue = 0, paintStrength = 0;
   std::string shot, profilePath, scene, garageMode, captureLoop, reviewPath, previewMesh,skyMesh,sceneryMesh;
   std::vector<std::string> worldMeshes;
@@ -118,6 +118,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--no-tyre-smoke") tyreSmoke = false;
     else if (a == "--no-dof") depthOfField = false;
     else if (a == "--no-orange-peel") orangePeel = false;
+    else if (a == "--no-bokeh") bokeh = false;
     else if (a == "--paint" && i + 1 < argc) {
       const std::string value = argv[++i];
       struct Entry {const char* name; float hue;};
@@ -224,7 +225,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::cerr << "Cars: [--vehicle-library catalog.racer] [--vehicle index|id|name] [--preview-gltf local-path]\n";
       std::cerr << "Visual inspection: [--world-mesh local.glb] [--scenery-mesh local.glb] [--sky-mesh local.glb] [--world-origin x y z] [--world-heading degrees] [--follow-ground] [--camera-distance metres] [--world-surfaces surfaces.rgba]\n";
       std::cerr << "Look and effects: [--time day|dusk|night] [--paint red|orange|yellow|green|teal|blue|purple|black] "
-                   "[--no-wheel-blur] [--no-skid-marks] [--no-tyre-smoke] [--no-speed-fov] [--no-dof] [--no-orange-peel]\n";
+                   "[--no-wheel-blur] [--no-skid-marks] [--no-tyre-smoke] [--no-speed-fov] [--no-dof] [--no-orange-peel] [--no-bokeh]\n";
       std::cerr << "Capture/automation: [--background] [--shader-dir path] [--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
       std::cerr << "Asset inspection: [--hide-hud]\n";
@@ -1647,7 +1648,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     {
       // Focus on the car: eye-to-body distance, so the chase camera keeps it sharp and softens distant street.
       const double fx=cameraX-shown.x,fy=cameraY-(bodyElevation+.6),fz=cameraZ-shown.z;
-      postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?.55f:0.f);
+      postProcess.setFocus(float(std::sqrt(fx*fx+fy*fy+fz*fz)),depthOfField?.55f:0.f,bokeh?1.f:0.f);
     }
     postProcess.setMotion(std::clamp((float(std::abs(shown.speed))-15.f)/35.f,0.f,1.f)*.85f);
     postProcess.draw(postNeutral);

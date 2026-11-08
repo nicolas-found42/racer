@@ -91,6 +91,11 @@ After the first gate (head `2aa6f76`) went stale, a fresh review iteration cover
 ## Formal review iteration 4 (ISS-4.01)
 A probe of an unwritable `--screenshot` path found the game ran, wrote nothing, printed nothing and exited 0 (the same failure class as the earlier delay defect). Fixed in `src/main.cpp`: startup now rejects a path whose parent directory does not exist with exit 1 and a message naming `--screenshot` (placed after the delay checks so their messages are unchanged); `tests/cli_option_checks.py` gained the case. On the pre-fix source the new case fails (the game keeps running and the test times out); with the fix it passes. The same iteration also showed `--post-neutral` is unaffected by depth of field (frames pixel-identical with and without `--no-dof`). Limits: only the parent directory is checked, so an existing but read-only directory, a full disk or an unwritable file still fail silently.
 
+## Bokeh and far-sky DoF (follow-up 8)
+- **Bokeh** (`src/post_process.h`, `--no-bokeh`): in the depth-of-field gather, taps brighter than 1 radiance weigh up to 13x more, so defocused lamps and neon spread toward discs (`u_dof.z`). Authored. `before-after/bokeh.png` (night, same build, only the flag differs): the difference is **very subtle** at this scale: slightly broader lamp glows. This is not the bokeh look of the reference frames (no aperture shape, only 12 taps).
+- **Star artifact fixed:** the first capture showed that the DoF gather turned tiny stars (far sky, maximum blur radius) into flower-shaped patterns because 12 taps undersample points. Blur now fades to ~10% beyond 80-200 m (`cocFor`), which also keeps the sky sharp; visible in both frames of the pair (the flowers are gone). A genuinely defocused sky is therefore not simulated.
+- The formal review gate (`db394d8`) is stale again for this change.
+
 ## Retention and publication boundary
 Images in `references/`, `console-compare/`, `before-after/` and `contact-*.png` are third-party screenshots or captures that show proprietary extracted game assets: they are **local only** and are now `.gitignore`d (`experiments/*/output/` already was). The README, scripts and code are what is committed.
 
