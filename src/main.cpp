@@ -100,7 +100,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool postNeutral=false;
   bool hideHud=false,followGround=false;
   int windowWidth = 1920, windowHeight = 1080;
-  std::string surfacePath = RACER_WORLD_SURFACES;
+  // Prefer the eight-tile RCRSURF3 atlas (adds facade/sign tiles) when it has been prepared locally;
+  // otherwise the four-tile file; --world-surfaces overrides both.
+  std::string surfacePath = std::filesystem::exists(RACER_WORLD_SURFACES_V3) ? RACER_WORLD_SURFACES_V3 : RACER_WORLD_SURFACES;
   skyMesh=RACER_SKY_MESH;
   if(!std::filesystem::exists(skyMesh))skyMesh.clear();
   sceneryMesh=RACER_CITY_SCENERY;
@@ -362,8 +364,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   const bool sourceSurfaces=!surfacePixels.empty();
   bgfx::TextureHandle surfaceTexture=whiteTexture;
   if(sourceSurfaces) {
-    surfaceTexture=bgfx::createTexture2D(256,1024,true,1,bgfx::TextureFormat::RGBA8,0);
-    unsigned w=256,h=1024;
+    // The shader addresses an eight-tile 256x2048 atlas. Older four-tile files (RCRSURF1/2) are padded
+    // with mid-grey so the new facade/sign surface ids stay defined (they just look plain grey).
+    if(surfacePixels.size()==size_t(256)*1024*4) surfacePixels.resize(size_t(256)*2048*4,uint8_t(128));
+    surfaceTexture=bgfx::createTexture2D(256,2048,true,1,bgfx::TextureFormat::RGBA8,0);
+    unsigned w=256,h=2048;
     for(uint8_t level=0;;++level) {
       bgfx::updateTexture2D(surfaceTexture,0,level,0,0,uint16_t(w),uint16_t(h),
         bgfx::copy(surfacePixels.data(),uint32_t(surfacePixels.size())));

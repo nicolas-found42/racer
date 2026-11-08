@@ -22,10 +22,13 @@ inline std::vector<uint8_t> readWorldSurfaces(const std::filesystem::path& path,
       throw std::runtime_error("world_surface_input");
     return {};
   }
-  constexpr size_t bytes=256*1024*4;
+  // RCRSURF1/2: 256x1024 (four tiles); RCRSURF3: 256x2048 (eight tiles, adds facade/sign tiles).
+  constexpr size_t smallBytes=256*1024*4,largeBytes=256*2048*4;
   struct stat status{};
-  if(file.fd<0 || ::fstat(file.fd,&status)!=0 || !S_ISREG(status.st_mode) || status.st_size!=bytes+8)
+  if(file.fd<0 || ::fstat(file.fd,&status)!=0 || !S_ISREG(status.st_mode) ||
+     (status.st_size!=smallBytes+8 && status.st_size!=largeBytes+8))
     throw std::runtime_error("world_surface_input");
+  const size_t bytes=size_t(status.st_size)-8;
   auto read=[&](void* data,size_t size) {
     size_t count=0;
     while(count<size) {
@@ -37,8 +40,9 @@ inline std::vector<uint8_t> readWorldSurfaces(const std::filesystem::path& path,
   };
   std::array<char,8> magic{};read(magic.data(),magic.size());
   const auto version=std::string_view(magic.data(),magic.size());
-  if(version!="RCRSURF1" && version!="RCRSURF2") throw std::runtime_error("world_surface_read");
-  if(foliage)*foliage=version=="RCRSURF2";
+  const bool large=version=="RCRSURF3";
+  if((version!="RCRSURF1" && version!="RCRSURF2" && !large) || large!=(bytes==largeBytes)) throw std::runtime_error("world_surface_read");
+  if(foliage)*foliage=version!="RCRSURF1";
   std::vector<uint8_t> result(bytes);read(result.data(),bytes);
   char extra;
   if(::read(file.fd,&extra,1)!=0)

@@ -22,6 +22,11 @@ for required in ('directFresnel*spec*','*diffuseWeight(metal)',
                  'coatDirectF*coatHighlight*','*2.0*ndl*visibility','float fog=hazeAmount(distance)',
                  'level(reflectionLod(rough))','level(reflectionLod(coatRough))'):
     if required not in source: raise AssertionError('lighting integration missing: '+required)
+# Facade atlas: ids 8-10 sample tiles 4/5/7 of the 2048-high atlas, signs use tile 6, foliage stays 6-7.
+for required in ('in.uv.y>5.5 && in.uv.y<7.5', 'surface>7.5 && surface<10.5', '(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/2048',
+                 '(6*256+(1-w.y)*254+1)/2048', '.375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048', 'lit+=night*facadeGlow*1.15'):
+    if required not in source: raise AssertionError('facade atlas integration missing: '+required)
+if '/1024' in surface: raise AssertionError('stale 1024-high atlas addressing remains in the surface shader')
 # Rough surfaces (asphalt) must not mirror the sun/moon disc, and grazing Fresnel is roughness-limited.
 for required in ('sky(reflect(-v,n),_mtl_u.u_headlight.w,1-smoothstep(.25,.55,rough))',
                  'max(float3(1.0-rough),f0)-f0'):

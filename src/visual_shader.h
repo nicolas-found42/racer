@@ -255,16 +255,26 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(mode>1.5 && mode<2.5) { o.color=float4(sky(normalize(in.world-_mtl_u.u_visualCamera.xyz),_mtl_u.u_headlight.w),1); return o; }
  if(mode>2.5) { o.color=float4(linearDisplay(in.color.rgb),in.color.a); return o; }
  if(mode>.5 && in.uv.y<-1.5) { // lamp head: display colour by day, hot emitter at night
-  o.color=float4(linearDisplay(in.color.rgb)*mix(1.0,7.0,_mtl_u.u_headlight.w),1);return o; // emitter keeps its own colour (lamps warm, neon coloured)
+  float3 emitColor=linearDisplay(in.color.rgb);
+  if(_mtl_u.u_visualMaterial.z>1.5) {
+   // Neon blades carry sign artwork (SLRR sign sheet, tile 6) mapped by world position, kept in the
+   // blade's own hue so the cast-light palette still matches. Authored mapping.
+   float3 en=normalize(in.normal);
+   float2 suv=(abs(en.x)>.5?in.world.zy:in.world.xy)/float2(1.9,2.2);
+   float2 w=fract(suv);
+   float3 art=linearDisplay(s_surfaces.sample(surfaceSampler,float2((w.x*254+1)/256,(6*256+(1-w.y)*254+1)/2048),level(clamp(log2(max(length(_mtl_u.u_visualCamera.xyz-in.world),1.0)/5.0),0.0,5.0))).rgb);
+   emitColor=mix(emitColor,art*1.1+emitColor*.28,.88);
+  }
+  o.color=float4(emitColor*mix(1.0,_mtl_u.u_visualMaterial.z>1.5?2.4:6.0,_mtl_u.u_headlight.w),1);return o; // emitter: sign artwork in the blade's own hue (lamps warm, neon coloured)
  }
  float night=_mtl_u.u_headlight.w;
  float4 sampled=_mtl_u.u_visualMaterial.z>.5?s_texColor.sample(smp,in.uv):float4(1);
  float4 base=in.color*sampled;
- bool foliage=mode>.5 && in.uv.y>5.5;
+ bool foliage=mode>.5 && in.uv.y>5.5 && in.uv.y<7.5; // ids 8-10 are facade surfaces, not foliage
  bool leaf=mode>.5 && in.uv.y<-.5 && in.uv.y>-1.5;
  if(foliage) {
   float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
-    .75+(clamp(in.uv.y-6,0.0,1.0)*254+1)/1024);
+    .375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048);
   base=in.color*s_surfaces.sample(surfaceSampler,uv);
   if(base.a<.4) discard_fragment();
  }
@@ -286,10 +296,11 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
  if(reverseNormal) n=-n;
  float3 l=normalize(float3(-.55,.34,.70)); float3 h=normalize(l+v);
  float rough=clamp(_mtl_u.u_visualMaterial.x,.08,1.0),metal=clamp(_mtl_u.u_visualMaterial.y,0.0,1.0);
- if(mode>.5) { rough=in.uv.x>.01?clamp(in.uv.x,.08,1.0):.95; metal=in.uv.y>4.5?.18:0.0; }
+ if(mode>.5) { rough=in.uv.x>.01?clamp(in.uv.x,.08,1.0):.95; metal=(in.uv.y>4.5 && in.uv.y<5.5)?.18:0.0; }
  if(foliage || leaf) { rough=1;metal=0; }
  // glTF factors are linear; decoded base-color texture bytes are sRGB.
  // Authored world vertex colors use the usual display RGB convention.
+ float3 facadeGlow=float3(0);
  float3 albedo=mode<.5?in.color.rgb*linearDisplay(sampled.rgb):
    linearDisplay(base.rgb);
  if(mode>.5) {
@@ -300,11 +311,25 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    // Keep the atlas selection inside its tile while retaining correct mip
    // gradients across wrap seams. These are authored mappings, not donor UVs.
    float2 wrapped=fract(uv);
-   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/1024);
-   float2 dx=dfdx(uv)*float2(254.0/256,254.0/1024),dy=dfdy(uv)*float2(254.0/256,254.0/1024);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+wrapped.y*254+1)/2048);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/2048),dy=dfdy(uv)*float2(254.0/256,254.0/2048);
    float3 tex=s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb;
    float3 textured=linearDisplay(tex);
    albedo=surface<1.5?textured*.24:mix(albedo,textured,.68);
+  }
+  // Facade surfaces (ids 8 siding, 9 storefront, 10 concrete): SLRR textures mapped by world position
+  // (no donor UVs), top of the image up on vertical faces. Storefronts glow at night. Authored mapping.
+  if(surface>7.5 && surface<10.5 && _mtl_u.u_visualMaterial.z>1.5) {
+   float tile=surface<8.5?4.0:(surface<9.5?5.0:7.0);
+   float2 scale=surface<8.5?float2(3.2,3.2):(surface<9.5?float2(6.0,2.6):float2(4.0,4.0));
+   bool top=abs(n.y)>.5;
+   float2 uv=top?in.world.xz/scale:abs(n.x)>.5?in.world.zy/scale:in.world.xy/scale;
+   float2 wrapped=fract(uv);
+   float2 atlasUV=float2((wrapped.x*254+1)/256,(tile*256+(top?wrapped.y:1-wrapped.y)*254+1)/2048);
+   float2 dx=dfdx(uv)*float2(254.0/256,254.0/2048),dy=dfdy(uv)*float2(254.0/256,254.0/2048);
+   float3 textured=linearDisplay(s_surfaces.sample(surfaceSampler,atlasUV,gradient2d(dx,dy)).rgb);
+   albedo=mix(albedo,textured*(surface<9.5?.9:1.0),surface<9.5?.78:.92);
+   if(surface>8.5 && surface<9.5) facadeGlow=textured;
   }
   float2 p=in.world.xz*38.0,q=in.world.xy*29.0;
   float fade=1-smoothstep(.25,1.0,max(length(dfdx(p)),length(dfdy(p))));
@@ -405,6 +430,7 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    float2 cell=floor(float2((abs(n.x)>.5?in.world.z:in.world.x)/2.6,in.world.y/3.7));
    lit+=night*float3(1.0,.75,.42)*(hash(cell)>.42?1.6:0.0);
   }
+  lit+=night*facadeGlow*1.15; // lit shop windows (storefront texture as emission)
  }
  if(mode<.5 && _mtl_u.u_visualCoat.x>0) {
   float coat=_mtl_u.u_visualCoat.x,coatRough=clamp(_mtl_u.u_visualCoat.y,.05,1.0);
@@ -459,9 +485,9 @@ fragment float4 xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
   float r=length(in.tangent.xy-.5)*2;
   float cluster=noise(in.world.xz*3.1+in.world.y*2.3)*.55+noise(in.world.xz*8.7-in.world.y*5.9)*.45;
   if(cluster<.14+.46*r) discard_fragment();
- } else if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y>5.5) {
+ } else if(_mtl_u.u_visualMaterial.w>.5 && in.uv.y>5.5 && in.uv.y<7.5) {
   float2 uv=float2(clamp(in.uv.x,0.0,1.0)*254.0/256+1.0/256,
-    .75+(clamp(in.uv.y-6,0.0,1.0)*254+1)/1024);
+    .375+(clamp(in.uv.y-6,0.0,1.0)*254+1)/2048);
   alpha*=s_surfaces.sample(surfaceSampler,uv).a;
   if(alpha<.4) discard_fragment();
  } else if(_mtl_u.u_visualMaterial.z>.5 && _mtl_u.u_visualMaterial.w<.5) alpha*=s_texColor.sample(smp,in.uv).a;

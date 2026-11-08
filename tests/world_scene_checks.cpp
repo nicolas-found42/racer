@@ -33,16 +33,18 @@ void inspectScene(const std::vector<racer::AssetVertex>& scene,bool textured) {
   check(scene.size()<=300000,"city stays within its GPU vertex budget");
   check(scene.size()%3==0,"triangle-list vertex count");
   bool finite=true,unit=true,clear=true,triangles=true,normalsAgree=true,noRoadBridges=true;
-  bool foliageDomain=true,foliageColor=true;
+  bool foliageDomain=true,foliageColor=true,facadeDomain=true;
   size_t foliageVertices=0;
   std::set<std::pair<float,float>> foliageCorners;
   std::set<std::pair<int,int>> occupiedBlocks;
   float tallest=0;
   for(const auto& v:scene) {
     for(float component:{v.x,v.y,v.z,v.u,v.v,v.nx,v.ny,v.nz}) finite&=std::isfinite(component);
+    if(v.v>=7.5f) facadeDomain&=(v.v==8 || v.v==9 || v.v==10);
     const double norm=double(v.nx)*v.nx+double(v.ny)*v.ny+double(v.nz)*v.nz;
     unit&=std::abs(norm-1)<.0001;
-    if(v.v>=5.5f) {
+    if(v.v>=5.5f && v.v<7.5f) { // ids 8-10 are facade atlas surfaces (siding, storefront, concrete), not foliage
+      
       ++foliageVertices;
       foliageDomain&=(v.u==0 || v.u==1) && (v.v==6 || v.v==7);
       foliageColor&=v.color==0xffffffff;
@@ -77,6 +79,7 @@ void inspectScene(const std::vector<racer::AssetVertex>& scene,bool textured) {
   check(clear,"all in-world vertices preserve 7m road clearance");
   check(noRoadBridges,"no scenery face bridges a road or the world boundary");
   check(occupiedBlocks.size()>=16&&tallest>=15,"district contains distributed buildings and a skyline");
+  check(facadeDomain,"facade vertices use only the atlas surface ids 8-10");
   check(foliageDomain,"foliage vertices use the dedicated complete-image UV domain");
   check(foliageColor,"foliage source RGB is retained with white vertex modulation");
   if(textured) {

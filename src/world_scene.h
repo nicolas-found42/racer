@@ -171,7 +171,7 @@ inline void building(std::vector<AssetVertex>& m,float x,float z,float w,float d
   const float h=3.9f+float(floors)*3.15f;
   const std::array<uint32_t,6> walls{rgb(174,157,132),rgb(144,143,133),rgb(185,174,154),rgb(130,124,113),rgb(162,137,117),rgb(190,182,163)};
   const auto wall=walls[style%walls.size()],trim=rgb(117,115,106),glass=rgb(54+style%13,77+style%15,86+style%17);
-  box(m,x,.16f,z,w,h,d,wall,.9f,style%3==0?3.f:0.f);
+  box(m,x,.16f,z,w,h,d,wall,.9f,style%3==0?3.f:(style%3==1?8.f:10.f)); // stone / siding / concrete atlas tiles
   box(m,x,.16f,z,w+.35f,.55f,d+.35f,rgb(110,108,99));
   box(m,x,h+.16f,z,w+.6f,.32f,d+.6f,trim);
   box(m,x,h+.48f,z,w-.9f,.14f,d-.9f,rgb(94,96,92));
@@ -207,7 +207,7 @@ inline void building(std::vector<AssetVertex>& m,float x,float z,float w,float d
   // Street-level shop glazing, recessed door and sun shades on both fronts.
   for(float side:{-1.f,1.f}) {
     const float front=z+side*(d*.5f+.045f);
-    box(m,x,.8f,front,w*.76f,2.15f,.08f,rgb(45,66,71),.18f,5);
+    box(m,x,.8f,front,w*.76f,2.15f,.08f,rgb(45,66,71),.18f,9); // storefront atlas tile (lit at night)
     for(int i=-1;i<=1;++i) box(m,x+float(i)*w*.25f,.6f,front+side*.065f,.12f,2.45f,.12f,trim);
     box(m,x,3.05f,front,w*.86f,.6f,.16f,(style%2)?rgb(114,66,46):rgb(59,88,79));
     box(m,x,2.9f,front+side*.6f,w*.9f,.12f,1.35f,(style%2)?rgb(155,114,77):rgb(87,115,102));

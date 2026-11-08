@@ -67,6 +67,24 @@ int main() try {
   write("RCRSURF2",payloadBytes);
   require(racer::readWorldSurfaces(path,&foliage)==expected && foliage,"version2 enables the alpha-palm tile explicitly");
   require(racer::readWorldSurfaces(directory.path/"absent",&foliage).empty() && !foliage,"missing data clears foliage availability");
+  {
+    // RCRSURF3: eight tiles (256x2048), palms and the facade/sign tiles available.
+    constexpr size_t largeBytes=256*2048*4;
+    std::vector<uint8_t> large(largeBytes);
+    for (size_t i=0;i<large.size();++i) large[i]=uint8_t(i*29+i/241);
+    auto writeLarge=[&](const std::string &magic,size_t bytes) {
+      std::ofstream output(path,std::ios::binary|std::ios::trunc);
+      output.write(magic.data(),std::streamsize(magic.size()));
+      output.write(reinterpret_cast<const char*>(large.data()),std::streamsize(bytes));
+      require(bool(output),"write large surface fixture");
+    };
+    writeLarge("RCRSURF3",largeBytes);
+    foliage=false;
+    require(racer::readWorldSurfaces(path,&foliage)==large && foliage,"version3 returns the 256x2048 payload and enables palms");
+    writeLarge("RCRSURF2",largeBytes);reject(path,"world_surface_read");
+    writeLarge("RCRSURF3",payloadBytes);reject(path,"world_surface_read");
+    writeLarge("RCRSURF3",largeBytes-1);reject(path,"world_surface_input");
+  }
   write("RCRSURF1",payloadBytes-1);reject(path,"world_surface_input");
   write("RCRSURF1",0);reject(path,"world_surface_input");
   write("BADMAGIC",payloadBytes);reject(path,"world_surface_read");
