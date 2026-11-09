@@ -231,17 +231,6 @@ void controls(CGContextRef c,const DriveState& s) {
   }
   CGContextRestoreGState(c);
 }
-void destinationStrip(CGContextRef c,const DriveState& s) {
-  if(!s.hasDestination||s.test) return;
-  const CGRect r=CGRectMake(470,24,340,46);
-  plate(c,r,0,1,12);
-  triangleArrow(c,{r.origin.x+36,r.origin.y+24},11,s.bearingRadians,cyan);
-  text(c,kLabel,11,"DESTINATION",r.origin.x+62,r.origin.y+18,muted,170,Align::Left,2.6);
-  text(c,kHeading,19,upper(s.destination.empty()?"EXPLORE THE CITY":s.destination),r.origin.x+62,r.origin.y+38,white,180,Align::Left,1);
-  const int metres=int(std::clamp(std::round(s.distance/10)*10,0.,1e8));
-  text(c,kNumeric,25,rangeText(metres),r.origin.x+r.size.width-12,r.origin.y+31,amber,110,Align::Right,.5);
-  text(c,kLabel,11,s.bearing,r.origin.x+r.size.width-12,r.origin.y+43,muted,80,Align::Right,2);
-}
 // Floating waypoint: diamond over the target when visible; edge arrow when not.
 bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float windowWidth,float windowHeight) {
   if(!s.markerActive) return false;
@@ -275,8 +264,9 @@ bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float w
     CGContextSetShadowWithColor(c,{0,0},12,shade(1,.7,.25,.9));
     triangleArrow(c,{ex,ey},14,std::atan2(dx,-dy),amber);
     CGContextRestoreGState(c);
-    const auto dist=rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
-    text(c,kNumeric,17,dist,ex,ey+(dy>0?-24:34),white,90,Align::Center,.4,true);
+    const CGFloat tw=measure(kLabel,13,label,1.6)+24,chipX=std::clamp<CGFloat>(ex,tw/2+12,w-tw/2-12),chipY=ey+(dy>0?-48:22);
+    plate(c,CGRectMake(chipX-tw/2,chipY,tw,24),4,1);
+    text(c,kLabel,13,label,chipX,chipY+17,white,320,Align::Center,1.6);
   }
   return false;
 }
@@ -380,22 +370,23 @@ struct DriveHud::Impl {
   void paintCompact(const DriveState& s) {
     CGContextRef c;begin(c);gTypeScale=1;
     const int metres=int(std::clamp(std::round(s.distance/10)*10,0.,1e8));
-    plate(c,CGRectMake(16,16,608,s.test?60:128),8);
     if(s.test) {
       const auto& t=*s.test;
-      text(c,kHeading,26,upper(t.name),32,48,white,576);
-      text(c,kNumeric,34,t.countdown?"GET READY":clock(t.elapsed)+" s",32,86,amber,300);
-      if(t.kind==2) text(c,kNumeric,34,"GATE "+std::to_string(t.gate)+"/"+std::to_string(t.gates),608,86,white,260,Align::Right);
+      plate(c,CGRectMake(14,14,420,76),0,1,12);
+      text(c,kLabel,16,upper(t.name),36,38,muted,300,Align::Left,2.2);
+      text(c,kNumeric,44,t.countdown?"GET READY":clock(t.elapsed),34,80,white,260,Align::Left,0,true);
+      if(t.kind==2) text(c,kNumeric,34,std::to_string(t.gate)+"/"+std::to_string(t.gates),420,70,amber,120,Align::Right);
     } else {
-      text(c,kHeading,28,s.vehicle,32,50,white,576);
-      text(c,kBody,22,s.destination.empty()?"EXPLORE THE CITY":s.destination,32,88,cyan,576);
-      text(c,kBody,22,rangeText(metres)+" / "+s.bearing,32,124,muted,576);
+      gradientRect(c,CGRectMake(16,18,4,62),cyan,amber,false,2);
+      text(c,kHeading,30,s.vehicle,32,46,white,580,Align::Left,.3,true);
+      if(s.hasDestination) text(c,kLabel,22,upper(s.destination.empty()?"EXPLORE THE CITY":s.destination)+"   ·   "+rangeText(metres)+"   "+s.bearing,32,76,cyan,580,Align::Left,1.6,true);
     }
     CGContextSaveGState(c);CGContextTranslateCTM(c,500,330);CGContextScaleCTM(c,.8,.8);
     speedometer(c,s,{0,0});
     CGContextRestoreGState(c);
-    plate(c,CGRectMake(16,426,608,40),6);
-    text(c,kLabel,22,"WASD/RT DRIVE  R RESET  ESC MENU",30,454,white,580,Align::Left,1);
+    CGFloat x=22;
+    auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,442,26,white)+6;x+=text(c,kLabel,19,upper(action),x,461,muted,200,Align::Left,1.2,true)+16;};
+    chip("WASD","DRIVE");chip("R","RESET");chip("ESC","MENU");
     end(c);mode=Mode::Drive;
   }
   void paintDrive(const DriveState& s,const HudLayout& fit,uint16_t width,uint16_t height) {
@@ -411,9 +402,7 @@ struct DriveHud::Impl {
     } else {
       identity(c,s);
     }
-    const bool markerVisible=worldMarker(c,s,fit,width,height);
-    // The destination strip only appears when the world marker is off screen.
-    if(!s.test&&!markerVisible) destinationStrip(c,s);
+    worldMarker(c,s,fit,width,height);
     const double bannerPhase=(now()-bannerStart)/1.9;
     if(bannerPhase>=0&&bannerPhase<1) banner(c,bannerTitle,bannerSub,bannerPhase,amber);
     controls(c,s);
@@ -690,24 +679,61 @@ struct DriveHud::Impl {
     }
     end(c);mode=Mode::Panel;
   }
-  void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest) {
+  // Compact menus (windows below 0.75 scale): 640x480 canvas, 24-unit type, a scrolling
+  // window of menu rows around the selection, warnings kept visible, one hint line.
+  void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount) {
+    const auto panel=ui::parsePanel(lines,optionCount<0?size_t(-1):size_t(optionCount));
     CGContextRef c;begin(c);gTypeScale=1;
-    fill(c,CGRectMake(12,12,616,456),{.02,.035,.048,.94},8);
-    text(c,kHeavy,30,upper(lines.front()),28,46,white,584,Align::Left,1);
-    gradientSkew(c,CGRectMake(28,58,300,3),8,cyan,{cyan.r,cyan.g,cyan.b,0});
-    const auto visible=hudPanelRows(lines);CGFloat baseline=94;
-    for(auto index:visible.rows){
-      const auto& line=lines[index];const bool selected=line.starts_with("> ");
-      if(selected) skewFill(c,CGRectMake(22,baseline-27,590,34),10,{.13,.45,.50,.92});
-      text(c,selected?kHeading:kBody,24,line,30,baseline,hudStatusRow(line)?amber:selected?white:white.withAlpha(.86),580);baseline+=36;
+    gradientRect(c,CGRectMake(0,0,640,480),{.01,.02,.03,.94},{.01,.02,.03,.80},false);
+    text(c,kHeavy,32,upper(panel.title),22,50,white,panel.subtitle.empty()?596:330,Align::Left,1.5,true);
+    if(!panel.subtitle.empty()&&panel.subtitle!="RACER") text(c,kBody,20,panel.subtitle,618,48,muted,270,Align::Right);
+    gradientSkew(c,CGRectMake(22,60,260,3),8,cyan,{cyan.r,cyan.g,cyan.b,0});
+    const auto menu=ui::selectable(panel);
+    size_t selectedAt=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) selectedAt=i;
+    // Status rows (warnings, notices, results headline) outrank the lower menu rows.
+    std::vector<const ui::Row*> status;const ui::Row* hero=nullptr;
+    for(const auto& row:panel.rows) {
+      if(row.kind==ui::RowKind::Warning||row.kind==ui::RowKind::Notice) status.push_back(&row);
+      else if(!row.value.empty()&&(row.label=="MEASUREMENT"||row.label=="PARTIAL (INVALID)")) hero=&row;
     }
-    if(visible.omittedStatus) text(c,kBody,22,std::to_string(visible.omittedStatus)+" MORE STATUS ROWS / ENLARGE WINDOW",28,421,amber,584);
-    else if(visible.omitted) text(c,kBody,22,std::to_string(visible.omitted)+" MORE ROWS / selection scrolls",28,421,muted,584);
-    text(c,kLabel,22,activeTest?"WASD/RT DRIVE  ESC PAUSE":"↑↓/D-PAD  ENTER/SOUTH OK  ESC/EAST BACK",28,454,muted,584,Align::Left,1);
+    CGFloat top=78;
+    if(hero) {
+      text(c,kNumeric,56,hero->value,22,top+44,hero->label=="MEASUREMENT"?green:red,380,Align::Left,0,true);
+      top+=60;
+    }
+    const size_t statusShown=std::min<size_t>(status.size(),activeTest?0:2);
+    const CGFloat footerTop=432,statusH=CGFloat(statusShown)*34+(status.size()>statusShown?26:0);
+    const size_t capacity=std::max<size_t>(3,size_t((footerTop-statusH-top-6)/40));
+    size_t first=0;if(menu.size()>capacity) first=std::min(selectedAt>capacity/2?selectedAt-capacity/2:0,menu.size()-capacity);
+    CGFloat y=top;
+    for(size_t i=first;i<std::min(menu.size(),first+capacity);++i) {
+      const auto& row=panel.rows[menu[i]];const CGRect r=CGRectMake(14,y,612,34);
+      if(row.selected) {skewFill(c,r,10,{.16,.52,.58,.95});skewFill(c,CGRectMake(12,y,5,34),10,amber);}
+      else gradientSkew(c,r,10,{.05,.08,.10,i%2?.72:.5},{.05,.08,.10,.28});
+      const CGFloat tx=40+(row.icon!=ui::Icon::None?32:0);
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{40,y+17},22,row.selected?amber:Ink{cyan.r,cyan.g,cyan.b,.8});
+      const bool valued=!row.value.empty();
+      text(c,row.selected?kHeading:kBody,24,row.label,tx,y+25,row.selected?white:white.withAlpha(.86),valued?300-(tx-40):560-(tx-40));
+      if(valued) text(c,kNumeric,26,row.value,606-(row.adjustable?30:0),y+26,row.selected?amber:white,260,Align::Right,.4);
+      if(row.adjustable) {const Ink k=row.selected?amber:Ink{1,1,1,.4};triangleArrow(c,{596,y+17},6,-1.5708,k);triangleArrow(c,{612,y+17},6,1.5708,k);}
+      y+=40;
+    }
+    if(menu.size()>capacity) text(c,kLabel,18,std::to_string(selectedAt+1)+" OF "+std::to_string(menu.size()),618,y+16,muted,200,Align::Right,2);
+    CGFloat sy=footerTop-statusH;
+    for(size_t i=0;i<statusShown;++i) {
+      const bool bad=status[i]->kind==ui::RowKind::Warning;const Ink tone=bad?red:amber;
+      fill(c,CGRectMake(14,sy,612,30),{tone.r,tone.g,tone.b,.16},4);fill(c,CGRectMake(14,sy,4,30),tone);
+      text(c,kBody,19,status[i]->label,28,sy+21,white,590);sy+=34;
+    }
+    if(status.size()>statusShown) text(c,kLabel,18,std::to_string(status.size()-statusShown)+" MORE STATUS ROWS / ENLARGE WINDOW",22,sy+16,amber,590,Align::Left,1.5);
+    CGFloat x=22;
+    auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,444,26,white)+6;x+=text(c,kLabel,19,upper(action),x,463,muted,200,Align::Left,1.2)+16;};
+    if(activeTest){chip("WASD","DRIVE");chip("ESC","PAUSE");}
+    else{chip("↑↓","SELECT");chip("ENTER","OK");chip("ESC","BACK");}
     end(c);mode=Mode::Panel;
   }
   void paintPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map,const std::string& mapKey) {
-    if(compact) paintCompactPanel(lines,activeTest);
+    if(compact) paintCompactPanel(lines,activeTest,optionCount);
     else paintPanelNormal(lines,optionCount,map);
     previousPanel=lines;previousActiveTest=activeTest;previousOptions=optionCount;previousMapKey=mapKey;
   }
