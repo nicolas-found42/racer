@@ -17,6 +17,14 @@ template<class F> void rejects(F action, const char *name) {
   try { action(); } catch (const std::invalid_argument &) { rejected = true; }
   check(rejected, name);
 }
+// Independent bicycle-to-Ackermann road-wheel angle, geometric (cot) form.
+double ackermannAngle(const racer::VehicleGeometry &g, std::size_t wheel, double central) {
+  if (wheel >= 2) return 0;
+  const double mid = (g.wheels[0].center.x + g.wheels[1].center.x) * .5;
+  const double offset = g.wheels[wheel].center.x - mid;
+  return std::atan(g.wheelbase() * std::tan(central) /
+                   (g.wheelbase() - offset * std::tan(central)));
+}
 }
 int main() {
   using namespace racer;
@@ -54,7 +62,7 @@ int main() {
           float m[16], rotateX[16], rotateY[16];
           wheelRenderTransform(m, geometry, wheel, heading, 12, -18, steering, spin);
           bx::mtxRotateX(rotateX, float(-spin));
-          bx::mtxRotateY(rotateY, float(-heading-(wheel < 2 ? steering : 0)));
+          bx::mtxRotateY(rotateY, float(-heading-ackermannAngle(geometry, wheel, steering)));
           for (int column = 0; column < 3; ++column)
             for (int row = 0; row < 3; ++row) {
               double expected = 0;
@@ -70,7 +78,21 @@ int main() {
         }
   float m[16];
   wheelRenderTransform(m,geometry,0,0,0,0,.3,0);
-  check(m[8] > 0 && near(m[10],std::cos(.3)), "front +Z nose steers right");
+  check(m[8] > 0 && near(m[10],std::cos(ackermannAngle(geometry,0,.3))), "front +Z nose steers right");
+  // Full Ackermann: the inside wheel turns more than the central angle, the
+  // outside wheel less; parallel steering and zero lock are exact.
+  const double toRight = wheelSteeringAngle(geometry,1,.3), toLeft = wheelSteeringAngle(geometry,0,.3);
+  check(geometry.wheels[1].center.x > geometry.wheels[0].center.x ? toRight > .3 && toLeft < .3
+                                                                 : toRight < .3 && toLeft > .3,
+        "Ackermann inner/outer wheel angles");
+  check(near(wheelSteeringAngle(geometry,0,.3,0),.3) && near(wheelSteeringAngle(geometry,1,.3,0),.3) &&
+        near(wheelSteeringAngle(geometry,0,0),0) && near(wheelSteeringAngle(geometry,2,.3),0) &&
+        near(wheelSteeringAngle(geometry,3,.3),0), "parallel steer, zero lock and straight rear");
+  check(near(wheelSteeringAngle(geometry,0,-.3),-wheelSteeringAngle(geometry,1,.3)),
+        "Ackermann mirror symmetry");
+  check(near(wheelSteeringAngle(geometry,0,.3),ackermannAngle(geometry,0,.3)) &&
+        near(wheelSteeringAngle(geometry,1,.3),ackermannAngle(geometry,1,.3)),
+        "Ackermann matches independent geometry");
   wheelRenderTransform(m,geometry,2,0,0,0,.3,0);
   check(near(m[8],0) && near(m[10],1), "rear wheel stays straight");
   wheelRenderTransform(m,geometry,0,0,0,0,0,.2);

@@ -1,5 +1,6 @@
 #pragma once
 #include "simulation.h"
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -26,7 +27,7 @@ struct TestResult {
   double seconds = 0, distance = 0, initialSpeed = 0;
   bool valid = false;
   std::string reason;
-  int testRevision = 1, handlingRevision = 1;
+  int testRevision = 2, handlingRevision = 1;
   std::string carId = "prototype";
 };
 class TestSession {
@@ -57,6 +58,7 @@ private:
   double countdown_ = 0, total_ = 0, measured_ = 0, distance_ = 0;
   size_t nextGate_ = 0;
   bool braking_ = false;
+  std::uint64_t configurationRevision_ = 0;
   void finish(double seconds, double distance);
 };
 } // namespace racer

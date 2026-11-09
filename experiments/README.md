@@ -1,3 +1,6 @@
+Latest: [partial-throttle stall diagnosis](2026-11-09-partial-throttle-stall/README.md): analog trigger held 5–24 % leaves all 24 cars at the idle-creep 1.7–2.7 m/s with 0.000 m/s² (engine 860–862 rpm, clutch 0.31–0.34); full throttle and the 7.34–7.94 s acceleration test are healthy. Cause: linear throttle→torque (14 Nm at 10 %) vs 35 Nm closed-throttle braking, a proportional idle governor, and an automatic clutch already 12.5 % engaged at idle; no production source changed yet.
+- [vehicle physics patch series applied and renderer wired](2026-11-09-vehicle-physics-patches/README.md): force-based chassis/drivetrain/tyre model, ctest 106/106, 29-car terrain/benchmark/wall/slope-tyre checks, placement and low-car fixes, screenshots of six cars at several angles; chase camera tilted up to 5° and tyre smoke lightened (before/after screenshots, headless parallel capture matrix); hand drive test still open.
+
 # Experiments
 
 Latest: [facade-v4 close-out: night lighting, smoke/sparks, streaks, reflectors](2026-11-08-facade-v4/README.md): sparks, stronger wet-road streaks, dusk-gated day green trim, night road studs; measured night saturation .492→.427 (city .405), day G−R +.054→+.012 vs MCLA; adversarial re-review gate exits 0. Console parity remains unmet; world density is the dominant residual.

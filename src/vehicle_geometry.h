@@ -37,8 +37,17 @@ BoundaryClearance orientedBoundaryClearance(const VehicleGeometry &, double head
 bool clampVehicleToBoundary(const VehicleGeometry &, double heading,
                             double &x, double &z, double halfWorld = worldScale::halfExtent);
 
+// Central/bicycle road-wheel angle -> individual road-wheel angle, radians.
+// Positive steer turns right, so the front-right wheel is the inner wheel.
+// ackermann=0 is parallel steering, 1 is geometric Ackermann. Rear steer is zero.
+// This geometric correction supplies the tyre solver AND wheel rendering;
+// it does not prescribe the body's path or remove tyre slip.
+double wheelSteeringAngle(const VehicleGeometry &, std::size_t wheel,
+                          double centralAngle, double ackermann = 1.0);
+
 // Column-major bgfx-compatible matrix. Positive steering turns the nose toward
-// +X; rear wheels do not steer. Positive spin rolls forward (+Z at heading 0).
+// +X; steering is the central angle, corrected per wheel with full Ackermann.
+// Rear wheels do not steer. Positive spin rolls forward (+Z at heading 0).
 void wheelRenderTransform(float *matrix, const VehicleGeometry &, std::size_t wheel,
                           double heading, double x, double z, double steering,
                           double spin, bool rolling = true);

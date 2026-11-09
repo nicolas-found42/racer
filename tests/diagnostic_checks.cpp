@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
       require(flow.session.phase() == TestPhase::Invalid, "timeout invalidates");
       flow.startTest(TestKind::Handling); flow.rearming = false;
       for (int i = 0; i < 360; ++i) flow.tick({});
-      flow.sim.car.z = 497.49; flow.sim.car.speed = 10;
+      flow.sim.car.z = 497.79; flow.sim.car.speed = 10; // nose reaches the 500 m wall at z=497.8
       flow.tick({1,0,0}); require(!flow.session.result().valid, "boundary invalid");
       flow.startTest(TestKind::Handling); flow.rearming = false; flow.action(Action::Reset);
       require(flow.profile.records.size() == 1, "invalid attempts never record");

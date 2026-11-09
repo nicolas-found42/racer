@@ -1,3 +1,4 @@
+#include "performance_class.h"
 #include "play_flow.h"
 #include <filesystem>
 #include <iostream>
@@ -22,7 +23,8 @@ int main() try {
   require(flow.session.result().setup.acceleration==1.15,"effective values frozen");
   flow.rearming=false;flow.sim.tick({},0);
   for (int i=0;i<2400 && flow.session.active();++i) flow.tick({});
-  require(flow.session.result().valid && std::abs(flow.session.result().seconds-8/1.15)<.01,"measured upgrade effect");
+  require(flow.session.result().valid && std::abs(flow.session.result().seconds-racer::prototypeRating(flow.effectiveSetup(0)).targetSeconds)<.01 &&
+          flow.session.result().seconds<7.916461-.9,"measured upgrade effect");
   require(flow.profile.records.size()==1 && flow.profile.records[0].setup.acceleration==1.15,"effective record identity");
   racer::StoredResult stock;stock.testId="acceleration";
   require(!flow.profile.best(stock),"stock cannot match upgrade record");

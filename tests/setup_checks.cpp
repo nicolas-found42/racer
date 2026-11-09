@@ -86,7 +86,7 @@ int main() {
       malformedProfiles.push_back(header + value + " 1 1\n1 1 1\n1 1 1\n0\n");
     for (const char *record : {"unknown acceleration 1 1 0 1 1 1 8 100 0",
                                "prototype unknown 1 1 0 1 1 1 8 100 0",
-                               "prototype acceleration 2 1 0 1 1 1 8 100 0",
+                               "prototype acceleration 3 1 0 1 1 1 8 100 0",
                                "prototype acceleration 1 2 0 1 1 1 8 100 0",
                                "prototype acceleration 1 1 3 1 1 1 8 100 0",
                                "prototype acceleration 1 1 0 1.3 1 1 8 100 0",
@@ -107,6 +107,22 @@ int main() {
       check(candidate.garage.applied[0].brake == 1.1 && !malformed.save(p) &&
                 read(store.path()) == bad,
             "malformed original preserved");
+    }
+    {
+      // Revision 1 (retired kinematic model) stays loadable; revision 2 (force-based
+      // model) is accepted; the two are never comparable.
+      StoredResult old = result, current = result;
+      old.testRevision = 1;
+      current.testRevision = 2;
+      check(old.valid() && current.valid() && !old.comparable(current), "test revisions valid but not comparable");
+      Profile both;
+      check(both.record(old) && both.record(current) && both.records.size() == 2, "both revisions retained");
+      ProfileStore revisions(root / "revisions.txt");
+      Profile reloaded;
+      check(revisions.save(both) && ProfileStore(root / "revisions.txt").load(reloaded) &&
+                reloaded.records == both.records && reloaded.best(current)->testRevision == 2 &&
+                reloaded.best(old)->testRevision == 1,
+            "revision 1 and 2 records round-trip");
     }
     if (geteuid() != 0) {
       const auto readOnlyDir = root / "read-only";

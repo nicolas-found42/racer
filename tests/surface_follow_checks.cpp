@@ -87,7 +87,27 @@ int main(){
     check(near(index.sample(0,0,0)->height,0)&&near(index.sample(0,0,2)->height,2)&&!index.sample(0,0,1),"reference band keeps bridge decks separate and skips alpha geometry");
     SurfaceIndex::Builder high;high.add(plane());high.add(plane(0,0,.7));auto highest=high.finish();check(near(highest.sample(0,0,0)->height,.7)&&near(highest.sample(0,0,0,.5)->height,0),"highest eligible face with explicit window");
     auto reversed=plane();std::swap(reversed.triangles[0],reversed.triangles[2]);std::swap(reversed.triangles[3],reversed.triangles[5]);check(single(reversed).sample(0,0,0)->normal.y>.99,"up face eligibility independent of source winding");
-    auto steep=single(plane(.6,0));check(steep.triangleCount()==0&&!fit(steep,vehicle,0,0,0,0),"steep unsupported faces produce no fit");
+    // Default road support now accepts banked/graded faces up to 60 degrees (normal.y >= .5).
+    auto steep=single(plane(2.5,0));check(steep.triangleCount()==0&&!fit(steep,vehicle,0,0,0,0)&&!steep.sampleBelow(0,0,1,2),"steep unsupported faces produce no fit");
+    auto banked=single(plane(.6,0));auto bankedHit=banked.sampleBelow(0,0,.2,1);
+    check(banked.triangleCount()==2&&bankedHit&&near(bankedHit->normal.y,1/std::sqrt(1.36))&&near(bankedHit->normal.x,-.6/std::sqrt(1.36)),"banked 31 degree road face is driveable support with its true normal");
+    Limits legacy;legacy.minimumNormalY=.9;check(single(plane(.6,0),identity,legacy).triangleCount()==0,"legacy 0.9 normal limit remains selectable");
+    Limits tooLoose;tooLoose.minimumNormalY=.05;rejected([&]{single(plane(),identity,tooLoose);},"normal limit below 0.1 rejected");
+    {
+      // Downward-facing underside: two-sided by default, excluded for consistently wound collision meshes.
+      auto under=plane();std::swap(under.triangles[0],under.triangles[2]);std::swap(under.triangles[3],under.triangles[5]);
+      Limits oneSided;oneSided.twoSided=false;
+      check(single(under).triangleCount()==2&&single(under,identity,oneSided).triangleCount()==0&&single(plane(),identity,oneSided).triangleCount()==2,"twoSided=false excludes only downward-facing faces");
+    }
+    {
+      // Bounded downward query: a bridge deck above the origin or a lower deck beyond the drop is never selected.
+      SurfaceIndex::Builder decks;decks.add(plane());decks.add(plane(0,0,4));auto both=decks.finish();
+      check(near(both.sampleBelow(0,0,.5,1)->height,0)&&near(both.sampleBelow(0,0,4.5,1)->height,4)&&!both.sampleBelow(0,0,3,1)&&!both.sampleBelow(0,0,-.5,.2),"sampleBelow selects the highest support inside the query band only");
+      auto sampler=makeRoadSampler(std::make_shared<const SurfaceIndex>(std::move(both)),.8,1.5);
+      auto road=sampler(0,0,.5,1);auto air=sampler(0,0,3,1);
+      check(road&&near(road->height,0)&&near(road->friction,.8)&&near(road->rollingResistance,1.5)&&!air,"road sampler owns the index, applies multipliers and reports air as no support");
+      rejected([&]{makeRoadSampler(nullptr);},"null road sampler index rejected");
+    }
     auto tiny=single(plane(0,0,0,0,1,0,1));check(!tiny.sample(1.001,.5,0)&&!tiny.sample(.5,1.001,0),"same-cell query does not extrapolate face");
     auto boundary=single(plane(0,0,0,-8,0,-8,0));check(boundary.sample(-8,-8,0)&&boundary.sample(0,0,0)&&boundary.sample(-.01,-.01,0)&&!boundary.sample(-8.001,-4,0),"negative and exact cell boundaries retain coverage only inside faces");
   }

@@ -28,20 +28,29 @@ int main() {
   try {
     const auto baseA = run(TestKind::Acceleration),
                baseB = run(TestKind::Braking);
-    check(std::abs(baseA.seconds - 8) < 1e-8,
-          "interpolated default acceleration");
-    check(std::abs(baseB.distance - 38.8737) < .25,
+    // Force-based model (test revision 2): the default profile measures 7.9165 s and
+    // 41.816 m. The benchmark replays the simulation to locate the 100 km/h and
+    // 0.01 m/s thresholds, so these are not sample-quantized.
+    check(std::abs(baseA.seconds - 7.916461) < .005 &&
+              std::abs(baseA.distance - 110.4465) < .1,
+          "default acceleration measurement");
+    check(std::abs(baseB.distance - 41.816) < .1 && std::abs(baseB.seconds - 2.9182) < .01,
           "baseline braking distance");
-    check(baseB.initialSpeed == 100.0 / 3.6, "exact initial speed");
+    check(baseA.testRevision == 2 && baseB.testRevision == 2, "force-based test revision");
+    // Braking begins at the first simulation sample at or above 100 km/h.
+    check(baseB.initialSpeed >= 100.0 / 3.6 && baseB.initialSpeed < 100.0 / 3.6 + .1,
+          "initial speed is the first sample at or above 100 km/h");
     for (double acceleration : {.8, 1., 1.05, 1.2}) {
       VehicleSetup variant;
       variant.acceleration = acceleration;
       const auto braking = run(TestKind::Braking, variant);
-      check(braking.initialSpeed == 100.0 / 3.6,
+      // The lead-in reaches 100 km/h with the tuned engine, so drivetrain and
+      // suspension state at brake-on differ slightly, but not the braking.
+      check(braking.initialSpeed >= 100.0 / 3.6 && braking.initialSpeed < 100.0 / 3.6 + .25,
             "acceleration-independent brake initial speed");
-      check(std::abs(braking.distance - baseB.distance) < 1e-9,
+      check(std::abs(braking.distance - baseB.distance) < .02 * baseB.distance,
             "acceleration-independent brake distance");
-      check(std::abs(braking.seconds - baseB.seconds) < 1e-9,
+      check(std::abs(braking.seconds - baseB.seconds) < .02 * baseB.seconds,
             "acceleration-independent brake time");
     }
     VehicleSetup fast;
@@ -49,17 +58,22 @@ int main() {
     VehicleSetup strong;
     strong.brake = 1.2;
     const auto faster = run(TestKind::Acceleration, fast);
-    check(std::abs(faster.seconds - 8 / 1.2) < step,
-          "acceleration multiplier equation");
+    // The multiplier scales engine torque, so the time falls roughly in
+    // proportion (8/1.2 = 6.667 s under the old kinematic model); gearing,
+    // shift timing and slip decide the exact value.
+    check(std::abs(faster.seconds - 6.5911) < .01 && faster.seconds < baseA.seconds &&
+              faster.seconds > baseA.seconds / 1.35,
+          "acceleration multiplier effect");
     const auto stronger = run(TestKind::Braking, strong);
     check(stronger.distance < baseB.distance, "brake improvement");
-    // The authored braking term plus unchanged coast drag predicts distance
-    // inversely proportional to deceleration, within fixed-step integration
-    // error.
-    const double expectedRatio =
-        (9.645061728 + .25) / (1.2 * 9.645061728 + .25);
-    check(std::abs(stronger.distance / baseB.distance - expectedRatio) < .005,
-          "brake strength magnitude");
+    // Brake torque is limited by tyre grip: extra torque barely shortens the stop
+    // (ABS holds slip), while weaker brakes lengthen it clearly.
+    VehicleSetup weak;
+    weak.brake = .8;
+    const auto weaker = run(TestKind::Braking, weak);
+    check(stronger.distance / baseB.distance > .94 && stronger.distance / baseB.distance < .995 &&
+              weaker.distance / baseB.distance > 1.08 && weaker.distance / baseB.distance < 1.2,
+          "brake strength saturates at the tyre limit");
     for (int fps : {30, 60, 144}) {
       check(std::abs(run(TestKind::Acceleration, {}, fps).seconds -
                      baseA.seconds) < step,
@@ -79,19 +93,22 @@ int main() {
           "steering transient equation");
     Simulation tunedCap;
     tunedCap.setSetup(fast);
-    // Travel straight from the southern test start so cap is reached before
-    // bounds.
-    tunedCap.car.z = -350;
-    for (int i = 0; i < 1400; ++i)
+    // There is no artificial road-speed clamp: a tuned car keeps accelerating
+    // past the old 160 km/h limit, bounded by gearing, drag and the road.
+    Simulation stockCap;
+    tunedCap.car.z = stockCap.car.z = -350;
+    for (int i = 0; i < 1400; ++i) {
       tunedCap.tick({1, 0, 0});
-    check(std::abs(tunedCap.car.speed - 160 / 3.6) < 1e-9,
-          "tuning preserves forward cap");
+      stockCap.tick({1, 0, 0});
+    }
+    check(tunedCap.car.speed > stockCap.car.speed && tunedCap.car.speed * 3.6 > 130 &&
+              tunedCap.car.speed * 3.6 < 250,
+          "tuning raises uncapped speed");
     tunedCap.reset();
     tunedCap.tick({});
     for (int i = 0; i < 1000; ++i)
       tunedCap.tick({0, 1, 0});
-    check(std::abs(tunedCap.car.speed + 30 / 3.6) < 1e-9,
-          "tuning preserves reverse cap");
+    check(tunedCap.car.gear == -1 && tunedCap.car.speed < -5 / 3.6, "tuned car reverses");
     VehicleSetup bad;
     bad.acceleration = std::numeric_limits<double>::quiet_NaN();
     check(!slowSteer.setSetup(bad), "invalid setup rejected");

@@ -29,7 +29,9 @@ bool StoredResult::valid() const {
   return ((carId == "prototype" && modelRevision==1) || (imported && modelRevision==2)) &&
          (testId == "acceleration" || testId == "braking" ||
           testId == "handling") &&
-         testRevision == 1 && slot < 3 && setup.valid() &&
+         // Revision 1: retired kinematic model; revision 2: force-based model.
+         // comparable() never mixes them, and old records stay loadable.
+         (testRevision == 1 || testRevision == 2) && slot < 3 && setup.valid() &&
          finiteRange(seconds, .000001, 3600) &&
          finiteRange(distance, 0, 100000) &&
          finiteRange(initialSpeed, 0, 160.0 / 3.6 + .01);

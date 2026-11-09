@@ -1,6 +1,7 @@
 #pragma once
 #include "simulation.h"
 #include <SDL3/SDL.h>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include "diagnostics.h"
@@ -93,7 +94,7 @@ public:
       if (t < 2.0)
         return;
       require(!paused, "held-trigger menu resume failed");
-      require(car.speed == 0, "stale trigger applied on menu resume");
+      require(std::abs(car.speed) < .01, "stale trigger applied on menu resume"); // 0.01 m/s: physics settling residual, same stop threshold as benchmarks
       SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
                                  -32768);
       focus(SDL_EVENT_WINDOW_FOCUS_LOST);

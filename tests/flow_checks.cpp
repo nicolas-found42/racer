@@ -50,11 +50,14 @@ int main() {
       failObserverAllocation=false;
       observed.observe("recovered");
       observed.paused=false;observed.rearming=false;
-      observed.sim.car.x=497.49;observed.sim.car.heading=1.5707963267948966;observed.sim.car.speed=10;
+      observed.sim.car.x=497.79;/* default body nose reaches the 500 m wall at x=497.8 */observed.sim.car.heading=1.5707963267948966;observed.sim.car.speed=10;
       observed.tick({});
       check(observed.sim.boundaryContact,"single-tick boundary fixture reaches wall");
-      observed.tick({});
-      check(!observed.sim.boundaryContact,"collision clears before10Hz sample");
+      // The impulse/friction wall response lasts a few ticks (about 58 ms here),
+      // not one clamped tick, but still ends well inside a 100 ms sampling interval.
+      int contactTicks=1;
+      while (observed.sim.boundaryContact && contactTicks<11) {observed.tick({});++contactTicks;}
+      check(!observed.sim.boundaryContact && contactTicks<=10,"collision clears before10Hz sample");
       diagnostics.flush();
       bool recovered=false;size_t boundaryEvents=0;
       for (const auto &file:std::filesystem::directory_iterator(root / "observer-history")) {

@@ -1,0 +1,5 @@
+drive-input 1 0 0
+wait 3.5
+drive-input 0.8 0 -1
+wait 6
+quit

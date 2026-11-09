@@ -1,7 +1,47 @@
 #include "test_session.h"
 #include <algorithm>
 #include <cmath>
+#include <utility>
 namespace racer {
+namespace {
+constexpr double targetSpeed = 100.0 / 3.6;
+// A measured standstill threshold (0.036 km/h), not a guessed braking force.
+constexpr double stopSpeed = .01;
+double groundSpeed(const Car &car) {
+  const double velocity = std::hypot(car.velocityX, car.velocityZ);
+  // Preserve observeMotion's use with legacy synthetic Car samples.
+  return velocity > 0 ? velocity : std::abs(car.speed);
+}
+bool finiteMotion(const Car &car) {
+  return std::isfinite(car.x) && std::isfinite(car.z) &&
+         std::isfinite(car.speed) && std::isfinite(car.heading) &&
+         std::isfinite(car.velocityX) && std::isfinite(car.velocityZ) &&
+         std::isfinite(car.distance);
+}
+double traveled(const Car &before, const Car &after) {
+  const double arc = after.distance - before.distance;
+  // Simulation accumulates substep arc length; manually supplied samples may
+  // only carry positions, in which case a segment is the available measurement.
+  return arc > 0 ? arc : std::hypot(after.x - before.x, after.z - before.z);
+}
+// Replay the entire state, including wheel, suspension and drivetrain memory.
+// A RoadSampler used in a benchmark must be a pure spatial query.
+template <class Reached>
+double atEvent(Simulation &sim, const Simulation &before, Input input,
+               double interval, Reached reached) {
+  double low = 0, high = interval;
+  Simulation best = sim;
+  for (unsigned i = 0; i < 28; ++i) {
+    const double middle = .5 * (low + high);
+    Simulation trial = before;
+    trial.tick(input, middle);
+    if (reached(trial.car)) { high = middle; best = std::move(trial); }
+    else low = middle;
+  }
+  sim = std::move(best);
+  return high;
+}
+} // namespace
 const char *testId(TestKind k) {
   switch (k) {
   case TestKind::Acceleration:
@@ -48,7 +88,8 @@ std::optional<double> gateCrossing(const Gate &g, const Car &a, const Car &b) {
 }
 bool TestSession::start(TestKind kind, int slot, const VehicleSetup &setup,
                         Simulation &sim,const std::string &carId,int modelRevision) {
-  if (slot < 0 || slot > 2 || !setup.valid() ||
+  if (slot < 0 || slot > 2 || !setup.valid() || modelRevision < 1 ||
+      carId.empty() || !std::isfinite(timeout) || timeout <= 0 || timeout > 3600 ||
       (kind != TestKind::Acceleration && kind != TestKind::Braking &&
        kind != TestKind::Handling))
     return false;
@@ -67,6 +108,7 @@ bool TestSession::start(TestKind kind, int slot, const VehicleSetup &setup,
   total_ = measured_ = distance_ = 0;
   nextGate_ = 0;
   braking_ = false;
+  configurationRevision_ = sim.configurationRevision();
   return true;
 }
 void TestSession::invalidate(std::string reason) {
@@ -79,6 +121,10 @@ void TestSession::invalidate(std::string reason) {
   phase_ = TestPhase::Invalid;
 }
 void TestSession::finish(double seconds, double distance) {
+  if (!std::isfinite(seconds) || !std::isfinite(distance) || seconds < 0 || distance < 0) {
+    invalidate("Invalid measurement - no record saved");
+    return;
+  }
   result_.seconds = seconds;
   result_.distance = distance;
   result_.valid = true;
@@ -86,34 +132,55 @@ void TestSession::finish(double seconds, double distance) {
   phase_ = TestPhase::Result;
 }
 void TestSession::tick(Simulation &sim, Input player, double dt) {
-  if (!active() || !(dt > 0) || !std::isfinite(dt))
+  if (!active() || !(dt > 0) || !std::isfinite(dt) || dt > 1)
     return;
+  if (sim.configurationRevision() != configurationRevision_ ||
+      sim.setup() != result_.setup) {
+    invalidate("Vehicle or road configuration changed - no record saved");
+    return;
+  }
+  if (!std::isfinite(timeout) || timeout <= 0 || timeout > 3600) {
+    invalidate("Invalid test timeout - no record saved");
+    return;
+  }
   if (phase_ == TestPhase::Countdown) {
-    countdown_ = std::max(0.0, countdown_ - dt);
-    if (countdown_ < 1e-9) {
+    const double consumed = std::min(countdown_, dt);
+    countdown_ -= consumed;
+    dt -= consumed;
+    if (countdown_ <= 1e-9) {
       countdown_ = 0;
       phase_ = TestPhase::Running;
+    } else return;
+  }
+  // Bound measurement segments independently of the rendering frame rate.
+  while (phase_ == TestPhase::Running && dt > 1e-12) {
+    const double interval = std::min(dt, step);
+    Input input = player;
+    if (result_.kind != TestKind::Handling)
+      input = braking_ ? Input{0, 1, 0} : Input{1, 0, 0};
+    const Simulation before = sim;
+    sim.tick(input, interval);
+    if (sim.chassisContact) {
+      invalidate("Chassis contact - no record saved");
+      return;
     }
-    return;
+    double advanced = interval;
+    if (!sim.boundaryContact && finiteMotion(sim.car)) {
+      if (result_.kind != TestKind::Handling && !braking_ &&
+          groundSpeed(before.car) < targetSpeed &&
+          groundSpeed(sim.car) >= targetSpeed) {
+        advanced = atEvent(sim, before, input, interval,
+                           [](const Car &c) { return groundSpeed(c) >= targetSpeed; });
+      } else if (result_.kind == TestKind::Braking && braking_ &&
+                 groundSpeed(before.car) > stopSpeed &&
+                 groundSpeed(sim.car) <= stopSpeed) {
+        advanced = atEvent(sim, before, input, interval,
+                           [](const Car &c) { return groundSpeed(c) <= stopSpeed; });
+      }
+    }
+    observeMotion(before.car, sim.car, advanced, sim.boundaryContact);
+    dt -= advanced;
   }
-  Input input = player;
-  if (result_.kind != TestKind::Handling) {
-    input = braking_ ? Input{0, 1, 0} : Input{1, 0, 0};
-  }
-  auto before = sim.car;
-  sim.tick(input, dt);
-  constexpr double target = 100.0 / 3.6;
-  if (result_.kind == TestKind::Braking && !braking_ &&
-      sim.car.speed >= target - 1e-10) {
-    // End the lead-in at the threshold, then begin braking on the next tick.
-    // A stronger acceleration setup must not change the measured initial speed.
-    const double fraction = std::clamp(
-        (target - before.speed) / (sim.car.speed - before.speed), 0.0, 1.0);
-    sim.car.x = before.x + (sim.car.x - before.x) * fraction;
-    sim.car.z = before.z + (sim.car.z - before.z) * fraction;
-    sim.car.speed = target;
-  }
-  observeMotion(before, sim.car, dt, sim.boundaryContact);
 }
 void TestSession::observeMotion(const Car &before, const Car &after, double dt,
                                 bool boundaryContact) {
@@ -123,13 +190,21 @@ void TestSession::observeMotion(const Car &before, const Car &after, double dt,
     invalidate("Boundary contact - no record saved");
     return;
   }
+  if (!finiteMotion(before) || !finiteMotion(after)) {
+    invalidate("Non-finite vehicle state - no record saved");
+    return;
+  }
   total_ += dt;
   if (total_ > (result_.kind == TestKind::Handling ? 300 : timeout)) {
     invalidate("Timed out - no record saved");
     return;
   }
-  const double movement = std::hypot(after.x - before.x, after.z - before.z);
-  constexpr double target = 100.0 / 3.6;
+  const double movement = traveled(before, after);
+  const double initialSpeed = groundSpeed(before), finalSpeed = groundSpeed(after);
+  if (!std::isfinite(movement) || !std::isfinite(initialSpeed) || !std::isfinite(finalSpeed)) {
+    invalidate("Invalid measurement - no record saved");
+    return;
+  }
   if (result_.kind == TestKind::Handling) {
     // Only the expected gate may advance. Process subsequent gates in segment
     // order.
@@ -149,30 +224,29 @@ void TestSession::observeMotion(const Car &before, const Car &after, double dt,
     measured_ += dt;
     distance_ += movement;
   } else if (result_.kind == TestKind::Acceleration) {
-    if (before.speed < target && after.speed >= target) {
+    if (initialSpeed < targetSpeed && finalSpeed >= targetSpeed) {
       const double fraction =
-          (target - before.speed) / (after.speed - before.speed);
+          (targetSpeed - initialSpeed) / (finalSpeed - initialSpeed);
       finish(measured_ + dt * fraction, distance_ + movement * fraction);
     } else {
       measured_ += dt;
       distance_ += movement;
     }
   } else if (!braking_) {
-    if (after.speed >= target - 1e-10) {
+    if (finalSpeed >= targetSpeed - 1e-10) {
       braking_ = true;
-      result_.initialSpeed = after.speed;
-      // Brake begins at the next exact tick boundary; lead-in is excluded.
+      result_.initialSpeed = finalSpeed;
+      // Brake starts at this complete simulated state; lead-in is excluded.
       measured_ = distance_ = 0;
     }
   } else {
-    if (after.speed <= 0) {
-      // Last braking interval may reach zero before the tick ends.
-      const double deceleration = result_.setup.brake * 9.645061728 + .25;
-      const double fraction =
-          std::clamp(before.speed / (deceleration * dt), 0.0, 1.0);
-      // Simulation uses semi-implicit position integration; retain that
-      // measurement.
-      finish(measured_ + dt * fraction, distance_ + movement);
+    if (finalSpeed <= stopSpeed) {
+      // tick() replays to this observed event. For externally supplied samples,
+      // interpolate the speed crossing without assuming any deceleration law.
+      const double fraction = initialSpeed > stopSpeed && initialSpeed > finalSpeed
+          ? std::clamp((initialSpeed - stopSpeed) / (initialSpeed - finalSpeed), 0.0, 1.0)
+          : 1.0;
+      finish(measured_ + dt * fraction, distance_ + movement * fraction);
     } else {
       measured_ += dt;
       distance_ += movement;
