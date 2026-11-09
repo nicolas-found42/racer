@@ -37,6 +37,7 @@ struct RendererLifetime {
   }
 };
 #include "drive_hud.h"
+#include "presentation.h"
 #include "livery_raster.h"
 #include "mesh_asset.h"
 #include "post_process.h"
@@ -88,6 +89,107 @@ void box(Mesh &m, float x, float y, float z, float sx, float sy, float sz,
                    normals[f][1], normals[f][2]});
   }
 }
+// Flat annulus on the ground (turntable plate/rim for the garage showroom).
+void annulus(Mesh &m, float r0, float r1, float y, uint32_t c, int segments = 72) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    const float x0 = std::sin(a0), z0 = std::cos(a0), x1 = std::sin(a1), z1 = std::cos(a1);
+    const float q[4][2] = {{x0 * r0, z0 * r0}, {x0 * r1, z0 * r1}, {x1 * r1, z1 * r1}, {x1 * r0, z1 * r0}};
+    for (int k : {0, 2, 1, 0, 3, 2})
+      m.push_back({q[k][0], y, q[k][1], c, .95f, 0.f, 0.f, 1.f, 0.f});
+  }
+}
+uint32_t packRgb(float r, float g, float b) {
+  auto q = [](float v) { return uint32_t(std::clamp(v, 0.f, 1.f) * 255.f + .5f); };
+  return 0xff000000u | (q(b) << 16) | (q(g) << 8) | q(r);
+}
+uint32_t lerpRgb(uint32_t a, uint32_t b, float t) {
+  auto ch = [&](int shift) {
+    const float x = float((a >> shift) & 255), y = float((b >> shift) & 255);
+    return uint32_t(x + (y - x) * t + .5f) << shift;
+  };
+  return 0xff000000u | ch(16) | ch(8) | ch(0);
+}
+// Inward-facing wall band between two heights with a vertical vertex-colour ramp.
+void wallBand(Mesh &m, float radius, float y0, float y1, uint32_t c0, uint32_t c1, int segments = 64) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    const float x0 = std::sin(a0) * radius, z0 = std::cos(a0) * radius, x1 = std::sin(a1) * radius, z1 = std::cos(a1) * radius;
+    const float nx = -std::sin((a0 + a1) / 2), nz = -std::cos((a0 + a1) / 2);
+    const Vertex q[4] = {{x0, y0, z0, c0, .95f, 0.f, nx, 0.f, nz}, {x1, y0, z1, c0, .95f, 0.f, nx, 0.f, nz},
+                         {x1, y1, z1, c1, .95f, 0.f, nx, 0.f, nz}, {x0, y1, z0, c1, .95f, 0.f, nx, 0.f, nz}};
+    for (int k : {0, 1, 2, 0, 2, 3}) m.push_back(q[k]);
+  }
+}
+// Ground ellipse (contact shadow) centred on the origin of its transform.
+void ellipse(Mesh &m, float rx, float rz, float y, uint32_t c, int segments = 40) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    m.push_back({0, y, 0, c, .95f, 0.f, 0.f, 1.f, 0.f});
+    m.push_back({std::sin(a1) * rx, y, std::cos(a1) * rz, c, .95f, 0.f, 0.f, 1.f, 0.f});
+    m.push_back({std::sin(a0) * rx, y, std::cos(a0) * rz, c, .95f, 0.f, 0.f, 1.f, 0.f});
+  }
+}
+// Closed studio cyclorama: glossy floor pool, graded walls, softboxes and ceiling
+// strip lights, so garage screens read as a lit showroom instead of the street.
+Mesh buildStudio() {
+  Mesh m;
+  constexpr float radius = 14.f;
+  const uint32_t floorIn = packRgb(.62f, .66f, .74f), floorOut = packRgb(.11f, .12f, .15f);
+  for (int i = 0; i < 14; ++i)
+    annulus(m, float(i), float(i + 1), .03f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
+  const float ys[] = {0.f, 1.2f, 3.5f, 6.f, 9.f};
+  const uint32_t cs[] = {packRgb(.10f, .11f, .14f), packRgb(.30f, .33f, .40f), packRgb(.56f, .62f, .72f),
+                         packRgb(.26f, .29f, .36f), packRgb(.07f, .08f, .10f)};
+  for (int b = 0; b < 4; ++b) wallBand(m, radius, ys[b], ys[b + 1], cs[b], cs[b + 1]);
+  annulus(m, 0.f, radius, 9.f, packRgb(.03f, .035f, .045f));
+  const uint32_t strip = packRgb(1.f, .98f, .95f);
+  for (float r : {3.f, 6.5f, 10.f}) annulus(m, r, r + .28f, 8.9f, strip);
+  // Softbox panels on the wall (evenly spaced, tall emissive quads).
+  for (int i = 0; i < 8; ++i) {
+    const float a = 6.2831853f * (float(i) + .5f) / 8, half = .16f;
+    const float x0 = std::sin(a - half) * (radius - .05f), z0 = std::cos(a - half) * (radius - .05f);
+    const float x1 = std::sin(a + half) * (radius - .05f), z1 = std::cos(a + half) * (radius - .05f);
+    const uint32_t lo = packRgb(.85f, .90f, 1.f), hi = packRgb(1.f, 1.f, 1.f);
+    const Vertex q[4] = {{x0, 2.2f, z0, lo, .95f, 0.f, 0.f, 0.f, 0.f}, {x1, 2.2f, z1, lo, .95f, 0.f, 0.f, 0.f, 0.f},
+                         {x1, 6.2f, z1, hi, .95f, 0.f, 0.f, 0.f, 0.f}, {x0, 6.2f, z0, hi, .95f, 0.f, 0.f, 0.f, 0.f}};
+    for (int k : {0, 1, 2, 0, 2, 3}) m.push_back(q[k]);
+  }
+  return m;
+}
+// Alpha-blended floor gloss under the showroom car: a bright pool that fades
+// outward plus faint rim-light reflection rings, drawn above the floor and
+// below the contact shadow so the floor reads as polished.
+Mesh buildFloorGloss() {
+  Mesh m;
+  auto withAlpha = [](uint32_t rgb, float a) {
+    return (uint32_t(std::clamp(a, 0.f, 1.f) * 255.f + .5f) << 24) | (rgb & 0x00ffffffu);
+  };
+  constexpr int steps = 18;
+  for (int i = 0; i < steps; ++i) {
+    const float r0 = 9.f * float(i) / steps, r1 = 9.f * float(i + 1) / steps;
+    const float f = std::pow(1.f - (r0 + r1) * .5f / 9.f, 2.2f);
+    annulus(m, r0, r1, .04f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
+  }
+  annulus(m, 4.35f, 4.5f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
+  annulus(m, 6.9f, 7.0f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
+  return m;
+}
+// Translucent plate-coloured disc drawn over the mirrored car so the floor
+// reflection reads as a faint, polished-floor image rather than a second car.
+Mesh buildReflectionVeil() {
+  Mesh m;
+  auto withAlpha = [](uint32_t rgb, float a) {
+    return (uint32_t(std::clamp(a, 0.f, 1.f) * 255.f + .5f) << 24) | (rgb & 0x00ffffffu);
+  };
+  constexpr int steps = 28;
+  for (int i = 0; i < steps; ++i)
+    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, .052f,
+            withAlpha(lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
+                              std::pow(float(i) / 27.f * (3.4f / 3.9f), 1.3f)),
+                      .80f + .15f * float(i) / (steps - 1)));
+  return m;
+}
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -110,6 +212,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double inspectionDistance = 0;
   bool postNeutral = false;
   bool hideHud = false, followGround = false, hideGuides = false;
+  int hudAccent = 0;
+  bool hudAccentExplicit = false;
   int windowWidth = 1920, windowHeight = 1080;
   // Prefer the sixteen-tile RCRSURF4 atlas (window grids, sign sheets, shop
   // glazing), then the eight-tile RCRSURF3 file, then the four-tile one;
@@ -180,6 +284,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         nightAmount = .45f;
       else {
         std::cerr << "--time must be day, dusk or night\n";
+        return 1;
+      }
+    } else if (a == "--hud-accent" && i + 1 < argc) {
+      const std::string value = argv[++i];
+      const char *names[] = {"cyan", "green", "violet", "magenta", "ice"};
+      hudAccent = -1;
+      hudAccentExplicit = true;
+      for (int k = 0; k < 5; ++k)
+        if (value == names[k]) hudAccent = k;
+      if (hudAccent < 0) {
+        std::cerr << "--hud-accent must be cyan, green, violet, magenta or ice\n";
         return 1;
       }
     } else if (a == "--hide-hud")
@@ -321,7 +436,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::cerr << "Capture/automation: [--background] [--shader-dir path] "
                    "[--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
-      std::cerr << "Asset inspection: [--hide-hud]\n";
+      std::cerr << "Asset inspection: [--hide-hud] [--hud-accent cyan|green|violet|magenta|ice]\n";
       return 1;
     }
   }
@@ -434,6 +549,16 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   lifetime.ready = true;
   racer::DriveHud driveHud;
+  // The accent is a display preference kept beside the profile (`<profile>.hud`),
+  // so it never touches the career schema. --hud-accent overrides it for the run.
+  const std::string accentPath = profilePath + ".hud";
+  if (!hudAccentExplicit) {
+    std::ifstream in(accentPath);
+    int saved = 0;
+    if (in >> saved && saved >= 0 && saved < racer::DriveHud::accentCount)
+      hudAccent = saved;
+  }
+  driveHud.setAccent(hudAccent);
   std::cout << "Renderer: " << bgfx::getRendererName(bgfx::getRendererType())
             << " | " << width << 'x' << height << '\n';
   diagnostics.event(
@@ -1125,10 +1250,33 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       layout);
   Mesh eventMarker;
   // Low roadside beacons preserve event discoverability without obscuring cars.
-  box(eventMarker, -5.5, .5, 0, .16, 1, .16, 0xff90e050);
-  box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff90e050);
+  box(eventMarker, -5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
+  box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
   for (float side : {-1.f, 1.f})
-    box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff90e050);
+    box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff4db8ff);
+  Mesh studioMesh = buildStudio();
+  auto studioBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(studioMesh.data(), uint32_t(studioMesh.size() * sizeof(Vertex))), layout);
+  Mesh floorGloss = buildFloorGloss();
+  auto floorGlossBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(floorGloss.data(), uint32_t(floorGloss.size() * sizeof(Vertex))), layout);
+  Mesh reflectionVeil = buildReflectionVeil();
+  auto reflectionVeilBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(reflectionVeil.data(), uint32_t(reflectionVeil.size() * sizeof(Vertex))), layout);
+  Mesh shadowBlob;
+  ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
+  auto shadowBlobBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
+  Mesh turntable;
+  // Lit slate plate: lighter at the centre so dark paint separates from it.
+  for (int i = 0; i < 28; ++i)
+    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, .05f,
+            lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
+                    std::pow(float(i) / 27.f, 1.3f)));
+  annulus(turntable, 3.55f, 3.72f, .06f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, .06f, 0xff4db8ff);    // amber outer hairline
+  auto turntableBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
       bgfx::copy(eventMarker.data(),
                  uint32_t(eventMarker.size() * sizeof(Vertex))),
@@ -1304,6 +1452,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           break;
         case SDLK_M:
           flow.action(Action::Map);
+          break;
+        case SDLK_H:
+          driveHud.cycleAccent();
+          {
+            // Best effort: a failed write only loses the preference.
+            std::ofstream out(accentPath, std::ios::trunc);
+            if (out) out << driveHud.accentIndex() << '\n';
+          }
           break;
         default:
           break;
@@ -1666,6 +1822,19 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
     cameraY = bodyElevation + (cameraView == "elevated" ? cameraDistance() * 1.3
                                                         : cameraHeight());
+    // Showroom: menus orbit a slow turntable camera around the car, framed to
+    // the right of the left-hand menu column. Driving cameras are untouched.
+    const bool showroom = flow.screen != racer::Screen::Drive &&
+                          flow.screen != racer::Screen::Pause &&
+                          inspectionDistance <= 0 && scene != "scale";
+    if (showroom) {
+      constexpr double pi = 3.14159265358979323846;
+      const double angle = shown.heading + pi * .78 + elapsed * .22;
+      const double radius = std::max(6.9, cameraDistance() * .9);
+      targetX = shown.x + std::sin(angle) * radius;
+      targetZ = shown.z + std::cos(angle) * radius;
+      cameraY = bodyElevation + 1.75;
+    }
     double blend = 1 - std::exp(-8 * dt);
     cameraX += (targetX - cameraX) * blend;
     cameraZ += (targetZ - cameraZ) * blend;
@@ -1873,10 +2042,18 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                             : cameraView == "rear" || inspectionDistance > 0
                                 ? 2.f
                                 : 0.f;
+    float lookX = float(shown.x + std::sin(shown.heading) * lookAhead),
+          lookZ = float(shown.z + std::cos(shown.heading) * lookAhead);
+    if (showroom) {
+      // Shift the aim point left of the car so the car sits right of centre.
+      const float fx = lookX - float(cameraX), fz = lookZ - float(cameraZ);
+      const float len = std::max(1e-3f, std::hypot(fx, fz));
+      const float rx = fz / len, rz = -fx / len; // camera right in the ground plane
+      lookX -= rx * .85f;
+      lookZ -= rz * .85f;
+    }
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
-                  {float(shown.x + std::sin(shown.heading) * lookAhead),
-                   float(bodyElevation + lookHeight()),
-                   float(shown.z + std::cos(shown.heading) * lookAhead)});
+                  {lookX, float(bodyElevation + lookHeight()), lookZ});
     // Chase-camera field of view widens with speed (up to +12 degrees by ~48
     // m/s), smoothed so it never jumps; inspection and scale cameras keep their
     // fixed lens.
@@ -2033,7 +2210,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           bgfx::submit(1, visualProgram);
         }
     bx::mtxIdentity(model);
-    if (!hideGuides && !flow.session.active() && scene != "scale") {
+    if (!hideGuides && !flow.session.active() && scene != "scale" &&
+        flow.screen == racer::Screen::Drive) {
       for (const auto &marker : flow.career.markers()) {
         racer::worldTransform(model, 0, marker.x, marker.z);
         bgfx::setTransform(model);
@@ -2043,6 +2221,36 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bindUnlit(3, whiteTexture);
         bgfx::submit(1, visualProgram);
       }
+    }
+    if (showroom) {
+      racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, studioBuffer);
+      // ALWAYS: the room is convex and seen from inside, so it can overwrite any
+      // street furniture drawn earlier in the frame; the car draws after it.
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
+      bgfx::setVertexBuffer(0, floorGlossBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS |
+                     BGFX_STATE_BLEND_ALPHA);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
+      racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, shadowBlobBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
+      racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, turntableBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
     }
     if (flow.session.active() &&
         flow.session.result().kind == racer::TestKind::Handling) {
@@ -2434,16 +2642,32 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bgfx::submit(1, visualProgram);
       }
     }
-    for (bool transparent : {false, true})
+    // Showroom floor reflection: pass 0 draws the opaque car mirrored in the
+    // floor plane (always-pass, no depth write), a veil dims it, then pass 1
+    // draws the real car over it.
+    const bool mirrorPass = showroom && !vehicles.empty();
+    for (int pass = mirrorPass ? 0 : 1; pass < 2; ++pass)
+     for (bool transparent : {false, true}) {
+      if (pass == 0 && transparent)
+        continue;
       for (const auto &section : graphics->sections) {
         if (section.blend != transparent)
           continue;
         float wheelModel[16];
+        const float *base = model;
         if (section.wheel >= 0 && !vehicles.empty()) {
           wheelMatrix(wheelModel, size_t(section.wheel), section.rolling);
-          bgfx::setTransform(wheelModel);
-        } else
-          bgfx::setTransform(model);
+          base = wheelModel;
+        }
+        float flipped[16];
+        if (pass == 0) {
+          float flip[16];
+          bx::mtxIdentity(flip);
+          flip[5] = -.55f; // squashed mirror: a gloss hint that stays on the plate
+          bx::mtxMul(flipped, base, flip);
+          base = flipped;
+        }
+        bgfx::setTransform(base);
         bgfx::setVertexBuffer(0, graphics->vertices, section.first,
                               section.count);
         const bool textured = section.image >= 0;
@@ -2463,10 +2687,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                   : whiteTexture,
               flags);
         }
-        bgfx::setState(
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-            BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA |
-            (transparent ? BGFX_STATE_BLEND_ALPHA : BGFX_STATE_WRITE_Z));
+        if (pass == 0)
+          bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
+                         BGFX_STATE_MSAA);
+        else
+          bgfx::setState(
+              BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+              BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA |
+              (transparent ? BGFX_STATE_BLEND_ALPHA : BGFX_STATE_WRITE_Z));
         float carEye[4] = {eyeUniform[0], eyeUniform[1], eyeUniform[2],
                            section.mask ? section.alphaCutoff : 0};
         const float carMaterial[4] = {section.roughness, section.metallic,
@@ -2485,6 +2713,26 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bgfx::setUniform(coatUniform, carCoat);
         bgfx::submit(1, visualProgram);
       }
+      if (pass == 0) {
+        float veilModel[16];
+        racer::worldTransform(veilModel, 0, float(shown.x), float(shown.z));
+        bgfx::setTransform(veilModel);
+        bgfx::setVertexBuffer(0, reflectionVeilBuffer);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
+                       BGFX_STATE_BLEND_ALPHA);
+        bindUnlit(3, whiteTexture);
+        bgfx::submit(1, visualProgram);
+        // The reflection pass painted over the contact shadow; redraw it.
+        float blobModel[16];
+        racer::worldTransform(blobModel, float(shown.heading), float(shown.x), float(shown.z));
+        bgfx::setTransform(blobModel);
+        bgfx::setVertexBuffer(0, shadowBlobBuffer);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                       BGFX_STATE_DEPTH_TEST_LESS);
+        bindUnlit(3, whiteTexture);
+        bgfx::submit(1, visualProgram);
+      }
+     }
     // Rotational blur: translucent ghosts of each rolling wheel across the
     // angle it sweeps during a ~1/40 s exposure, so spokes smear at speed as in
     // the reference frames. Authored.
@@ -2677,46 +2925,110 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     auto panel = flow.lines();
     const bool active =
         flow.screen == racer::Screen::Drive && flow.session.active();
-    if (!hideHud && flow.screen == racer::Screen::Drive && !active) {
-      const auto &marker = flow.career.selectedMarker();
-      const double dx = marker.x - sim.car.x, dz = marker.z - sim.car.z;
-      const double bearing = std::remainder(
-          std::atan2(dx, dz) - sim.car.heading, 2 * 3.14159265358979323846);
-      driveHud.draw(uint16_t(width), uint16_t(height),
-                    std::abs(sim.car.speed) * 2.236936, sim.car.direction != 1,
-                    vehicles.empty() ? "Prototype"
-                                     : vehicles[activeVehicle].name,
-                    marker.id, std::hypot(dx, dz),
-                    std::abs(bearing) < .2 ? "AHEAD"
-                    : bearing > 0          ? "RIGHT"
-                                           : "LEFT");
-    }
-    const int columns = width / 8;
-    const int rows = height / 16;
-    if (!hideHud && (flow.screen != racer::Screen::Drive || active))
-      driveHud.drawPanel(uint16_t(width), uint16_t(height), panel, active);
-    if (active && flow.session.result().kind == racer::TestKind::Handling) {
-      const auto &gates = racer::handlingCourse().gates;
-      {
-        const size_t i = flow.session.nextGate();
-        const auto &g = gates[i];
-        float p[4] = {float(g.x), 5.5f, float(g.z), 1}, eye[4]{}, clip[4]{};
-        for (int r = 0; r < 4; ++r)
-          for (int c = 0; c < 4; ++c)
-            eye[r] += view[c * 4 + r] * p[c];
-        for (int r = 0; r < 4; ++r)
-          for (int c = 0; c < 4; ++c)
-            clip[r] += projection[c * 4 + r] * eye[c];
-        if (clip[3] > 0) {
-          int x = int((clip[0] / clip[3] + 1) * width / 16);
-          // Keep the active tag below the compact HUD when perspective
-          // places a distant gate on the horizon, including at 720p.
-          int y = std::max(9, int((1 - clip[1] / clip[3]) * height / 32));
-          if (x >= 2 && x < columns - 16 && y >= 9 && y < rows - 5)
-            bgfx::dbgTextPrintf(uint16_t(x), uint16_t(y), 0x2f,
-                                "[NEXT GATE] %zu", i + 1);
-        }
+    // Project a world point to window pixels for HUD waypoint markers.
+    auto projectToWindow = [&](float wx, float wy, float wz, float &px,
+                               float &py, bool &behind) {
+      float p[4] = {wx, wy, wz, 1}, eye[4]{}, clip[4]{};
+      for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+          eye[r] += view[c * 4 + r] * p[c];
+      for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+          clip[r] += projection[c * 4 + r] * eye[c];
+      behind = clip[3] <= 1e-4f;
+      const float w = behind ? 1e-4f : clip[3];
+      px = (clip[0] / w + 1) * float(width) / 2;
+      py = (1 - clip[1] / w) * float(height) / 2;
+    };
+    if (!hideHud && flow.screen == racer::Screen::Drive) {
+      racer::DriveState hud;
+      hud.mph = std::abs(sim.car.speed) * 2.236936;
+      hud.reverse = sim.car.direction != 1;
+      hud.heading = sim.car.heading;
+      hud.carX = sim.car.x;
+      hud.carZ = sim.car.z;
+      hud.throttle = selectedInput.throttle;
+      hud.brake = selectedInput.brake;
+      hud.steer = selectedInput.steer;
+      hud.vehicle = vehicles.empty() ? "Prototype" : vehicles[activeVehicle].name;
+      if (!active) {
+        const auto &marker = flow.career.selectedMarker();
+        const double dx = marker.x - sim.car.x, dz = marker.z - sim.car.z;
+        const double bearing = std::remainder(
+            std::atan2(dx, dz) - sim.car.heading, 2 * 3.14159265358979323846);
+        hud.hasDestination = true;
+        hud.destination = marker.id;
+        hud.distance = std::hypot(dx, dz);
+        hud.bearingRadians = bearing;
+        hud.bearing = std::abs(bearing) < .2 ? "AHEAD"
+                      : bearing > 0          ? "RIGHT"
+                                             : "LEFT";
+        hud.markerActive = true;
+        hud.markerLabel = marker.id;
+        hud.markerDistance = hud.distance;
+        hud.blips.push_back({bearing, hud.distance, 0});
+        projectToWindow(float(marker.x), 4.f, float(marker.z), hud.markerX,
+                        hud.markerY, hud.markerBehind);
+      } else {
+        racer::DriveTest test;
+        const auto &r = flow.session.result();
+        test.kind = r.kind == racer::TestKind::Acceleration ? 0
+                    : r.kind == racer::TestKind::Braking    ? 1
+                                                            : 2;
+        test.name = std::string(racer::testName(r.kind));
+        test.countdown =
+            flow.session.phase() == racer::TestPhase::Countdown;
+        test.countdownSeconds = flow.session.countdownRemaining();
+        test.automatic = r.kind != racer::TestKind::Handling;
+        test.measuring = r.kind != racer::TestKind::Braking ||
+                         flow.session.measuringBraking();
+        test.elapsed = flow.session.elapsed();
+        test.distance = flow.session.distance();
+        test.speedKmh = std::abs(sim.car.speed) * 3.6;
+        if (r.kind == racer::TestKind::Handling) {
+          const auto &gates = racer::handlingCourse().gates;
+          const size_t i = flow.session.nextGate();
+          const auto cue = racer::courseGuidance(gates[i], sim.car);
+          test.gate = int(i + 1);
+          test.gates = int(gates.size());
+          test.gateDistance = cue.distance;
+          test.bearing = cue.bearing;
+          test.turn = cue.turn;
+          test.note = cue.returnToApproach
+                          ? "Return to approach side"
+                          : std::string("Cross toward ") + cue.crossing;
+          hud.markerActive = true;
+          hud.markerLabel = "Gate " + std::to_string(i + 1);
+          hud.markerDistance = cue.distance;
+          for (size_t g = i; g < std::min(gates.size(), i + 2); ++g) {
+            const auto gc = racer::courseGuidance(gates[g], sim.car);
+            hud.blips.push_back({gc.bearing, gc.distance, g == i ? 1 : 2});
+          }
+          projectToWindow(float(gates[i].x), 5.5f, float(gates[i].z),
+                          hud.markerX, hud.markerY, hud.markerBehind);
+        } else
+          test.note = r.kind == racer::TestKind::Braking
+                          ? (test.measuring ? "Automatic braking measurement"
+                                            : "Lead-in: not measured")
+                          : "Automatic launch measurement";
+        hud.test = test;
       }
+      driveHud.draw(uint16_t(width), uint16_t(height), hud);
+    }
+    if (!hideHud && flow.screen != racer::Screen::Drive) {
+      racer::PanelMap eventMap;
+      if (flow.screen == racer::Screen::Events) {
+        eventMap.active = true;
+        eventMap.carX = sim.car.x;
+        eventMap.carZ = sim.car.z;
+        eventMap.heading = sim.car.heading;
+        for (const auto &marker : flow.career.markers())
+          eventMap.markers.push_back(
+              {marker.x, marker.z, marker.id,
+               marker.id == flow.career.selectedMarker().id});
+      }
+      driveHud.drawPanel(uint16_t(width), uint16_t(height), panel, active,
+                         flow.menuCount(), eventMap);
     }
     if (!review.capture.empty()) {
       requestCapture(review.capture);
@@ -2841,6 +3153,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     SDL_CloseGamepad(pad);
   bgfx::destroy(gateBuffer);
   bgfx::destroy(eventBuffer);
+  bgfx::destroy(turntableBuffer);
+  bgfx::destroy(studioBuffer);
+  bgfx::destroy(floorGlossBuffer);
+  bgfx::destroy(reflectionVeilBuffer);
+  bgfx::destroy(shadowBlobBuffer);
   bgfx::destroy(worldBuffer);
   bgfx::destroy(skyBuffer);
   bgfx::destroy(contactBuffer);

@@ -28,6 +28,7 @@ struct ReviewScript {
     if (arg == "up") return SDLK_UP;
     if (arg == "down") return SDLK_DOWN;
     if (arg == "reset") return SDLK_R;
+    if (arg == "accent") return SDLK_H;
     throw InvalidKey();
   }
   explicit ReviewScript(const std::string &path) {

@@ -1,5 +1,8 @@
 #include "drive_hud.h"
 #include "hud_layout.h"
+#include "ui_model.h"
+#include "ui_paint.h"
+#include "world_scale.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 #include <bgfx/bgfx.h>
@@ -7,66 +10,328 @@
 #include "vs_debugdraw_fill_texture.bin.h"
 #include "fs_debugdraw_fill_texture.bin.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <sstream>
 #include <stdexcept>
-#include <tuple>
 #include <vector>
 
 namespace racer {
 namespace {
+using namespace paint;
+using ui::upper;
+Ink& accent=gAccent;
 constexpr uint16_t canvasWidth=1280,canvasHeight=720;
 struct HudVertex {float x,y,z;uint32_t color;float u,v;};
-struct Ink {CGFloat r,g,b,a;};
 std::string boundedText(const std::string& value,size_t bytes) {
   size_t end=std::min(value.size(),bytes);
   while(end>0&&end<value.size()&&(static_cast<unsigned char>(value[end])&0xc0)==0x80) --end;
   return value.substr(0,end);
 }
-constexpr Ink white{.95,.96,.94,1},muted{.66,.73,.75,1},amber{1,.74,.35,1},cyan{.47,.83,.86,1};
-void fill(CGContextRef c,CGRect rect,Ink ink,CGFloat radius=0) {
-  CGContextSetRGBFillColor(c,ink.r,ink.g,ink.b,ink.a);
-  if(radius>0) {
-    CGPathRef path=CGPathCreateWithRoundedRect(rect,radius,radius,nullptr);
-    CGContextAddPath(c,path);CGContextFillPath(c);CGPathRelease(path);
-  } else CGContextFillRect(c,rect);
+std::string rangeText(int metres) {
+  char range[32];
+  if(metres<1000) std::snprintf(range,sizeof(range),"%d m",metres);
+  else std::snprintf(range,sizeof(range),"%.1f km",double(metres)/1000);
+  return range;
 }
-void label(CGContextRef c,const char* face,CGFloat size,const std::string& value,
-           CGFloat x,CGFloat baseline,Ink ink,CGFloat width=1000,bool right=false) {
-  CFStringRef string=CFStringCreateWithBytes(kCFAllocatorDefault,
-      reinterpret_cast<const UInt8*>(value.data()),CFIndex(value.size()),kCFStringEncodingUTF8,false);
-  if(!string) return;
-  CFStringRef fontName=CFStringCreateWithCString(kCFAllocatorDefault,face,kCFStringEncodingASCII);
-  CTFontRef font=CTFontCreateWithName(fontName,size,nullptr);CFRelease(fontName);
-  const CGFloat rgba[]{ink.r,ink.g,ink.b,ink.a};
-  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
-  CGColorRef color=CGColorCreate(space,rgba);CGColorSpaceRelease(space);
-  const void* keys[]{kCTFontAttributeName,kCTForegroundColorAttributeName};
-  const void* values[]{font,color};
-  CFDictionaryRef attributes=CFDictionaryCreate(kCFAllocatorDefault,keys,values,2,
-      &kCFTypeDictionaryKeyCallBacks,&kCFTypeDictionaryValueCallBacks);
-  CFAttributedStringRef attributed=CFAttributedStringCreate(kCFAllocatorDefault,string,attributes);
-  CTLineRef original=CTLineCreateWithAttributedString(attributed),line=original;
-  CFAttributedStringRef tokenString=nullptr;CTLineRef token=nullptr,truncated=nullptr;
-  if(CTLineGetTypographicBounds(original,nullptr,nullptr,nullptr)>width) {
-    tokenString=CFAttributedStringCreate(kCFAllocatorDefault,CFSTR("…"),attributes);
-    token=CTLineCreateWithAttributedString(tokenString);
-    truncated=CTLineCreateTruncatedLine(original,width,kCTLineTruncationEnd,token);
-    if(truncated) line=truncated;
-  }
+std::string clock(double seconds) {
+  char text[32];
+  const int whole=int(seconds);
+  if(whole>=60) std::snprintf(text,sizeof(text),"%d:%05.2f",whole/60,seconds-60*(whole/60));
+  else std::snprintf(text,sizeof(text),"%.2f",seconds);
+  return text;
+}
+Ink speedColour(double t) {
+  t=std::clamp(t,0.,1.);
+  return t<.7?mix(accent,amber,t/.7):mix(amber,red,(t-.7)/.3);
+}
+// Dark glass plate used by every HUD cluster: soft shadow, vertical gradient, hairline.
+void plate(CGContextRef c,CGRect r,CGFloat radius,CGFloat alpha=1,CGFloat skew=0) {
   CGContextSaveGState(c);
-  CGContextSetTextMatrix(c,CGAffineTransformMakeScale(1,-1));
-  if(right) x-=CTLineGetTypographicBounds(line,nullptr,nullptr,nullptr);
-  CGContextSetTextPosition(c,x,baseline);CTLineDraw(line,c);
+  CGContextSetShadowWithColor(c,{0,3},12,shade(0,0,0,.45*alpha));
+  if(skew>0) skewFill(c,r,skew,{.02,.035,.048,.55*alpha});
+  else fill(c,r,{.02,.035,.048,.55*alpha},radius);
   CGContextRestoreGState(c);
-  if(truncated) CFRelease(truncated);
-  if(token) CFRelease(token);
-  if(tokenString) CFRelease(tokenString);
-  CFRelease(original);CFRelease(attributed);CFRelease(attributes);
-  CGColorRelease(color);CFRelease(font);CFRelease(string);
+  if(skew>0) gradientSkew(c,r,skew,{.07,.11,.14,.80*alpha},{.02,.035,.048,.72*alpha});
+  else gradientRect(c,r,{.07,.11,.14,.80*alpha},{.02,.035,.048,.72*alpha},false,radius);
+  setStroke(c,{1,1,1,.10*alpha});CGContextSetLineWidth(c,1);
+  if(skew>0){skewPath(c,r,skew);CGContextStrokePath(c);}
+  else{rounded(c,r,radius);CGContextStrokePath(c);}
+}
+void triangleArrow(CGContextRef c,CGPoint at,CGFloat size,double radians,Ink k) {
+  const CGPoint pts[]{{0,-size},{size*.78,size*.82},{0,size*.36},{-size*.78,size*.82}};
+  const CGFloat s=std::sin(radians),co=std::cos(radians);
+  setFill(c,k);
+  for(int i=0;i<4;++i){
+    const CGFloat x=at.x+pts[i].x*co-pts[i].y*s,y=at.y+pts[i].x*s+pts[i].y*co;
+    if(i==0) CGContextMoveToPoint(c,x,y);else CGContextAddLineToPoint(c,x,y);
+  }
+  CGContextClosePath(c);CGContextFillPath(c);
+}
+void diamond(CGContextRef c,CGPoint at,CGFloat r,Ink k) {
+  setFill(c,k);
+  CGContextMoveToPoint(c,at.x,at.y-r);CGContextAddLineToPoint(c,at.x+r,at.y);
+  CGContextAddLineToPoint(c,at.x,at.y+r);CGContextAddLineToPoint(c,at.x-r,at.y);
+  CGContextClosePath(c);CGContextFillPath(c);
+}
+
+// ---- driving HUD ---------------------------------------------------------
+void speedometer(CGContextRef c,const DriveState& s,CGPoint centre) {
+  constexpr double maxMph=180,start=135,sweep=270;
+  const double mph=std::clamp(s.mph,0.,999.),fraction=std::min(mph/maxMph,1.);
+  // Backing disc with a faint top-light so it reads as a lens, not a flat circle.
+  CGContextSaveGState(c);
+  CGContextSetShadowWithColor(c,{0,4},16,shade(0,0,0,.5));
+  setFill(c,{.02,.035,.048,.62});CGContextFillEllipseInRect(c,CGRectMake(centre.x-114,centre.y-114,228,228));
+  CGContextRestoreGState(c);
+  CGContextSaveGState(c);
+  CGContextAddEllipseInRect(c,CGRectMake(centre.x-114,centre.y-114,228,228));CGContextClip(c);
+  radialGlow(c,{centre.x,centre.y-50},170,{.16,.26,.31,.50},{.02,.035,.048,.78});
+  CGContextRestoreGState(c);
+  setStroke(c,{1,1,1,.12});CGContextSetLineWidth(c,1.5);
+  CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-113.5,centre.y-113.5,227,227));
+  // Track + value arc (accent -> amber -> red as speed climbs).
+  arc(c,centre,102,start,start+sweep,6,{1,1,1,.10},kCGLineCapButt);
+  const int segments=std::max(1,int(fraction*sweep/2));
+  for(int i=0;i<segments;++i) {
+    const double t0=double(i)/segments,t1=double(i+1)/segments;
+    arc(c,centre,102,start+sweep*fraction*t0,start+sweep*fraction*t1+.8,6,speedColour(fraction*(t0+t1)/2));
+  }
+  // Ticks every 10 mph, labels every 20; passed ticks light up.
+  for(int v=0;v<=int(maxMph);v+=10) {
+    const double angle=start+sweep*v/maxMph;const bool major=v%20==0,lit=v<=mph;
+    const Ink k=lit?speedColour(double(v)/maxMph):Ink{1,1,1,major?.40:.24};
+    const auto a=onCircle(centre,91,angle),b=onCircle(centre,major?78:84,angle);
+    setStroke(c,k);CGContextSetLineWidth(c,major?2.4:1.3);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,a.x,a.y);CGContextAddLineToPoint(c,b.x,b.y);CGContextStrokePath(c);
+    if(major&&v%40==0) {
+      const auto p=onCircle(centre,64,angle);
+      text(c,kNumeric,13,std::to_string(v),p.x,p.y+4.5,lit?white.withAlpha(.9):Ink{1,1,1,.38},40,Align::Center,.4);
+    }
+  }
+  // Needle tip: a small bright bead riding the arc end.
+  if(fraction>0.002) {
+    const auto tip=onCircle(centre,102,start+sweep*fraction);
+    CGContextSaveGState(c);
+    CGContextSetShadowWithColor(c,{0,0},10,shade(.4,.9,1,.9));
+    setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(tip.x-4.5,tip.y-4.5,9,9));
+    CGContextRestoreGState(c);
+  }
+  text(c,kNumeric,76,std::to_string(int(std::round(mph))),centre.x+4,centre.y+22,white,120,Align::Center,0,true);
+  text(c,kLabel,15,"MPH",centre.x,centre.y+43,amber,60,Align::Center,3.5);
+  const CGRect gear=CGRectMake(centre.x-19,centre.y+62,38,24);
+  fill(c,gear,s.reverse?Ink{.75,.30,.12,.80}:Ink{.12,.34,.38,.85},5);
+  text(c,kNumeric,18,s.reverse?"R":"D",centre.x,centre.y+80,white,30,Align::Center,.6);
+  // Pedal bars (real inputs): brake left, throttle right of the dial.
+  const CGFloat barX[]{centre.x+126,centre.x+142};const double values[]{s.brake,s.throttle};
+  const Ink tones[]{red,green};const char* names[]{"B","T"};
+  for(int i=0;i<2;++i) {
+    const CGRect rail=CGRectMake(barX[i],centre.y-52,9,112);
+    fill(c,CGRectInset(rail,-2,-2),{.02,.035,.048,.62},5);
+    fill(c,rail,{1,1,1,.10},3);
+    const CGFloat h=rail.size.height*CGFloat(std::clamp(values[i],0.,1.));
+    if(h>0.5) fill(c,CGRectMake(rail.origin.x,rail.origin.y+rail.size.height-h,rail.size.width,h),tones[i],3);
+    text(c,kNumeric,12,names[i],rail.origin.x+4.5,rail.origin.y+rail.size.height+16,muted,12,Align::Center,.4);
+  }
+}
+
+// Radar: heading-up disc with a rotating compass rim and blips for the
+// destination and upcoming gates (real positions; no road data is drawn).
+void radar(CGContextRef c,const DriveState& s,CGPoint centre) {
+  constexpr CGFloat R=76;
+  const double range=120+std::clamp(s.mph,0.,100.)*1.8;
+  CGContextSaveGState(c);
+  CGContextSetShadowWithColor(c,{0,4},14,shade(0,0,0,.5));
+  setFill(c,{.02,.035,.048,.62});CGContextFillEllipseInRect(c,CGRectMake(centre.x-R-8,centre.y-R-8,2*R+16,2*R+16));
+  CGContextRestoreGState(c);
+  CGContextSaveGState(c);
+  CGContextAddEllipseInRect(c,CGRectMake(centre.x-R-8,centre.y-R-8,2*R+16,2*R+16));CGContextClip(c);
+  radialGlow(c,{centre.x,centre.y-30},R*1.9,{.14,.24,.29,.5},{.02,.035,.048,.8});
+  // Authored street grid: roads every 100 m (road width 12 m) inside +-500 m.
+  {
+    const double k=(R+4)/range,sh=std::sin(s.heading),ch=std::cos(s.heading);
+    auto toScreen=[&](double wx,double wz){
+      const double dx=wx-s.carX,dz=wz-s.carZ,fwd=dx*sh+dz*ch,right=dx*ch-dz*sh;
+      return CGPoint{CGFloat(centre.x+right*k),CGFloat(centre.y-fwd*k)};
+    };
+    const double e=worldScale::halfExtent;
+    const CGPoint corners[]{toScreen(-e,-e),toScreen(e,-e),toScreen(e,e),toScreen(-e,e)};
+    setFill(c,{.09,.15,.18,1});
+    CGContextMoveToPoint(c,corners[0].x,corners[0].y);
+    for(int i=1;i<4;++i) CGContextAddLineToPoint(c,corners[i].x,corners[i].y);
+    CGContextClosePath(c);CGContextFillPath(c);
+    setStroke(c,{.27,.35,.38,1});CGContextSetLineWidth(c,std::max(2.4,worldScale::roadWidth*k));
+    CGContextSetLineCap(c,kCGLineCapButt);
+    for(int i=-int(e/worldScale::blockSpacing);i<=int(e/worldScale::blockSpacing);++i) {
+      const double axis=i*worldScale::blockSpacing;
+      const auto a=toScreen(axis,-e),b=toScreen(axis,e),c1=toScreen(-e,axis),d1=toScreen(e,axis);
+      CGContextBeginPath(c);CGContextMoveToPoint(c,a.x,a.y);CGContextAddLineToPoint(c,b.x,b.y);
+      CGContextMoveToPoint(c,c1.x,c1.y);CGContextAddLineToPoint(c,d1.x,d1.y);CGContextStrokePath(c);
+    }
+  }
+  // View wedge (forward 70 degrees).
+  setFill(c,{accent.r,accent.g,accent.b,.10});
+  CGContextMoveToPoint(c,centre.x,centre.y);
+  for(int i=0;i<=14;++i){const auto p=onCircle(centre,R,-125+i*70./14);CGContextAddLineToPoint(c,p.x,p.y);}
+  CGContextClosePath(c);CGContextFillPath(c);
+  CGContextRestoreGState(c);
+  setStroke(c,{1,1,1,.12});CGContextSetLineWidth(c,1.5);
+  CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-R-7.5,centre.y-R-7.5,2*R+15,2*R+15));
+  for(CGFloat f:{.33,.66}) {setStroke(c,{1,1,1,.07});CGContextSetLineWidth(c,1);CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-R*f,centre.y-R*f,2*R*f,2*R*f));}
+  // Compass rim: north is -heading from the car's forward axis.
+  const char* names[]{"N","E","S","W"};
+  for(int i=0;i<4;++i) {
+    const double a=-s.heading+i*M_PI/2;const CGFloat deg=a*180/M_PI-90;
+    const auto p=onCircle(centre,R-1,deg),q=onCircle(centre,R-9,deg),t=onCircle(centre,R-20,deg);
+    setStroke(c,i==0?Ink{red}:Ink{1,1,1,.45});CGContextSetLineWidth(c,i==0?3:2);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,p.x,p.y);CGContextAddLineToPoint(c,q.x,q.y);CGContextStrokePath(c);
+    text(c,kNumeric,i==0?15:12,names[i],t.x,t.y+(i==0?5:4),i==0?red:Ink{1,1,1,.55},20,Align::Center);
+  }
+  for(int i=0;i<24;++i) if(i%6) {
+    const CGFloat deg=(-s.heading*180/M_PI)+i*15-90;
+    const auto p=onCircle(centre,R-1,deg),q=onCircle(centre,R-5,deg);
+    setStroke(c,{1,1,1,.22});CGContextSetLineWidth(c,1);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,p.x,p.y);CGContextAddLineToPoint(c,q.x,q.y);CGContextStrokePath(c);
+  }
+  // Blips.
+  for(const auto& b:s.blips) {
+    const bool clamped=b.distance>range;const CGFloat r=(clamped?1.:b.distance/range)*(R-26);
+    const CGFloat deg=b.bearing*180/M_PI-90;const auto p=onCircle(centre,r,deg);
+    const Ink tone=b.kind==2?amber.withAlpha(.55):amber;
+    CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,.7,.25,b.kind==2?.4:.9));
+    if(clamped) triangleArrow(c,p,6,b.bearing,tone);else diamond(c,p,b.kind==2?4.5:6.5,tone);
+    CGContextRestoreGState(c);
+  }
+  triangleArrow(c,centre,7,0,white);
+  text(c,kLabel,10.5,"RANGE "+std::to_string(int(std::round(range/10)*10))+" M",centre.x,centre.y+R+23,muted,120,Align::Center,1.8);
+}
+void identity(CGContextRef c,const DriveState& s) {
+  gradientRect(c,CGRectMake(34,36,3.5,62),{accent.r,accent.g,accent.b,1},{amber.r,amber.g,amber.b,1},false,1.5);
+  text(c,kHeavy,28,"RACER",50,62,white,200,Align::Left,7,true);
+  text(c,kBody,17,s.vehicle,50,86,white.withAlpha(.94),340,Align::Left,.2,true);
+  text(c,kLabel,12.5,"CENTRAL DISTRICT   ·   FREE DRIVE",50,106,muted,340,Align::Left,2.2,true);
+}
+void controls(CGContextRef c,const DriveState& s) {
+  const double alpha=s.mph<1.5?1.:.38;
+  struct Group {std::vector<const char*> keys;const char* label;};
+  const std::vector<std::vector<Group>> rows{
+    {{{"W","S"},"THROTTLE / BRAKE"},{{"A","D"},"STEER"}},
+    {{{"R"},"RESET"},{{"M"},"EVENTS"},{{"F8"},"REPORT"},{{"ESC"},"MENU"}}};
+  CGFloat y=646;
+  CGContextSaveGState(c);CGContextSetAlpha(c,alpha);
+  for(const auto& row:rows) {
+    CGFloat x=222;
+    for(const auto& group:row) {
+      for(auto key:group.keys) x+=keycap(c,key,x,y,22,white)+3;
+      x+=4;
+      x+=text(c,kLabel,12.5,group.label,x,y+16,muted,200,Align::Left,1.6,true)+18;
+    }
+    y+=28;
+  }
+  CGContextRestoreGState(c);
+}
+// Floating waypoint: diamond over the target when visible; edge arrow when not.
+bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float windowWidth,float windowHeight) {
+  if(!s.markerActive) return false;
+  float lx=(s.markerX-fit.x)/std::max(1.f,float(fit.width))*fit.logicalWidth,
+        ly=(s.markerY-fit.y)/std::max(1.f,float(fit.height))*fit.logicalHeight;
+  (void)windowWidth;(void)windowHeight;
+  const float w=fit.logicalWidth,h=fit.logicalHeight;
+  const CGFloat inset=70;
+  const bool inside=!s.markerBehind&&lx>inset&&lx<w-inset&&ly>inset+10&&ly<h-inset-60;
+  const std::string label=upper(s.markerLabel)+"  ·  "+rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
+  if(inside) {
+    // Soft beacon column above the marker (objective visibility at distance).
+    gradientRect(c,CGRectMake(lx-5,std::max<CGFloat>(0,ly-170),10,std::min<CGFloat>(ly,170)),{amber.r,amber.g,amber.b,0},{amber.r,amber.g,amber.b,.35},false,5);
+    CGContextSaveGState(c);
+    CGContextSetShadowWithColor(c,{0,0},14,shade(1,.7,.25,.9));
+    diamond(c,{lx,ly},11,amber);
+    CGContextRestoreGState(c);
+    diamond(c,{lx,ly},5,Ink{.02,.035,.048,1});
+    setStroke(c,{amber.r,amber.g,amber.b,.55});CGContextSetLineWidth(c,1.5);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,lx,ly+14);CGContextAddLineToPoint(c,lx,ly+40);CGContextStrokePath(c);
+    const CGFloat tw=measure(kLabel,13,label,1.6)+24;
+    plate(c,CGRectMake(lx-tw/2,ly+42,tw,24),4,1);
+    text(c,kLabel,13,label,lx,ly+59,white,320,Align::Center,1.6);
+    return true;
+  } else {
+    const float cx=w/2,cy=h/2;float dx=lx-cx,dy=ly-cy;
+    if(s.markerBehind){dx=-dx;dy=-dy;if(std::abs(dx)<1&&std::abs(dy)<1)dy=1;}
+    const float scale=std::min((w/2-inset)/std::max(std::abs(dx),1e-3f),(h/2-inset-30)/std::max(std::abs(dy),1e-3f));
+    const float ex=cx+dx*scale,ey=cy+dy*scale;
+    CGContextSaveGState(c);
+    CGContextSetShadowWithColor(c,{0,0},12,shade(1,.7,.25,.9));
+    triangleArrow(c,{ex,ey},14,std::atan2(dx,-dy),amber);
+    CGContextRestoreGState(c);
+    const CGFloat tw=measure(kLabel,13,label,1.6)+24,chipX=std::clamp<CGFloat>(ex,tw/2+12,w-tw/2-12),chipY=ey+(dy>0?-48:22);
+    plate(c,CGRectMake(chipX-tw/2,chipY,tw,24),4,1);
+    text(c,kLabel,13,label,chipX,chipY+17,white,320,Align::Center,1.6);
+  }
+  return false;
+}
+
+// Announcement banner: slides in with a two-step echo, holds, then fades (cf. console
+// "GO" / "FINAL LAP" banners). `phase` runs 0..1 over the banner lifetime.
+void banner(CGContextRef c,const std::string& title,const std::string& sub,double phase,Ink tone) {
+  const double in=std::clamp(phase/.12,0.,1.),out=std::clamp((1-phase)/.25,0.,1.);
+  const double ease=1-(1-in)*(1-in),alpha=ease*out;
+  const CGFloat w=std::max<CGFloat>(300,measure(kHeavy,46,title,3)+90),h=64,cx=640,y=236;
+  for(int i=2;i>=0;--i) {
+    const CGFloat offset=-(1-ease)*220-i*16;
+    CGContextSaveGState(c);CGContextSetAlpha(c,alpha*(i==0?1:i==1?.30:.14));
+    const CGRect r=CGRectMake(cx-w/2+offset,y,w,h);
+    gradientSkew(c,r,16,mix(teal,accent,.35),{teal.r,teal.g,teal.b,.85});
+    if(i==0) {
+      skewFill(c,CGRectMake(r.origin.x,r.origin.y,w,3),16,{1,1,1,.55});
+      text(c,kHeavy,46,title,cx+offset+8,y+48,white,w-30,Align::Center,3,true);
+      if(!sub.empty()) text(c,kLabel,13,sub,cx+offset+8,y+h+22,tone,w,Align::Center,4,true);
+    }
+    CGContextRestoreGState(c);
+  }
+}
+void testHud(CGContextRef c,const DriveState& s) {
+  const auto& t=*s.test;
+  const std::string name=upper(t.name);
+  if(t.countdown) {
+    text(c,kLabel,14,name,640,92,white.withAlpha(.85),420,Align::Center,4,true);
+    text(c,kLabel,13,t.automatic?"AUTOMATIC INPUT":"GET READY",640,114,amber,300,Align::Center,5,true);
+    const CGFloat cx=640,cy=196;
+    arc(c,{cx,cy},62,-90,-90+360*std::clamp(t.countdownSeconds-std::floor(t.countdownSeconds),0.,1.),5,amber,kCGLineCapRound);
+    arc(c,{cx,cy},62,0,360,2,{1,1,1,.18});
+    // Each second the digit pops in (scale 1.45 -> 1, fade 0 -> 1) like the console launch countdowns.
+    const double phase=1-(t.countdownSeconds-std::floor(t.countdownSeconds));
+    const double pop=std::clamp(phase/.35,0.,1.),ease=1-(1-pop)*(1-pop);
+    CGContextSaveGState(c);
+    CGContextTranslateCTM(c,cx,cy+8);CGContextScaleCTM(c,1.45-.45*ease,1.45-.45*ease);
+    text(c,kNumeric,92,std::to_string(std::max(1,int(std::ceil(t.countdownSeconds)))),0,24,white.withAlpha(.25+.75*ease),200,Align::Center,0,true);
+    CGContextRestoreGState(c);
+    return;
+  }
+  const CGRect r=CGRectMake(430,24,420,t.kind==2?108:96);
+  plate(c,r,0,1,14);
+  text(c,kLabel,12,name,r.origin.x+28,r.origin.y+22,muted,300,Align::Left,2.6);
+  text(c,kNumeric,54,clock(t.elapsed),r.origin.x+26,r.origin.y+70,white,230,Align::Left,0,true);
+  text(c,kLabel,14,"SEC",r.origin.x+26+measure(kNumeric,54,clock(t.elapsed))+6,r.origin.y+70,amber,60,Align::Left,2);
+  if(t.kind==2) {
+    text(c,kLabel,11,"GATE",r.origin.x+r.size.width-26,r.origin.y+22,muted,80,Align::Right,2.6);
+    text(c,kNumeric,34,std::to_string(t.gate)+"/"+std::to_string(t.gates),r.origin.x+r.size.width-26,r.origin.y+58,white,120,Align::Right,.5);
+    triangleArrow(c,{r.origin.x+r.size.width-150,r.origin.y+46},13,t.bearing,accent);
+    text(c,kNumeric,22,rangeText(int(t.gateDistance)),r.origin.x+r.size.width-26,r.origin.y+86,amber,120,Align::Right,.4);
+    text(c,kLabel,12.5,upper(t.note),r.origin.x+28,r.origin.y+96,muted,260,Align::Left,1.6);
+  } else {
+    const double target=t.kind==0?100.:100.;
+    const double fraction=std::clamp(t.speedKmh/target,0.,1.);
+    const CGRect bar=CGRectMake(r.origin.x+28,r.origin.y+80,r.size.width-60,6);
+    fill(c,bar,{1,1,1,.12},3);
+    if(fraction>0) gradientRect(c,CGRectMake(bar.origin.x,bar.origin.y,bar.size.width*fraction,6),accent,t.kind==1?red:amber,true,3);
+    text(c,kNumeric,22,t.kind==0?"0 → 100 KM/H":(t.measuring?"100 → 0 KM/H":"ACCELERATE TO 100 KM/H"),r.origin.x+r.size.width-26,r.origin.y+58,white,240,Align::Right,.6);
+    text(c,kNumeric,22,rangeText(int(t.distance)),r.origin.x+r.size.width-26,r.origin.y+26,amber,120,Align::Right,.4);
+  }
 }
 }
+
 struct DriveHud::Impl {
   std::vector<uint8_t> pixels=std::vector<uint8_t>(size_t(canvasWidth)*canvasHeight*4);
   CGContextRef context=nullptr;
@@ -74,137 +339,406 @@ struct DriveHud::Impl {
   bgfx::ProgramHandle program=BGFX_INVALID_HANDLE;
   bgfx::UniformHandle sampler=BGFX_INVALID_HANDLE;
   bgfx::VertexLayout layout;
-  using Key=std::tuple<int,bool,std::string,std::string,int,std::string>;
   enum class Mode { None,Drive,Panel };
-  Key previous{};Mode mode=Mode::None;
-  std::vector<std::string> previousPanel;
+  Mode mode=Mode::None;
+  std::vector<std::string> previousPanel;int previousOptions=-2;std::string previousMapKey;
   bool previousActiveTest=false;
-  bool compact=false,medium=false;
+  bool compact=false;
+  double scale=1;
+  std::string driveKey;
+  HudLayout lastFit;
+  int accentIndex=0;
+  double panelAnimStart=-10;
+  // Announcement banner state (set from draw() on test events).
+  std::string bannerTitle,bannerSub;double bannerStart=-100;
+  bool wasCountdown=false;int lastGate=0;
+  static double now(){using namespace std::chrono;return duration<double>(steady_clock::now().time_since_epoch()).count();}
   ~Impl() {
     if(bgfx::isValid(texture)) bgfx::destroy(texture);
     if(bgfx::isValid(program)) bgfx::destroy(program);
     if(bgfx::isValid(sampler)) bgfx::destroy(sampler);
     if(context) CGContextRelease(context);
   }
-  void paintCompact(const Key& key) {
-    const auto& [speed,reverse,vehicle,destination,metres,bearing]=key;
-    std::memset(pixels.data(),0,pixels.size());auto c=context;
+  void begin(CGContextRef& c) {
+    std::memset(pixels.data(),0,pixels.size());c=context;
     CGContextSaveGState(c);CGContextTranslateCTM(c,0,canvasHeight);CGContextScaleCTM(c,1,-1);
-    fill(c,CGRectMake(16,16,608,128),{.025,.045,.055,.88},8);
-    label(c,"HelveticaNeue-CondensedBold",28,vehicle,32,50,white,576);
-    label(c,"HelveticaNeue-Medium",24,destination.empty()?"EXPLORE THE CITY":destination,32,88,cyan,576);
-    char range[32];if(metres<1000)std::snprintf(range,sizeof(range),"%d m",metres);
-    else std::snprintf(range,sizeof(range),"%.1f km",double(metres)/1000);
-    label(c,"HelveticaNeue-Medium",24,std::string(range)+" / "+bearing,32,124,muted,576);
-    fill(c,CGRectMake(388,300,236,112),{.025,.045,.055,.88},8);
-    label(c,"HelveticaNeue-CondensedBold",70,std::to_string(speed),530,375,white,132,true);
-    label(c,"HelveticaNeue-Medium",24,"MPH",545,373,amber,65);
-    label(c,"HelveticaNeue-Medium",24,reverse?"REV":"D",410,402,white,160);
-    fill(c,CGRectMake(16,426,608,40),{.025,.045,.055,.9},6);
-    label(c,"HelveticaNeue-Medium",24,"WASD/RT DRIVE  R RESET  ESC MENU",30,454,white,580);
-    CGContextRestoreGState(c);upload();previous=key;mode=Mode::Drive;
+    CGContextSetAllowsAntialiasing(c,true);CGContextSetShouldAntialias(c,true);
+    CGContextSetAllowsFontSmoothing(c,false);
   }
-  void paint(const Key& key) {
-    if(compact){paintCompact(key);return;}
-    const CGFloat small=medium?16:12;
-    const auto& [speed,reverse,vehicle,destination,metres,bearing]=key;
-    std::memset(pixels.data(),0,pixels.size());
-    auto c=context;
-    // CoreGraphics draws in a top-left logical canvas; text matrices restore
-    // upright glyphs. Upload bytes are RGBA with premultiplied alpha.
-    CGContextSaveGState(c);CGContextTranslateCTM(c,0,canvasHeight);CGContextScaleCTM(c,1,-1);
-    fill(c,CGRectMake(32,32,410,112),{.025,.045,.055,.72},8);
-    fill(c,CGRectMake(32,45,3,83),cyan);
-    label(c,"HelveticaNeue-CondensedBold",23,"R A C E R",50,61,white);
-    label(c,"HelveticaNeue-Medium",10,"CENTRAL DISTRICT  /  FREE DRIVE",194,59,muted,230);
-    label(c,"HelveticaNeue-Medium",18,vehicle,50,88,white,370);
-    char range[32];
-    if(metres<1000) std::snprintf(range,sizeof(range),"%d m",metres);
-    else std::snprintf(range,sizeof(range),"%.1f km",double(metres)/1000);
-    label(c,"HelveticaNeue-Medium",small,destination.empty()?"EXPLORE THE CITY":destination,50,117,cyan,239);
-    label(c,"HelveticaNeue-Medium",small,std::string(range)+"  /  "+bearing,422,117,muted,125,true);
-    fill(c,CGRectMake(938,558,310,130),{.025,.045,.055,.78},9);
-    fill(c,CGRectMake(958,558,270,2),amber);
-    label(c,"HelveticaNeue-Medium",medium?16:11,"GROUND SPEED",958,584,muted);
-    fill(c,CGRectMake(1185,573,43,24),reverse?Ink{.7,.29,.12,.65}:Ink{.17,.29,.3,.8},4);
-    label(c,"HelveticaNeue-CondensedBold",14,reverse?"REV":"D",1218,590,white,40,true);
-    label(c,"HelveticaNeue-CondensedBold",84,std::to_string(speed),1130,666,white,180,true);
-    label(c,"HelveticaNeue-Light",22,"MPH",1147,649,amber,78);
-    fill(c,CGRectMake(32,616,586,72),{.025,.045,.055,.60},7);
-    label(c,"HelveticaNeue-Medium",small,medium?"WASD/RT DRIVE   R RESET   ESC MENU":"WASD / RT   DRIVE     R   RESET     ESC   MENU / GARAGE",49,640,white,551);
-    label(c,"HelveticaNeue-Medium",medium?16:11,"M   EVENTS     F8   REPORT",49,660,cyan,551);
-    label(c,"HelveticaNeue-Medium",medium?16:10,"BRAKE  ·  RELEASE  ·  BRAKE TO REVERSE",49,677,muted,551);
-    CGContextRestoreGState(c);
-    upload();previous=key;mode=Mode::Drive;
-  }
+  void end(CGContextRef c) {CGContextRestoreGState(c);upload();}
   void upload() {
     bgfx::updateTexture2D(texture,0,0,0,0,canvasWidth,canvasHeight,
                          bgfx::copy(pixels.data(),uint32_t(pixels.size())));
   }
-  void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest) {
-    std::memset(pixels.data(),0,pixels.size());auto c=context;
-    CGContextSaveGState(c);CGContextTranslateCTM(c,0,canvasHeight);CGContextScaleCTM(c,1,-1);
-    fill(c,CGRectMake(12,12,616,456),{.025,.045,.055,.94},8);
-    label(c,"HelveticaNeue-CondensedBold",28,lines.front(),28,46,white,584);
-    fill(c,CGRectMake(28,58,584,2),cyan);
-    const auto visible=hudPanelRows(lines);CGFloat baseline=94;
-    for(auto index:visible.rows){
-      const auto& text=lines[index];const bool selected=text.starts_with("> ");
-      if(selected)fill(c,CGRectMake(22,baseline-27,596,34),{.13,.34,.36,.85},4);
-      label(c,selected?"HelveticaNeue-Bold":"HelveticaNeue-Medium",24,text,30,baseline,
-        hudStatusRow(text)?amber:selected?cyan:white,580);baseline+=36;
+  void paintCompact(const DriveState& s) {
+    CGContextRef c;begin(c);gTypeScale=1;
+    const int metres=int(std::clamp(std::round(s.distance/10)*10,0.,1e8));
+    if(s.test) {
+      const auto& t=*s.test;
+      plate(c,CGRectMake(14,14,420,76),0,1,12);
+      text(c,kLabel,16,upper(t.name),36,38,muted,300,Align::Left,2.2);
+      text(c,kNumeric,44,t.countdown?"GET READY":clock(t.elapsed),34,80,white,260,Align::Left,0,true);
+      if(t.kind==2) text(c,kNumeric,34,std::to_string(t.gate)+"/"+std::to_string(t.gates),420,70,amber,120,Align::Right);
+    } else {
+      gradientRect(c,CGRectMake(16,18,4,62),accent,amber,false,2);
+      text(c,kHeading,30,s.vehicle,32,46,white,580,Align::Left,.3,true);
+      if(s.hasDestination) text(c,kLabel,22,upper(s.destination.empty()?"EXPLORE THE CITY":s.destination)+"   ·   "+rangeText(metres)+"   "+s.bearing,32,76,accent,580,Align::Left,1.6,true);
     }
-    if(visible.omittedStatus)label(c,"HelveticaNeue-Medium",22,std::to_string(visible.omittedStatus)+" MORE STATUS ROWS / ENLARGE WINDOW",28,421,amber,584);
-    else if(visible.omitted)label(c,"HelveticaNeue-Medium",22,std::to_string(visible.omitted)+" MORE ROWS / selection scrolls",28,421,muted,584);
-    label(c,"HelveticaNeue-Medium",24,activeTest?"WASD/RT DRIVE  ESC PAUSE":"↑↓/D-PAD  ENTER/SOUTH OK  ESC/EAST BACK",28,454,muted,584);
-    CGContextRestoreGState(c);upload();previousPanel=lines;previousActiveTest=activeTest;mode=Mode::Panel;
+    CGContextSaveGState(c);CGContextTranslateCTM(c,500,330);CGContextScaleCTM(c,.8,.8);
+    speedometer(c,s,{0,0});
+    CGContextRestoreGState(c);
+    CGFloat x=22;
+    auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,442,26,white)+6;x+=text(c,kLabel,19,upper(action),x,461,muted,200,Align::Left,1.2,true)+16;};
+    chip("WASD","DRIVE");chip("R","RESET");chip("ESC","MENU");
+    end(c);mode=Mode::Drive;
   }
-  void paintPanel(const std::vector<std::string>& lines,bool activeTest) {
-    if(compact){paintCompactPanel(lines,activeTest);return;}
-    std::memset(pixels.data(),0,pixels.size());
-    auto c=context;
-    CGContextSaveGState(c);CGContextTranslateCTM(c,0,canvasHeight);CGContextScaleCTM(c,1,-1);
-    const CGFloat body=lines.size()>22?14:16;
-    auto rows=[&](size_t first,size_t count,CGRect rect,CGFloat font,CGFloat step,bool title) {
-      if(!count) return;
-      fill(c,rect,{.025,.045,.055,.91},10);
-      fill(c,CGRectMake(rect.origin.x+24,rect.origin.y,rect.size.width-48,2),cyan);
-      CGFloat y=rect.origin.y+(title?36:25);
-      for(size_t i=0;i<count;++i) {
-        const auto& text=lines[first+i];
-        const bool heading=title&&i==0,selected=text.starts_with("> ");
-        const bool error=text.find("INVALID")!=std::string::npos||
-                         text.find("UNSAVED")!=std::string::npos||
-                         text.find("Malformed")!=std::string::npos||
-                         text.find("Saving disabled")!=std::string::npos;
-        const bool draft=text.find("DRAFT NOT")!=std::string::npos;
-        const bool controls=text.starts_with("Arrows / D-pad")||text.starts_with("ESC /")||
-                            text.starts_with("WASD /")||text.starts_with("AUTOMATIC INPUT");
-        const Ink ink=error?Ink{1,.49,.34,1}:draft?amber:selected?cyan:controls?muted:white;
-        if(selected) {
-          fill(c,CGRectMake(rect.origin.x+16,y-font-3,rect.size.width-32,step),{.13,.34,.36,.68},4);
-          fill(c,CGRectMake(rect.origin.x+16,y-font-3,3,step),amber);
-        }
-        label(c,heading?"HelveticaNeue-CondensedBold":selected?"HelveticaNeue-Bold":"HelveticaNeue-Medium",
-              heading?22:font,text,rect.origin.x+27,y,ink,rect.size.width-54);
-        y+=heading?step+6:step;
-      }
-    };
-    if(activeTest) {
-      const size_t top=std::min(size_t(6),lines.size()),bottom=lines.size()-top;
-      rows(0,top,CGRectMake(32,32,1040,CGFloat(top)*20+36),16,20,true);
-      if(bottom) {
-        const CGFloat step=bottom>18?18:22;
-        const CGFloat height=CGFloat(bottom)*step+28;
-        rows(top,bottom,CGRectMake(32,688-height,1216,height),bottom>18?14:16,step,false);
+  void paintDrive(const DriveState& s,const HudLayout& fit,uint16_t width,uint16_t height) {
+    gTypeScale=scale<.9?1.2:1;
+    if(compact){gTypeScale=1;paintCompact(s);return;}
+    CGContextRef c;begin(c);
+    if(s.test) {
+      testHud(c,s);
+      if(s.test->kind==2||s.test->kind==0||s.test->kind==1) {
+        const CGRect note=CGRectMake(0,0,0,0);(void)note;
+        if(!s.test->countdown&&s.test->kind!=2) text(c,kLabel,12.5,upper(s.test->note),640,142,white.withAlpha(.8),500,Align::Center,2,true);
       }
     } else {
-      const CGFloat step=body==14?18:25;
-      const CGFloat height=CGFloat(lines.size())*step+50;
-      rows(0,lines.size(),CGRectMake(32,std::max(CGFloat(32),(720-height)*.5),1216,height),body,step,true);
+      identity(c,s);
     }
-    CGContextRestoreGState(c);upload();
-    previousPanel=lines;previousActiveTest=activeTest;mode=Mode::Panel;
+    worldMarker(c,s,fit,width,height);
+    const double bannerPhase=(now()-bannerStart)/1.9;
+    if(bannerPhase>=0&&bannerPhase<1) banner(c,bannerTitle,bannerSub,bannerPhase,amber);
+    controls(c,s);
+    radar(c,s,{122,590});
+    speedometer(c,s,{1096,578});
+    end(c);mode=Mode::Drive;
+  }
+  // ---- menus ------------------------------------------------------------
+  struct Block {
+    enum Kind {Map,Tiles,Hero,Detail,KeyValue,Paragraph,Warning,Notice,Sub,Header,Gap} kind=Gap;
+    std::string label,value;std::vector<std::string> wrapped;CGFloat height=0;bool good=true;std::vector<std::pair<std::string,std::string>> tiles;
+  };
+  static std::vector<Block> buildBlocks(const ui::Panel& panel,const ui::Row* selected,CGFloat width,CGFloat scale,bool map=false) {
+    std::vector<Block> blocks;
+    if(map) {Block m;m.kind=Block::Map;m.height=236*scale;blocks.push_back(m);}
+    if(selected&&!selected->hint.empty()) {
+      Block b;b.kind=Block::Detail;b.label=selected->label;b.wrapped=wrap(kBodyMedium,15*scale,selected->hint,width-36);
+      b.height=34+CGFloat(b.wrapped.size())*21*scale;blocks.push_back(b);
+    }
+    for(size_t i=0;i<panel.rows.size();++i) {
+      const auto& row=panel.rows[i];
+      const bool inColumn=!(row.kind==ui::RowKind::Option||row.kind==ui::RowKind::Slider||row.kind==ui::RowKind::Field)||row.indented;
+      if(!inColumn) continue;
+      Block b;b.label=row.label;b.value=row.value;
+      switch(row.kind) {
+      case ui::RowKind::Spacer:b.kind=Block::Gap;b.height=8*scale;break;
+      case ui::RowKind::Warning:
+      case ui::RowKind::Notice:
+        b.kind=row.kind==ui::RowKind::Warning?Block::Warning:Block::Notice;
+        b.wrapped=wrap(kBodyMedium,15*scale,row.label,width-52);b.height=CGFloat(b.wrapped.size())*21*scale+18*scale;break;
+      default:
+        if(!row.tiles.empty()) {b.kind=Block::Tiles;b.tiles=row.tiles;b.height=58*scale;break;}
+        if(!row.value.empty()&&row.label!="MEASUREMENT"&&row.label!="PARTIAL (INVALID)"&&
+           measure(kBodyMedium,15*scale,row.label+": "+row.value)>width-40&&
+           measure(kBody,15.5*scale,row.value)>(width-40)*.6) {
+          Block q=b;q.kind=Block::Paragraph;q.wrapped=wrap(kBodyMedium,15*scale,row.label+": "+row.value,width-36);
+          q.height=CGFloat(q.wrapped.size())*21*scale+6*scale;blocks.push_back(std::move(q));continue;
+        }
+        if(!row.value.empty()&&(row.label=="MEASUREMENT"||row.label=="PARTIAL (INVALID)")) {
+          b.kind=Block::Hero;b.good=row.label=="MEASUREMENT";b.height=92;
+        } else if(row.indented) {
+          b.kind=Block::Sub;b.height=22*scale;
+          if(row.value.empty()) {b.wrapped=wrap(kBodyMedium,14*scale,row.label,width-40);b.height=CGFloat(b.wrapped.size())*19*scale+4;}
+        } else if(!row.value.empty()) {b.kind=Block::KeyValue;b.height=27*scale;}
+        else {
+          const bool header=i+1<panel.rows.size()&&panel.rows[i+1].indented;
+          b.wrapped=wrap(header?kBody:kBodyMedium,15*scale,row.label,width-36);
+          b.kind=header?Block::Header:Block::Paragraph;
+          b.height=CGFloat(b.wrapped.size())*21*scale+(header?12*scale:6*scale);
+        }
+      }
+      blocks.push_back(std::move(b));
+    }
+    return blocks;
+  }
+  void drawMap(CGContextRef c,const PanelMap& map,CGRect r) {
+    CGContextSaveGState(c);rounded(c,r,5);CGContextClip(c);
+    fill(c,r,{.06,.10,.12,1});
+    // Fit markers and the car with margin.
+    double x0=map.carX,x1=map.carX,z0=map.carZ,z1=map.carZ;
+    for(const auto& m:map.markers){x0=std::min(x0,m.x);x1=std::max(x1,m.x);z0=std::min(z0,m.z);z1=std::max(z1,m.z);}
+    const double pad=70;x0-=pad;x1+=pad;z0-=pad;z1+=pad;
+    const double k=std::min(r.size.width/(x1-x0),r.size.height/(z1-z0));
+    const CGFloat ox=r.origin.x+(r.size.width-(x1-x0)*k)/2,oy=r.origin.y+(r.size.height+(z1-z0)*k)/2;
+    auto at=[&](double wx,double wz){return CGPoint{CGFloat(ox+(wx-x0)*k),CGFloat(oy-(wz-z0)*k)};};
+    const double e=worldScale::halfExtent;
+    setStroke(c,{.27,.35,.38,1});CGContextSetLineWidth(c,std::max(2.0,worldScale::roadWidth*k));
+    for(int i=-int(e/worldScale::blockSpacing);i<=int(e/worldScale::blockSpacing);++i){
+      const double axis=i*worldScale::blockSpacing;
+      const auto a=at(axis,-e),b=at(axis,e),c1=at(-e,axis),d1=at(e,axis);
+      CGContextBeginPath(c);CGContextMoveToPoint(c,a.x,a.y);CGContextAddLineToPoint(c,b.x,b.y);
+      CGContextMoveToPoint(c,c1.x,c1.y);CGContextAddLineToPoint(c,d1.x,d1.y);CGContextStrokePath(c);
+    }
+    for(const auto& m:map.markers){
+      const auto p=at(m.x,m.z);
+      CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},m.selected?12:5,shade(1,.7,.25,m.selected?.95:.4));
+      diamond(c,p,m.selected?9:6,m.selected?amber:amber.withAlpha(.6));CGContextRestoreGState(c);
+      plate(c,CGRectMake(p.x-measure(kLabel,12,upper(m.name),1.4)/2-8,p.y+13,measure(kLabel,12,upper(m.name),1.4)+16,20),4,m.selected?1:.7);
+      text(c,kLabel,12,upper(m.name),p.x,p.y+27,m.selected?white:muted,200,Align::Center,1.4);
+    }
+    triangleArrow(c,at(map.carX,map.carZ),8,map.heading,accent);
+    CGContextRestoreGState(c);
+    stroke(c,r,{1,1,1,.12},1,5);
+  }
+  void drawBlocks(CGContextRef c,const std::vector<Block>& blocks,CGRect card,CGFloat scale,const PanelMap* map=nullptr) {
+    CGFloat y=card.origin.y+18*scale;const CGFloat x=card.origin.x+20,w=card.size.width-40;
+    for(const auto& b:blocks) {
+      switch(b.kind) {
+      case Block::Gap:break;
+      case Block::Map: if(map) drawMap(c,*map,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-10*scale)); break;
+      case Block::Tiles: {
+        const CGFloat gap=8,tw=(w-gap*(b.tiles.size()-1))/b.tiles.size();
+        for(size_t i=0;i<b.tiles.size();++i) {
+          const CGRect r=CGRectMake(x+i*(tw+gap),y,tw,b.height-8*scale);
+          fill(c,r,{1,1,1,.06},5);fill(c,CGRectMake(r.origin.x,r.origin.y+4,2.5,r.size.height-8),{accent.r,accent.g,accent.b,.8},1);
+          text(c,kLabel,11.5*scale,upper(b.tiles[i].first),r.origin.x+12,r.origin.y+17*scale,muted,tw-16,Align::Left,1.8);
+          text(c,kNumeric,27*scale,b.tiles[i].second,r.origin.x+12,r.origin.y+r.size.height-8*scale,white,tw-16);
+        }
+        break;
+      }
+      case Block::Hero: {
+        text(c,kLabel,13,b.label=="MEASUREMENT"?"RESULT":"PARTIAL / INVALID",x,y+14,muted,w,Align::Left,3);
+        text(c,kNumeric,66,b.value,x,y+72,b.good?green:red,w,Align::Left,0,true);break;
+      }
+      case Block::Detail: {
+        fill(c,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-8),{accent.r,accent.g,accent.b,.10},4);
+        fill(c,CGRectMake(card.origin.x+12,y,3,b.height-8),accent);
+        text(c,kLabel,12,upper(b.label),x+10,y+19,accent,w-10,Align::Left,2.2);
+        CGFloat ty=y+40*scale;for(const auto& line:b.wrapped){text(c,kBodyMedium,15*scale,line,x+10,ty,white.withAlpha(.9),w-10);ty+=21*scale;}
+        break;
+      }
+      case Block::KeyValue:
+        text(c,kLabel,13.5*scale,upper(b.label),x,y+17*scale,muted,w*.58,Align::Left,1.6);
+        text(c,kBody,15.5*scale,b.value,x+w,y+17*scale,white,w*.62,Align::Right);
+        fill(c,CGRectMake(x,y+25*scale,w,1),{1,1,1,.07});break;
+      case Block::Paragraph: {
+        CGFloat ty=y+16*scale;for(const auto& line:b.wrapped){text(c,kBodyMedium,15*scale,line,x,ty,white.withAlpha(.84),w);ty+=21*scale;}break;
+      }
+      case Block::Header: {
+        CGFloat ty=y+17*scale;for(const auto& line:b.wrapped){text(c,kBody,16*scale,line,x,ty,white,w);ty+=21*scale;}
+        gradientRect(c,CGRectMake(x,y+b.height-6*scale,w,2),{accent.r,accent.g,accent.b,.55},{accent.r,accent.g,accent.b,0},true);break;
+      }
+      case Block::Sub:
+        if(b.wrapped.empty()) {
+          text(c,kLabel,13*scale,upper(b.label),x+14,y+15*scale,muted,w*.5,Align::Left,1.4);
+          const bool none=b.value.find("No comparable")!=std::string::npos;
+          text(c,kBodyMedium,14*scale,b.value,x+w,y+15*scale,none?dim:white.withAlpha(.92),w*.62,Align::Right);
+        } else {
+          CGFloat ty=y+15*scale;for(const auto& line:b.wrapped){text(c,kBodyMedium,14*scale,line,x+14,ty,muted,w-14);ty+=19*scale;}
+        }
+        break;
+      case Block::Warning:
+      case Block::Notice: {
+        const Ink tone=b.kind==Block::Warning?red:amber;
+        fill(c,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-6),{tone.r,tone.g,tone.b,.13},4);
+        fill(c,CGRectMake(card.origin.x+12,y,3,b.height-6),tone);
+        text(c,kNumeric,20,"!",card.origin.x+30,y+22*scale,tone,20,Align::Center);
+        CGFloat ty=y+19*scale;for(const auto& line:b.wrapped){text(c,kBodyMedium,15*scale,line,x+22,ty,white.withAlpha(.92),w-22);ty+=21*scale;}
+        break;
+      }
+      }
+      y+=b.height;
+    }
+  }
+  static CGFloat blocksHeight(const std::vector<Block>& blocks,CGFloat scale) {
+    CGFloat h=36*scale;for(const auto& b:blocks) h+=b.height;return h;
+  }
+  void backdrop(CGContextRef c,bool centred) {
+    if(centred) {
+      fill(c,CGRectMake(0,0,canvasWidth,canvasHeight),{0,.01,.02,.52});
+      CGContextSaveGState(c);CGContextClipToRect(c,CGRectMake(0,0,canvasWidth,canvasHeight));
+      radialGlow(c,{640,360},700,{0,.01,.02,.0},{0,0,.01,.62});CGContextRestoreGState(c);
+    } else {
+      gradientRect(c,CGRectMake(0,0,720,canvasHeight),{.005,.015,.025,.92},{.005,.015,.025,.50},true);
+      gradientRect(c,CGRectMake(720,0,560,canvasHeight),{.005,.015,.025,.50},{.005,.015,.025,.10},true);
+    }
+    gradientRect(c,CGRectMake(0,0,canvasWidth,150),{0,0,0,.55},{0,0,0,0},false);
+    gradientRect(c,CGRectMake(0,624,canvasWidth,96),{0,0,0,0},{0,0,0,.70},false);
+  }
+  void header(CGContextRef c,const ui::Panel& panel,bool centred) {
+    const CGFloat x=centred?640:64;const Align a=centred?Align::Center:Align::Left;
+    text(c,kLabel,12.5,"RACER",x,50,accent,200,a,6);
+    text(c,kHeavy,50,upper(panel.title),x,102,white,900,a,2.5,true);
+    if(!panel.subtitle.empty()&&panel.subtitle!="RACER") text(c,kBody,18,panel.subtitle,x,132,muted,900,a,.6,true);
+    const CGFloat sx=centred?(640-80):64,sy=centred&&panel.subtitle.empty()?116:(panel.subtitle.empty()?116:144);
+    gradientSkew(c,CGRectMake(sx,sy,120,3),8,accent,{accent.r,accent.g,accent.b,.0});
+    skewFill(c,CGRectMake(sx+128,sy,22,3),8,amber);
+  }
+  void footer(CGContextRef c,const ui::Panel& panel) {
+    CGFloat x=64;const CGFloat y=670;
+    auto chip=[&](const std::string& key,const std::string& action) {
+      x+=keycap(c,key,x,y,24,white)+6;
+      x+=text(c,kLabel,13,upper(action),x,y+17,muted,260,Align::Left,1.8,true)+26;
+    };
+    if(panel.hints.empty()) {chip("ESC","BACK");return;}
+    for(const auto& hint:panel.hints) {
+      const std::string key=ui::upper(hint.key);
+      if(key=="ARROWS") {
+        const auto comma=hint.action.find(", ");
+        chip("↑↓",ui::upper(hint.action.substr(0,comma)));
+        if(comma!=std::string::npos) chip("←→",ui::upper(hint.action.substr(comma+2)));
+      } else chip(key,hint.action);
+    }
+  }
+  void paintPanelNormal(const std::vector<std::string>& lines,int optionCount,const PanelMap& map) {
+    gTypeScale=scale<.9?1.22:1;
+    const auto panel=ui::parsePanel(lines,optionCount<0?size_t(-1):size_t(optionCount));
+    CGContextRef c;begin(c);
+    std::vector<size_t> menu=ui::selectable(panel);
+    size_t informational=0;
+    for(const auto& row:panel.rows) if(!(row.kind==ui::RowKind::Option||row.kind==ui::RowKind::Slider||row.kind==ui::RowKind::Field)||row.indented) if(row.kind!=ui::RowKind::Spacer) ++informational;
+    const bool centred=menu.size()<=5&&informational<=3;
+    backdrop(c,centred);header(c,panel,centred);
+    const ui::Row* selected=nullptr;
+    for(auto index:menu) if(panel.rows[index].selected) selected=&panel.rows[index];
+    // Menu column.
+    const bool dense=menu.size()>12;
+    const CGFloat top=centred?170:dense?164:176,bottom=dense?654:648,colX=centred?(1280-520)/2:64,colW=centred?520:540;
+    const CGFloat pitch=std::clamp((bottom-top)/std::max<size_t>(1,menu.size()),28.,centred?58.:44.);
+    const CGFloat rowH=pitch-5,skew=rowH*.32;CGFloat y=top;
+    for(auto index:menu) {
+      const auto& row=panel.rows[index];
+      const CGRect r=CGRectMake(colX,y,colW,rowH);
+      if(row.selected) {
+        CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},14,shade(accent.r,accent.g,accent.b,.35));
+        skewFill(c,r,skew,accentScaled(.47,.9));CGContextRestoreGState(c);
+        gradientSkew(c,r,skew,accentScaled(.72,.96),accentScaled(.30,.78));
+        skewFill(c,CGRectMake(r.origin.x-2,r.origin.y,5,r.size.height),skew,amber);
+      } else {
+        const bool odd=(&index-&menu[0])%2;
+        gradientSkew(c,r,skew,{.05,.08,.10,odd?.74:.58},{.05,.08,.10,odd?.40:.24});
+      }
+      const CGFloat fs=std::max<CGFloat>(14,std::min<CGFloat>(20,rowH*.54)),base=y+rowH/2+fs*.34,tx0=colX+skew+16;
+      CGFloat tx=tx0;
+      const Ink body=row.selected?white:white.withAlpha(.80);
+      const CGFloat iconW=row.icon!=ui::Icon::None?28:0;
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{tx0+9,y+rowH/2},std::min<CGFloat>(rowH*.58,19),row.selected?amber:Ink{accent.r,accent.g,accent.b,.75});
+      tx=tx0+iconW;
+      if(row.kind==ui::RowKind::Slider) {
+        text(c,kBody,fs*.92,row.label,tx,base,body,150-iconW);
+        const CGFloat bx=tx0+150,bw=colW-150-skew-16-96,by=y+rowH/2-3;
+        fill(c,CGRectMake(bx,by,bw,6),{0,0,0,.45},3);
+        const double fr=ui::sliderFraction(row);
+        gradientRect(c,CGRectMake(bx,by,std::max<CGFloat>(6,bw*fr),6),accent,fr>.8?amber:mix(accent,green,.5),true,3);
+        fill(c,CGRectMake(bx+bw*(row.high>row.low?(1-row.low)/(row.high-row.low):.5)-1,by-5,2,16),{1,1,1,.35}); // 1.00x reference
+        CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,1,1,.5));
+        setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(bx+bw*fr-6,by-3,12,12));CGContextRestoreGState(c);
+        text(c,kNumeric,fs*1.15,row.value,colX+colW-skew-14,base,row.selected?amber:white,80,Align::Right,.4);
+      } else if(row.kind==ui::RowKind::Field) {
+        text(c,kLabel,fs*.78,upper(row.label),tx,base,row.selected?white.withAlpha(.9):muted,160-iconW,Align::Left,1.6);
+        const CGFloat vx=colX+colW-skew-(row.adjustable?44:16);
+        text(c,kBody,fs*.95,row.value,vx,base,body,colW-190,Align::Right);
+        if(row.adjustable) {
+          const Ink k=row.selected?amber:Ink{1,1,1,.35};
+          triangleArrow(c,{colX+colW-skew-22,y+rowH/2},5,-1.5708,k);
+          triangleArrow(c,{colX+colW-skew-8,y+rowH/2},5,1.5708,k);
+        }
+      } else {
+        text(c,row.selected?kHeading:kBody,fs,row.label,tx,base,body,colW-skew-(row.adjustable?70:44),Align::Left,row.selected?.6:.2);
+        if(row.adjustable) {
+          const Ink k=row.selected?amber:Ink{1,1,1,.35};
+          triangleArrow(c,{colX+colW-skew-22,y+rowH/2},5,-1.5708,k);
+          triangleArrow(c,{colX+colW-skew-8,y+rowH/2},5,1.5708,k);
+        } else if(row.selected) triangleArrow(c,{colX+colW-skew-14,y+rowH/2},5,1.5708,amber);
+      }
+      y+=pitch;
+    }
+    // Information card.
+    if(!centred) {
+      const CGFloat cardX=colX+colW+48,cardW=1280-64-cardX,cardH=bottom-top;
+      CGFloat scale=1;std::vector<Block> blocks;
+      for(CGFloat candidate:{1.,.92,.85,.78,.7}) {
+        scale=candidate;blocks=buildBlocks(panel,selected,cardW,scale,map.active);
+        if(blocksHeight(blocks,scale)<=cardH) break;
+      }
+      const CGFloat h=std::min(cardH,blocksHeight(blocks,scale));
+      const CGRect card=CGRectMake(cardX,top,cardW,h);
+      plate(c,card,6,.95);
+      gradientRect(c,CGRectMake(card.origin.x,card.origin.y,card.size.width,2),accent,{accent.r,accent.g,accent.b,0},true);
+      drawBlocks(c,blocks,card,scale,&map);
+    } else if(informational) {
+      auto blocks=buildBlocks(panel,nullptr,520,.9);
+      CGFloat yy=top+CGFloat(menu.size())*pitch+14;
+      const CGFloat h=std::min<CGFloat>(648-yy,blocksHeight(blocks,.9));
+      if(h>40) {
+        const CGRect card=CGRectMake(380,yy,520,h);
+        plate(c,card,6,.85);drawBlocks(c,blocks,card,.9);
+      }
+    }
+    footer(c,panel);
+    if(menu.size()>3) {
+      size_t at=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) at=i+1;
+      if(at) text(c,kLabel,13,std::to_string(at)+" OF "+std::to_string(menu.size()),1216,687,muted,200,Align::Right,2.4,true);
+    }
+    end(c);mode=Mode::Panel;
+  }
+  // Compact menus (windows below 0.75 scale): 640x480 canvas, 24-unit type, a scrolling
+  // window of menu rows around the selection, warnings kept visible, one hint line.
+  void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount) {
+    const auto panel=ui::parsePanel(lines,optionCount<0?size_t(-1):size_t(optionCount));
+    CGContextRef c;begin(c);gTypeScale=1;
+    gradientRect(c,CGRectMake(0,0,640,480),{.01,.02,.03,.94},{.01,.02,.03,.80},false);
+    text(c,kHeavy,32,upper(panel.title),22,50,white,panel.subtitle.empty()?596:330,Align::Left,1.5,true);
+    if(!panel.subtitle.empty()&&panel.subtitle!="RACER") text(c,kBody,20,panel.subtitle,618,48,muted,270,Align::Right);
+    gradientSkew(c,CGRectMake(22,60,260,3),8,accent,{accent.r,accent.g,accent.b,0});
+    const auto menu=ui::selectable(panel);
+    size_t selectedAt=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) selectedAt=i;
+    // Status rows (warnings, notices, results headline) outrank the lower menu rows.
+    std::vector<const ui::Row*> status;const ui::Row* hero=nullptr;
+    for(const auto& row:panel.rows) {
+      if(row.kind==ui::RowKind::Warning||row.kind==ui::RowKind::Notice) status.push_back(&row);
+      else if(!row.value.empty()&&(row.label=="MEASUREMENT"||row.label=="PARTIAL (INVALID)")) hero=&row;
+    }
+    CGFloat top=78;
+    if(hero) {
+      text(c,kNumeric,56,hero->value,22,top+44,hero->label=="MEASUREMENT"?green:red,380,Align::Left,0,true);
+      top+=60;
+    }
+    const size_t statusShown=std::min<size_t>(status.size(),activeTest?0:2);
+    const CGFloat footerTop=432,statusH=CGFloat(statusShown)*34+(status.size()>statusShown?26:0);
+    const size_t capacity=std::max<size_t>(3,size_t((footerTop-statusH-top-6)/40));
+    size_t first=0;if(menu.size()>capacity) first=std::min(selectedAt>capacity/2?selectedAt-capacity/2:0,menu.size()-capacity);
+    CGFloat y=top;
+    for(size_t i=first;i<std::min(menu.size(),first+capacity);++i) {
+      const auto& row=panel.rows[menu[i]];const CGRect r=CGRectMake(14,y,612,34);
+      if(row.selected) {skewFill(c,r,10,accentScaled(.62,.95));skewFill(c,CGRectMake(12,y,5,34),10,amber);}
+      else gradientSkew(c,r,10,{.05,.08,.10,i%2?.72:.5},{.05,.08,.10,.28});
+      const CGFloat tx=40+(row.icon!=ui::Icon::None?32:0);
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{40,y+17},22,row.selected?amber:Ink{accent.r,accent.g,accent.b,.8});
+      const bool valued=!row.value.empty();
+      text(c,row.selected?kHeading:kBody,24,row.label,tx,y+25,row.selected?white:white.withAlpha(.86),valued?300-(tx-40):560-(tx-40));
+      if(valued) text(c,kNumeric,26,row.value,606-(row.adjustable?30:0),y+26,row.selected?amber:white,260,Align::Right,.4);
+      if(row.adjustable) {const Ink k=row.selected?amber:Ink{1,1,1,.4};triangleArrow(c,{596,y+17},6,-1.5708,k);triangleArrow(c,{612,y+17},6,1.5708,k);}
+      y+=40;
+    }
+    if(menu.size()>capacity) text(c,kLabel,18,std::to_string(selectedAt+1)+" OF "+std::to_string(menu.size()),618,y+16,muted,200,Align::Right,2);
+    CGFloat sy=footerTop-statusH;
+    for(size_t i=0;i<statusShown;++i) {
+      const bool bad=status[i]->kind==ui::RowKind::Warning;const Ink tone=bad?red:amber;
+      fill(c,CGRectMake(14,sy,612,30),{tone.r,tone.g,tone.b,.16},4);fill(c,CGRectMake(14,sy,4,30),tone);
+      text(c,kBody,19,status[i]->label,28,sy+21,white,590);sy+=34;
+    }
+    if(status.size()>statusShown) text(c,kLabel,18,std::to_string(status.size()-statusShown)+" MORE STATUS ROWS / ENLARGE WINDOW",22,sy+16,amber,590,Align::Left,1.5);
+    CGFloat x=22;
+    auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,444,26,white)+6;x+=text(c,kLabel,19,upper(action),x,463,muted,200,Align::Left,1.2)+16;};
+    if(activeTest){chip("WASD","DRIVE");chip("ESC","PAUSE");}
+    else{chip("↑↓","SELECT");chip("ENTER","OK");chip("ESC","BACK");}
+    end(c);mode=Mode::Panel;
+  }
+  void paintPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map,const std::string& mapKey) {
+    if(compact) paintCompactPanel(lines,activeTest,optionCount);
+    else paintPanelNormal(lines,optionCount,map);
+    previousPanel=lines;previousActiveTest=activeTest;previousOptions=optionCount;previousMapKey=mapKey;
   }
   void submit(uint16_t width,uint16_t height) {
     constexpr uint16_t view=14; // After the scene optical finish (views10..13).
@@ -217,8 +751,15 @@ struct DriveHud::Impl {
     if(bgfx::getAvailTransientVertexBuffer(6,layout)<6) return;
     bgfx::TransientVertexBuffer buffer;bgfx::allocTransientVertexBuffer(&buffer,6,layout);
     const float w=fit.logicalWidth,h=fit.logicalHeight,u=fit.uMax,v=fit.vMax;
-    const HudVertex vertices[]={{0,0,0,0xffffffff,0,0},{w,0,0,0xffffffff,u,0},{w,h,0,0xffffffff,u,v},
-                                {0,0,0,0xffffffff,0,0},{w,h,0,0xffffffff,u,v},{0,h,0,0xffffffff,0,v}};
+    // Menus slide in from the left and fade over 0.28 s when a screen opens.
+    float dx=0;uint32_t tint=0xffffffff;
+    if(mode==Mode::Panel) {
+      const double t=std::clamp((now()-panelAnimStart)/.28,0.,1.),ease=1-(1-t)*(1-t)*(1-t);
+      dx=float(-(1-ease)*72*(w/1280));
+      const uint32_t a=uint32_t(std::round(255*ease));tint=(a<<24)|(a<<16)|(a<<8)|a;
+    }
+    const HudVertex vertices[]={{dx,0,0,tint,0,0},{w+dx,0,0,tint,u,0},{w+dx,h,0,tint,u,v},
+                                {dx,0,0,tint,0,0},{w+dx,h,0,tint,u,v},{dx,h,0,tint,0,v}};
     static_assert(sizeof(HudVertex)==24);
     std::memcpy(buffer.data,vertices,sizeof(vertices));
     bgfx::setVertexBuffer(0,&buffer);bgfx::setTexture(0,sampler,texture);
@@ -252,26 +793,67 @@ DriveHud::DriveHud():impl(std::make_unique<Impl>()) {
     throw std::runtime_error("drive_hud_gpu");
 }
 DriveHud::~DriveHud()=default;
-void DriveHud::draw(uint16_t width,uint16_t height,double mph,bool reverse,
-                    const std::string& vehicle,const std::string& destination,
-                    double distance,const std::string& bearing) {
+void DriveHud::setAccent(int index) {
+  static constexpr Ink palette[DriveHud::accentCount]{cyan,{.42,.93,.62,1},{.66,.58,1,1},{.96,.42,.80,1},{.84,.92,1,1}};
+  index=((index%accentCount)+accentCount)%accentCount;
+  gAccent=palette[index];impl->accentIndex=index;
+  impl->mode=Impl::Mode::None;impl->driveKey.clear();impl->previousPanel.clear();
+}
+int DriveHud::accentIndex() const {return impl->accentIndex;}
+void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   if(!width||!height) return;
-  const int speed=std::isfinite(mph)?int(std::clamp(std::round(std::abs(mph)),0.,999.)):0;
-  const int metres=std::isfinite(distance)?int(std::clamp(std::round(distance/10)*10,0.,100000000.)):0;
-  const Impl::Key key{speed,reverse,boundedText(vehicle,512),boundedText(destination,512),metres,boundedText(bearing,64)};
-  auto& p=*impl;const bool compact=hudLayout(width,height).compact;
-  const bool medium=!compact&&(width<1280||height<720);
-  if(p.compact!=compact||p.medium!=medium){p.compact=compact;p.medium=medium;p.mode=Impl::Mode::None;}
-  if(p.mode!=Impl::Mode::Drive||key!=p.previous) p.paint(key);
+  DriveState s=input;
+  s.mph=std::isfinite(s.mph)?std::clamp(std::round(std::abs(s.mph)),0.,999.):0;
+  s.distance=std::isfinite(s.distance)?std::clamp(std::round(s.distance/10)*10,0.,1e8):0;
+  s.vehicle=boundedText(s.vehicle,512);s.destination=boundedText(s.destination,512);
+  s.bearing=boundedText(s.bearing,64);s.markerLabel=boundedText(s.markerLabel,128);
+  auto q=[](double v,double step){return std::isfinite(v)?std::round(v/step)*step:0.;};
+  s.throttle=q(std::clamp(s.throttle,0.,1.),.05);s.brake=q(std::clamp(s.brake,0.,1.),.05);
+  s.bearingRadians=q(s.bearingRadians,.02);s.heading=q(std::remainder(s.heading,2*M_PI),.02);s.carX=q(s.carX,1);s.carZ=q(s.carZ,1);
+  for(auto& b:s.blips){b.bearing=q(b.bearing,.02);b.distance=q(b.distance,2);}s.markerDistance=q(s.markerDistance,10);
+  s.markerX=float(std::round(s.markerX));s.markerY=float(std::round(s.markerY));
+  s.time=0;
+  if(s.test){
+    auto& t=*s.test;t.elapsed=q(t.elapsed,.01);t.countdownSeconds=q(t.countdownSeconds,.02);
+    t.distance=std::round(t.distance);t.speedKmh=std::round(t.speedKmh);t.gateDistance=std::round(t.gateDistance);
+    t.bearing=q(t.bearing,.02);t.name=boundedText(t.name,128);t.note=boundedText(t.note,128);t.turn=boundedText(t.turn,64);
+  }
+  auto& p=*impl;const auto fit=hudLayout(width,height);const bool compact=fit.compact;
+  const double scale=double(fit.width)/fit.logicalWidth;
+  if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
+  if(s.test) {
+    if(p.wasCountdown&&!s.test->countdown){p.bannerTitle="GO!";p.bannerSub=upper(s.test->name);p.bannerStart=Impl::now();}
+    if(s.test->kind==2&&p.lastGate>0&&s.test->gate>p.lastGate){p.bannerTitle="GATE "+std::to_string(p.lastGate)+" CLEARED";p.bannerSub=std::to_string(s.test->gates-p.lastGate)+" TO GO";p.bannerStart=Impl::now();}
+    p.wasCountdown=s.test->countdown;p.lastGate=s.test->gate;
+  } else {p.wasCountdown=false;p.lastGate=0;}
+  const double bannerPhase=(Impl::now()-p.bannerStart)/1.9;
+  const int bannerStep=bannerPhase>=0&&bannerPhase<1?int(bannerPhase*90)+1:0;
+  std::ostringstream out;
+  out<<bannerStep<<'#'<<int(s.mph)<<'|'<<s.reverse<<'|'<<s.throttle<<'|'<<s.brake<<'|'<<s.hasDestination<<'|'<<s.vehicle<<'|'<<s.destination<<'|'
+     <<s.distance<<'|'<<s.bearing<<'|'<<s.bearingRadians<<'|'<<s.markerActive<<s.markerBehind<<'|'<<s.markerX<<','<<s.markerY<<'|'
+     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<s.heading<<'|'<<s.carX<<','<<s.carZ;
+  for(const auto& b:s.blips) out<<'|'<<b.kind<<','<<b.bearing<<','<<b.distance;
+  out<<'|'<<compact<<'|'<<width<<'x'<<height;
+  if(s.test){const auto& t=*s.test;
+    out<<"|T"<<t.kind<<'|'<<t.name<<'|'<<t.note<<'|'<<t.countdown<<t.measuring<<t.automatic<<'|'<<t.countdownSeconds<<'|'<<t.elapsed<<'|'
+       <<t.distance<<'|'<<t.speedKmh<<'|'<<t.gate<<'/'<<t.gates<<'|'<<t.gateDistance<<'|'<<t.bearing<<'|'<<t.turn;}
+  const std::string signature=out.str();
+  if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
+  if(p.mode!=Impl::Mode::Drive||signature!=p.driveKey){p.paintDrive(s,fit,width,height);p.driveKey=signature;}
   p.submit(width,height);
 }
 void DriveHud::drawPanel(uint16_t width,uint16_t height,
-                         const std::vector<std::string>& lines,bool activeTest) {
+                         const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map) {
   if(!width||!height||lines.empty()) return;
-  auto& p=*impl;const bool compact=hudLayout(width,height,true).compact;
+  std::ostringstream mapKey;
+  if(map.active){mapKey<<std::round(map.carX)<<','<<std::round(map.carZ)<<','<<std::round(map.heading*50);for(const auto& m:map.markers)mapKey<<'|'<<m.name<<m.selected<<m.x<<m.z;}
+  auto& p=*impl;const auto fit=hudLayout(width,height,true);const bool compact=fit.compact;
+  const double scale=double(fit.width)/fit.logicalWidth;
+  if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
   if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
-  if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest)
-    p.paintPanel(lines,activeTest);
+  if(p.mode!=Impl::Mode::Panel||p.previousPanel.empty()||lines.front()!=p.previousPanel.front()) p.panelAnimStart=Impl::now();
+  if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest||optionCount!=p.previousOptions||mapKey.str()!=p.previousMapKey)
+    p.paintPanel(lines,activeTest,optionCount,map,mapKey.str());
   p.submit(width,height);
 }
 }

@@ -14,9 +14,10 @@ struct HudLayout {
 inline HudLayout hudLayout(uint16_t width,uint16_t height,bool panel=false) {
   HudLayout out;if(!width||!height)return out;
   const double normal=std::min(double(width)/1280,double(height)/720);
-  // Panels page earlier; driving keeps corner cards at medium sizes and uses
-  // enlarged secondary type, preserving the car's unobstructed center view.
-  out.compact=normal<(panel?1:.75);
+  // The structured menus scale down gracefully to 0.75 (960x540); below that
+  // both modes switch to the cropped 640x480 canvas with large type.
+  (void)panel;
+  out.compact=normal<.75;
   if(out.compact){out.logicalWidth=640;out.logicalHeight=480;out.uMax=.5f;out.vMax=480.f/720;}
   const double scale=std::min(double(width)/out.logicalWidth,double(height)/out.logicalHeight);
   out.width=std::max(uint16_t(1),uint16_t(std::floor(out.logicalWidth*scale)));

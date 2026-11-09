@@ -40,6 +40,8 @@ public:
   void startTest(TestKind);
   VehicleSetup effectiveSetup(size_t slot) const;
   std::vector<std::string> lines() const;
+  // Number of selectable menu entries on the current screen (view-model split).
+  int menuCount() const { return count(); }
 
 private:
   Diagnostics *diagnostics;
