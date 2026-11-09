@@ -1,17 +1,28 @@
 #pragma once
-#include "profile.h"
-#include "garage_features.h"
 #include "career_flow.h"
+#include "garage_features.h"
+#include "profile.h"
 #include "test_session.h"
 #include <optional>
 #include <string>
 #include <vector>
 namespace racer {
-enum class Screen { Drive, Pause, Garage, Pending, Tests, Results, Parts, Livery, Events };
+enum class Screen {
+  Drive,
+  Pause,
+  Garage,
+  Pending,
+  Tests,
+  Results,
+  Parts,
+  Livery,
+  Events
+};
 enum class Action { Up, Down, Left, Right, Accept, Back, Pause, Reset, Map };
 class PlayFlow {
 public:
-  explicit PlayFlow(const std::string &path, Diagnostics *diagnostics = nullptr);
+  explicit PlayFlow(const std::string &path,
+                    Diagnostics *diagnostics = nullptr);
   uint64_t attempt = 0;
   void observe(const char *cause) noexcept;
   Simulation sim;
@@ -21,10 +32,12 @@ public:
   GarageFeatures features;
   CareerFlow career;
   bool careerAttempt = false;
-  std::string vehicleId="prototype",vehicleName="Prototype car",vehicleSaveStatus;
-  int vehicleCycleRequest=0;
-  bool vehicleSaveRetryRequest=false;
-  bool configureVehicle(const std::string &id,const std::string &name,const VehicleGeometry &geometry);
+  std::string vehicleId = "prototype", vehicleName = "Prototype car",
+              vehicleSaveStatus;
+  int vehicleCycleRequest = 0;
+  bool vehicleSaveRetryRequest = false;
+  bool configureVehicle(const std::string &id, const std::string &name,
+                        const VehicleGeometry &geometry);
   Screen screen = Screen::Drive;
   bool paused = false, rearming = false, focus = true, quit = false;
   int menu = 0;
@@ -49,6 +62,10 @@ private:
   uint64_t observationFailures = 0;
   bool previousBoundaryContact = false;
   void observeBoundary(Input input) noexcept;
+  // 10 Hz human-drive telemetry: allowlisted channels only, for the
+  // analog-trigger acceptance review (launch, coasting, upshift, route).
+  void observeDrive(Input input) noexcept;
+  double lastDriveSampleSeconds = -1;
   void actionImpl(Action);
   int pendingSlot = -1;
   Screen eventReturn = Screen::Drive;
