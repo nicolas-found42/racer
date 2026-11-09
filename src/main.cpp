@@ -137,7 +137,7 @@ Mesh buildStudio() {
   constexpr float radius = 14.f;
   const uint32_t floorIn = packRgb(.62f, .66f, .74f), floorOut = packRgb(.11f, .12f, .15f);
   for (int i = 0; i < 14; ++i)
-    annulus(m, float(i), float(i + 1), .03f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
+    annulus(m, float(i), float(i + 1), -.0030f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
   const float ys[] = {0.f, 1.2f, 3.5f, 6.f, 9.f};
   const uint32_t cs[] = {packRgb(.10f, .11f, .14f), packRgb(.30f, .33f, .40f), packRgb(.56f, .62f, .72f),
                          packRgb(.26f, .29f, .36f), packRgb(.07f, .08f, .10f)};
@@ -169,10 +169,10 @@ Mesh buildFloorGloss() {
   for (int i = 0; i < steps; ++i) {
     const float r0 = 9.f * float(i) / steps, r1 = 9.f * float(i + 1) / steps;
     const float f = std::pow(1.f - (r0 + r1) * .5f / 9.f, 2.2f);
-    annulus(m, r0, r1, .04f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
+    annulus(m, r0, r1, -.0025f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
   }
-  annulus(m, 4.35f, 4.5f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
-  annulus(m, 6.9f, 7.0f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
+  annulus(m, 4.35f, 4.5f, -.0024f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
+  annulus(m, 6.9f, 7.0f, -.0024f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
   return m;
 }
 // Translucent plate-coloured disc drawn over the mirrored car so the floor
@@ -184,17 +184,12 @@ Mesh buildReflectionVeil() {
   };
   constexpr int steps = 28;
   for (int i = 0; i < steps; ++i)
-    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, .052f,
+    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, -.0015f,
             withAlpha(lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
                               std::pow(float(i) / 27.f * (3.4f / 3.9f), 1.3f)),
                       .80f + .15f * float(i) / (steps - 1)));
   return m;
 }
-// Tyres are authored with their bottoms exactly at y=0, so every showroom floor
-// layer (studio floor .03, plate .05/.06, veil .052, contact blob .075) must sit
-// below that plane or it depth-hides the tyre bottoms. The whole stage is lowered
-// by more than the tallest layer.
-constexpr float showroomFloorDrop = .08f;
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -1269,17 +1264,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   auto reflectionVeilBuffer = bgfx::createVertexBuffer(
       bgfx::copy(reflectionVeil.data(), uint32_t(reflectionVeil.size() * sizeof(Vertex))), layout);
   Mesh shadowBlob;
-  ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
+  ellipse(shadowBlob, 1.15f, 2.35f, -.0005f, packRgb(.01f, .012f, .016f));
   auto shadowBlobBuffer = bgfx::createVertexBuffer(
       bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
   Mesh turntable;
   // Lit slate plate: lighter at the centre so dark paint separates from it.
   for (int i = 0; i < 28; ++i)
-    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, .05f,
+    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, -.0020f,
             lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
                     std::pow(float(i) / 27.f, 1.3f)));
-  annulus(turntable, 3.55f, 3.72f, .06f, 0xffebdb57);    // cyan rim (ABGR)
-  annulus(turntable, 3.86f, 3.92f, .06f, 0xff4db8ff);    // amber outer hairline
+  annulus(turntable, 3.55f, 3.72f, -.0010f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, -.0010f, 0xff4db8ff);    // amber outer hairline
   auto turntableBuffer = bgfx::createVertexBuffer(
       bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
@@ -1832,6 +1827,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     const bool showroom = flow.screen != racer::Screen::Drive &&
                           flow.screen != racer::Screen::Pause &&
                           inspectionDistance <= 0 && scene != "scale";
+    // Showroom stage plane: the lowest tyre bottom of the shown car. Tyres are
+    // authored with their bottoms at y=0 (a few cars sit up to 0.5 cm higher), and
+    // every stage layer is modelled just below this plane (-0.5..-3 mm) so the
+    // floor, plate and contact blob never depth-hide the tyres and leave no gap.
+    float showroomStageY = 0;
+    if (!vehicles.empty()) {
+      showroomStageY = 1e9f;
+      for (const auto &w : vehicles[activeVehicle].geometry.wheels)
+        showroomStageY = std::min(showroomStageY, float(w.center.y - w.radius));
+      showroomStageY = std::max(0.f, showroomStageY);
+    }
     if (showroom) {
       constexpr double pi = 3.14159265358979323846;
       const double angle = shown.heading + pi * .78 + elapsed * .22;
@@ -2229,7 +2235,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
     if (showroom) {
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
-      model[13] = -showroomFloorDrop;
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, studioBuffer);
       // ALWAYS: the room is convex and seen from inside, so it can overwrite any
@@ -2244,7 +2250,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
-      model[13] = -showroomFloorDrop;
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, shadowBlobBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2252,7 +2258,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
-      model[13] = -showroomFloorDrop;
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, turntableBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2672,6 +2678,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           float flip[16];
           bx::mtxIdentity(flip);
           flip[5] = -.55f; // squashed mirror: a gloss hint that stays on the plate
+          flip[13] = 1.55f * showroomStageY; // mirror about the stage plane
           bx::mtxMul(flipped, base, flip);
           base = flipped;
         }
@@ -2724,7 +2731,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if (pass == 0) {
         float veilModel[16];
         racer::worldTransform(veilModel, 0, float(shown.x), float(shown.z));
-        veilModel[13] = -showroomFloorDrop;
+        veilModel[13] = showroomStageY;
         bgfx::setTransform(veilModel);
         bgfx::setVertexBuffer(0, reflectionVeilBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
@@ -2734,7 +2741,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         // The reflection pass painted over the contact shadow; redraw it.
         float blobModel[16];
         racer::worldTransform(blobModel, float(shown.heading), float(shown.x), float(shown.z));
-        blobModel[13] = -showroomFloorDrop;
+        blobModel[13] = showroomStageY;
         bgfx::setTransform(blobModel);
         bgfx::setVertexBuffer(0, shadowBlobBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |

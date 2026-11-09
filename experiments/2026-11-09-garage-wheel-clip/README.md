@@ -16,6 +16,7 @@
   - All 17 vehicles in the fixed garage, floor-level camera: tyres complete and round, ending on the ground line. (A numeric row metric was discarded: it hit the plate edge, not the tyre.)
   - Driving at 62 mph (scripted `drive-input 1 0 0`): luma edge at rows 358-359 vs 360-361 at rest, about 5 mm; frames from horizon, side, rear and front views show round tyres on the road with contact shadow.
   - Other garage screens (garage, parts, livery, events, tests) and pause: tyres complete.
-- Known tradeoff: lowering the stage 8 cm leaves the plate about 2.7-3 cm below the tyre bottoms (blob ~0.5 cm). Invisible from the showroom camera; visible as a thin gap only from a floor-level camera.
+- Gap removal (second pass): the 8 cm drop left the plate ~3 cm and the blob ~0.5 cm under the tyres. Stage layers are now modelled at -0.5..-3 mm (same stacking order) and the stage plane is anchored to the shown car's lowest tyre bottom (vehicles 4 and 12 have tyres up to 0.51 cm above y=0), with the mirror flip pivoting on that plane. Verified on 5 cars (0 NSX, 2 white-wall tyres, 4 +0.38 cm tyres, 7 largest tyres, 12 Ford GT +0.51 cm front): floor-level and low three-quarter frames before/after show the light gap band under every tyre gone; no z-fighting at normal or close cameras. `ctest` 102/102.
+- Limits: gap is now <= 0.5 mm by construction (layer heights) and below 1 px at the cameras tested (~1.5-2.5 mm/px); it was judged by frames, not a numeric row metric. Cars whose front tyres are authored above their rear tyres (2, 12) still have the higher pair up to 0.5 cm off the floor, which is model data, the same in the driving scene.
 - Retention: frames and scripts were in the session scratchpad only; none retained. The debug camera patch was removed.
-- Next: none required. Optional: flatten the stage layers closer together to remove the gap.
+- Next: none required.
