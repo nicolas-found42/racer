@@ -63,6 +63,7 @@ Jev (restored 2026-11-08, `typesafe/jev-1.14-20261014` via OpenRouter): the jev 
 Jev limits found: the jev MCP tools take text only (no image input), so Jev cannot look at the comparison sheets. Any Jev judgment of an element would rest on my own written description of the sheet, which is circular, so none was made and none is claimed.
 Re-run after the framing change: the full `capture_ui.sh` recapture (14 screens) and `compare_ui.py` regeneration completed into `output/cur` and `output/compare` (ignored). Every capture process exits 1 with "FAIL: review script incomplete" while still writing the screenshot; this status predates this round and was not investigated. Parts and livery frame well; on the event board and driving-tests screens the tall data panel covers the car (kept: those are data-first screens, like the MC3 and Juiced 2 career menus over scenery; the car is visible as a backdrop only on the shorter garage, parts and livery panels). `ctest` 102/102 passes on the final build.
 `jev_verify` of five completion claims against this record (run once, after commit 24f8f7b): accent persists across runs - verified (1.00); all 14 screens recaptured and sheets regenerated - verified (0.88); car fills the stage - verified but low confidence (0.37, review); "every element is at least as appealing as the references" - unsupported (relation contradicted 0.64, confidence 0.46, review); "Jev judged every element comparison" - contradicted (1.00). So the parity goal is not established by this record.
+`jev_decide` tall-panel question (events and tests hide the car): leave_as_data_screens 0.40, lower_panel_opacity 0.29, shift_car_left_of_panel 0.24, hide_car 0.02; confidence 0.30, so a weak preference. Followed: no change; revisit only if a reviewer rejects it.
 Not done through Jev: per-element comparison sheets (judged manually) and the earlier 12 element comparisons; paint brightness is still open.
 
 ## Evidence / retention
@@ -72,4 +73,4 @@ Regeneration: `scripts/capture_ui.sh experiments/2026-11-08-ui-hud/output/cur 12
 
 ## Next action
 
-Decide (with Jev, on written evidence) whether the event board and tests screens should move the car clear of the tall panel; add true floor reflection and richer studio props; add a unit test for the accent sidecar by moving its read/write out of `main.cpp`.
+Add true floor reflection and richer studio props; add a unit test for the accent sidecar by moving its read/write out of `main.cpp`.
