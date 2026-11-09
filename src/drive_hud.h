@@ -58,6 +58,11 @@ public:
   void drawPanel(uint16_t width,uint16_t height,
                  const std::vector<std::string>& lines,bool activeTest,int optionCount=-1,
                  const PanelMap& map=PanelMap{});
+  // HUD accent colour (session setting): 0 cyan, 1 green, 2 violet, 3 magenta, 4 ice.
+  static constexpr int accentCount=5;
+  void setAccent(int index);
+  int accentIndex() const;
+  void cycleAccent(){setAccent((accentIndex()+1)%accentCount);}
 private:
   struct Impl;
   std::unique_ptr<Impl> impl;

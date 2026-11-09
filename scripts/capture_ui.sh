@@ -3,6 +3,7 @@
 # usage: [ONLY="name ..."] scripts/capture_ui.sh OUTDIR [WIDTH HEIGHT] [extra racer args...]
 set -u
 out=$1; w=${2:-1280}; h=${3:-720}; shift 3 2>/dev/null || shift $#
+extra=("$@")
 mkdir -p "$out"; bin=${RACER_BIN:-build/racer}
 shot() { # name, script body, extra args (SHOT_DELAY/SHOT_SMOKE override timing)
   local n=$1 body=$2; shift 2
@@ -10,7 +11,7 @@ shot() { # name, script body, extra args (SHOT_DELAY/SHOT_SMOKE override timing)
   printf '%b' "$body" > "$out/$n.review"
   rm -f "$out/$n.career" "$out/$n.profile"*
   timeout 90 "$bin" --background --no-diagnostics --profile "$out/$n.profile" \
-    --review-script "$out/$n.review" --window $w $h "$@" \
+    --review-script "$out/$n.review" --window $w $h ${extra[@]+"${extra[@]}"} "$@" \
     --screenshot "$out/$n.ppm" --screenshot-delay ${SHOT_DELAY:-7} --smoke ${SHOT_SMOKE:-9} > "$out/$n.log" 2>&1
   echo "$n exit=$?"
   python3 -c "from PIL import Image;Image.open('$out/$n.ppm').save('$out/$n.png')" 2>/dev/null && rm -f "$out/$n.ppm"

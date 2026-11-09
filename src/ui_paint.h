@@ -29,6 +29,9 @@ constexpr Ink white{.96, .97, .95, 1};
 constexpr Ink muted{.62, .70, .73, 1};
 constexpr Ink dim{.40, .47, .50, 1};
 constexpr Ink cyan{.34, .86, .92, 1};
+// Runtime accent (HUD colour option); defaults to cyan. Everything that was cyan follows it.
+inline Ink gAccent = cyan;
+inline Ink accentScaled(CGFloat k, CGFloat a) { return {gAccent.r * k, gAccent.g * k, gAccent.b * k, a}; }
 constexpr Ink teal{.10, .46, .52, 1};
 constexpr Ink amber{1, .72, .30, 1};
 constexpr Ink red{1, .33, .24, 1};

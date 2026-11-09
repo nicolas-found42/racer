@@ -22,6 +22,7 @@ namespace racer {
 namespace {
 using namespace paint;
 using ui::upper;
+Ink& accent=gAccent;
 constexpr uint16_t canvasWidth=1280,canvasHeight=720;
 struct HudVertex {float x,y,z;uint32_t color;float u,v;};
 std::string boundedText(const std::string& value,size_t bytes) {
@@ -44,7 +45,7 @@ std::string clock(double seconds) {
 }
 Ink speedColour(double t) {
   t=std::clamp(t,0.,1.);
-  return t<.7?mix(cyan,amber,t/.7):mix(amber,red,(t-.7)/.3);
+  return t<.7?mix(accent,amber,t/.7):mix(amber,red,(t-.7)/.3);
 }
 // Dark glass plate used by every HUD cluster: soft shadow, vertical gradient, hairline.
 void plate(CGContextRef c,CGRect r,CGFloat radius,CGFloat alpha=1,CGFloat skew=0) {
@@ -91,7 +92,7 @@ void speedometer(CGContextRef c,const DriveState& s,CGPoint centre) {
   CGContextRestoreGState(c);
   setStroke(c,{1,1,1,.12});CGContextSetLineWidth(c,1.5);
   CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-113.5,centre.y-113.5,227,227));
-  // Track + value arc (cyan -> amber -> red as speed climbs).
+  // Track + value arc (accent -> amber -> red as speed climbs).
   arc(c,centre,102,start,start+sweep,6,{1,1,1,.10},kCGLineCapButt);
   const int segments=std::max(1,int(fraction*sweep/2));
   for(int i=0;i<segments;++i) {
@@ -171,7 +172,7 @@ void radar(CGContextRef c,const DriveState& s,CGPoint centre) {
     }
   }
   // View wedge (forward 70 degrees).
-  setFill(c,{cyan.r,cyan.g,cyan.b,.10});
+  setFill(c,{accent.r,accent.g,accent.b,.10});
   CGContextMoveToPoint(c,centre.x,centre.y);
   for(int i=0;i<=14;++i){const auto p=onCircle(centre,R,-125+i*70./14);CGContextAddLineToPoint(c,p.x,p.y);}
   CGContextClosePath(c);CGContextFillPath(c);
@@ -207,7 +208,7 @@ void radar(CGContextRef c,const DriveState& s,CGPoint centre) {
   text(c,kLabel,10.5,"RANGE "+std::to_string(int(std::round(range/10)*10))+" M",centre.x,centre.y+R+23,muted,120,Align::Center,1.8);
 }
 void identity(CGContextRef c,const DriveState& s) {
-  gradientRect(c,CGRectMake(34,36,3.5,62),{cyan.r,cyan.g,cyan.b,1},{amber.r,amber.g,amber.b,1},false,1.5);
+  gradientRect(c,CGRectMake(34,36,3.5,62),{accent.r,accent.g,accent.b,1},{amber.r,amber.g,amber.b,1},false,1.5);
   text(c,kHeavy,28,"RACER",50,62,white,200,Align::Left,7,true);
   text(c,kBody,17,s.vehicle,50,86,white.withAlpha(.94),340,Align::Left,.2,true);
   text(c,kLabel,12.5,"CENTRAL DISTRICT   ·   FREE DRIVE",50,106,muted,340,Align::Left,2.2,true);
@@ -281,7 +282,7 @@ void banner(CGContextRef c,const std::string& title,const std::string& sub,doubl
     const CGFloat offset=-(1-ease)*220-i*16;
     CGContextSaveGState(c);CGContextSetAlpha(c,alpha*(i==0?1:i==1?.30:.14));
     const CGRect r=CGRectMake(cx-w/2+offset,y,w,h);
-    gradientSkew(c,r,16,mix(teal,cyan,.35),{teal.r,teal.g,teal.b,.85});
+    gradientSkew(c,r,16,mix(teal,accent,.35),{teal.r,teal.g,teal.b,.85});
     if(i==0) {
       skewFill(c,CGRectMake(r.origin.x,r.origin.y,w,3),16,{1,1,1,.55});
       text(c,kHeavy,46,title,cx+offset+8,y+48,white,w-30,Align::Center,3,true);
@@ -316,7 +317,7 @@ void testHud(CGContextRef c,const DriveState& s) {
   if(t.kind==2) {
     text(c,kLabel,11,"GATE",r.origin.x+r.size.width-26,r.origin.y+22,muted,80,Align::Right,2.6);
     text(c,kNumeric,34,std::to_string(t.gate)+"/"+std::to_string(t.gates),r.origin.x+r.size.width-26,r.origin.y+58,white,120,Align::Right,.5);
-    triangleArrow(c,{r.origin.x+r.size.width-150,r.origin.y+46},13,t.bearing,cyan);
+    triangleArrow(c,{r.origin.x+r.size.width-150,r.origin.y+46},13,t.bearing,accent);
     text(c,kNumeric,22,rangeText(int(t.gateDistance)),r.origin.x+r.size.width-26,r.origin.y+86,amber,120,Align::Right,.4);
     text(c,kLabel,12.5,upper(t.note),r.origin.x+28,r.origin.y+96,muted,260,Align::Left,1.6);
   } else {
@@ -324,7 +325,7 @@ void testHud(CGContextRef c,const DriveState& s) {
     const double fraction=std::clamp(t.speedKmh/target,0.,1.);
     const CGRect bar=CGRectMake(r.origin.x+28,r.origin.y+80,r.size.width-60,6);
     fill(c,bar,{1,1,1,.12},3);
-    if(fraction>0) gradientRect(c,CGRectMake(bar.origin.x,bar.origin.y,bar.size.width*fraction,6),cyan,t.kind==1?red:amber,true,3);
+    if(fraction>0) gradientRect(c,CGRectMake(bar.origin.x,bar.origin.y,bar.size.width*fraction,6),accent,t.kind==1?red:amber,true,3);
     text(c,kNumeric,22,t.kind==0?"0 → 100 KM/H":(t.measuring?"100 → 0 KM/H":"ACCELERATE TO 100 KM/H"),r.origin.x+r.size.width-26,r.origin.y+58,white,240,Align::Right,.6);
     text(c,kNumeric,22,rangeText(int(t.distance)),r.origin.x+r.size.width-26,r.origin.y+26,amber,120,Align::Right,.4);
   }
@@ -346,6 +347,8 @@ struct DriveHud::Impl {
   double scale=1;
   std::string driveKey;
   HudLayout lastFit;
+  int accentIndex=0;
+  double panelAnimStart=-10;
   // Announcement banner state (set from draw() on test events).
   std::string bannerTitle,bannerSub;double bannerStart=-100;
   bool wasCountdown=false;int lastGate=0;
@@ -377,9 +380,9 @@ struct DriveHud::Impl {
       text(c,kNumeric,44,t.countdown?"GET READY":clock(t.elapsed),34,80,white,260,Align::Left,0,true);
       if(t.kind==2) text(c,kNumeric,34,std::to_string(t.gate)+"/"+std::to_string(t.gates),420,70,amber,120,Align::Right);
     } else {
-      gradientRect(c,CGRectMake(16,18,4,62),cyan,amber,false,2);
+      gradientRect(c,CGRectMake(16,18,4,62),accent,amber,false,2);
       text(c,kHeading,30,s.vehicle,32,46,white,580,Align::Left,.3,true);
-      if(s.hasDestination) text(c,kLabel,22,upper(s.destination.empty()?"EXPLORE THE CITY":s.destination)+"   ·   "+rangeText(metres)+"   "+s.bearing,32,76,cyan,580,Align::Left,1.6,true);
+      if(s.hasDestination) text(c,kLabel,22,upper(s.destination.empty()?"EXPLORE THE CITY":s.destination)+"   ·   "+rangeText(metres)+"   "+s.bearing,32,76,accent,580,Align::Left,1.6,true);
     }
     CGContextSaveGState(c);CGContextTranslateCTM(c,500,330);CGContextScaleCTM(c,.8,.8);
     speedometer(c,s,{0,0});
@@ -483,7 +486,7 @@ struct DriveHud::Impl {
       plate(c,CGRectMake(p.x-measure(kLabel,12,upper(m.name),1.4)/2-8,p.y+13,measure(kLabel,12,upper(m.name),1.4)+16,20),4,m.selected?1:.7);
       text(c,kLabel,12,upper(m.name),p.x,p.y+27,m.selected?white:muted,200,Align::Center,1.4);
     }
-    triangleArrow(c,at(map.carX,map.carZ),8,map.heading,cyan);
+    triangleArrow(c,at(map.carX,map.carZ),8,map.heading,accent);
     CGContextRestoreGState(c);
     stroke(c,r,{1,1,1,.12},1,5);
   }
@@ -497,7 +500,7 @@ struct DriveHud::Impl {
         const CGFloat gap=8,tw=(w-gap*(b.tiles.size()-1))/b.tiles.size();
         for(size_t i=0;i<b.tiles.size();++i) {
           const CGRect r=CGRectMake(x+i*(tw+gap),y,tw,b.height-8*scale);
-          fill(c,r,{1,1,1,.06},5);fill(c,CGRectMake(r.origin.x,r.origin.y+4,2.5,r.size.height-8),{cyan.r,cyan.g,cyan.b,.8},1);
+          fill(c,r,{1,1,1,.06},5);fill(c,CGRectMake(r.origin.x,r.origin.y+4,2.5,r.size.height-8),{accent.r,accent.g,accent.b,.8},1);
           text(c,kLabel,11.5*scale,upper(b.tiles[i].first),r.origin.x+12,r.origin.y+17*scale,muted,tw-16,Align::Left,1.8);
           text(c,kNumeric,27*scale,b.tiles[i].second,r.origin.x+12,r.origin.y+r.size.height-8*scale,white,tw-16);
         }
@@ -508,9 +511,9 @@ struct DriveHud::Impl {
         text(c,kNumeric,66,b.value,x,y+72,b.good?green:red,w,Align::Left,0,true);break;
       }
       case Block::Detail: {
-        fill(c,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-8),{cyan.r,cyan.g,cyan.b,.10},4);
-        fill(c,CGRectMake(card.origin.x+12,y,3,b.height-8),cyan);
-        text(c,kLabel,12,upper(b.label),x+10,y+19,cyan,w-10,Align::Left,2.2);
+        fill(c,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-8),{accent.r,accent.g,accent.b,.10},4);
+        fill(c,CGRectMake(card.origin.x+12,y,3,b.height-8),accent);
+        text(c,kLabel,12,upper(b.label),x+10,y+19,accent,w-10,Align::Left,2.2);
         CGFloat ty=y+40*scale;for(const auto& line:b.wrapped){text(c,kBodyMedium,15*scale,line,x+10,ty,white.withAlpha(.9),w-10);ty+=21*scale;}
         break;
       }
@@ -523,7 +526,7 @@ struct DriveHud::Impl {
       }
       case Block::Header: {
         CGFloat ty=y+17*scale;for(const auto& line:b.wrapped){text(c,kBody,16*scale,line,x,ty,white,w);ty+=21*scale;}
-        gradientRect(c,CGRectMake(x,y+b.height-6*scale,w,2),{cyan.r,cyan.g,cyan.b,.55},{cyan.r,cyan.g,cyan.b,0},true);break;
+        gradientRect(c,CGRectMake(x,y+b.height-6*scale,w,2),{accent.r,accent.g,accent.b,.55},{accent.r,accent.g,accent.b,0},true);break;
       }
       case Block::Sub:
         if(b.wrapped.empty()) {
@@ -564,11 +567,11 @@ struct DriveHud::Impl {
   }
   void header(CGContextRef c,const ui::Panel& panel,bool centred) {
     const CGFloat x=centred?640:64;const Align a=centred?Align::Center:Align::Left;
-    text(c,kLabel,12.5,"RACER",x,50,cyan,200,a,6);
+    text(c,kLabel,12.5,"RACER",x,50,accent,200,a,6);
     text(c,kHeavy,50,upper(panel.title),x,102,white,900,a,2.5,true);
     if(!panel.subtitle.empty()&&panel.subtitle!="RACER") text(c,kBody,18,panel.subtitle,x,132,muted,900,a,.6,true);
     const CGFloat sx=centred?(640-80):64,sy=centred&&panel.subtitle.empty()?116:(panel.subtitle.empty()?116:144);
-    gradientSkew(c,CGRectMake(sx,sy,120,3),8,cyan,{cyan.r,cyan.g,cyan.b,.0});
+    gradientSkew(c,CGRectMake(sx,sy,120,3),8,accent,{accent.r,accent.g,accent.b,.0});
     skewFill(c,CGRectMake(sx+128,sy,22,3),8,amber);
   }
   void footer(CGContextRef c,const ui::Panel& panel) {
@@ -607,9 +610,9 @@ struct DriveHud::Impl {
       const auto& row=panel.rows[index];
       const CGRect r=CGRectMake(colX,y,colW,rowH);
       if(row.selected) {
-        CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},14,shade(cyan.r,cyan.g,cyan.b,.35));
-        skewFill(c,r,skew,{.10,.40,.45,.9});CGContextRestoreGState(c);
-        gradientSkew(c,r,skew,{.18,.62,.68,.96},{.06,.26,.31,.78});
+        CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},14,shade(accent.r,accent.g,accent.b,.35));
+        skewFill(c,r,skew,accentScaled(.47,.9));CGContextRestoreGState(c);
+        gradientSkew(c,r,skew,accentScaled(.72,.96),accentScaled(.30,.78));
         skewFill(c,CGRectMake(r.origin.x-2,r.origin.y,5,r.size.height),skew,amber);
       } else {
         const bool odd=(&index-&menu[0])%2;
@@ -619,14 +622,14 @@ struct DriveHud::Impl {
       CGFloat tx=tx0;
       const Ink body=row.selected?white:white.withAlpha(.80);
       const CGFloat iconW=row.icon!=ui::Icon::None?28:0;
-      if(row.icon!=ui::Icon::None) icon(c,row.icon,{tx0+9,y+rowH/2},std::min<CGFloat>(rowH*.58,19),row.selected?amber:Ink{cyan.r,cyan.g,cyan.b,.75});
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{tx0+9,y+rowH/2},std::min<CGFloat>(rowH*.58,19),row.selected?amber:Ink{accent.r,accent.g,accent.b,.75});
       tx=tx0+iconW;
       if(row.kind==ui::RowKind::Slider) {
         text(c,kBody,fs*.92,row.label,tx,base,body,150-iconW);
         const CGFloat bx=tx0+150,bw=colW-150-skew-16-96,by=y+rowH/2-3;
         fill(c,CGRectMake(bx,by,bw,6),{0,0,0,.45},3);
         const double fr=ui::sliderFraction(row);
-        gradientRect(c,CGRectMake(bx,by,std::max<CGFloat>(6,bw*fr),6),cyan,fr>.8?amber:mix(cyan,green,.5),true,3);
+        gradientRect(c,CGRectMake(bx,by,std::max<CGFloat>(6,bw*fr),6),accent,fr>.8?amber:mix(accent,green,.5),true,3);
         fill(c,CGRectMake(bx+bw*(row.high>row.low?(1-row.low)/(row.high-row.low):.5)-1,by-5,2,16),{1,1,1,.35}); // 1.00x reference
         CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,1,1,.5));
         setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(bx+bw*fr-6,by-3,12,12));CGContextRestoreGState(c);
@@ -661,7 +664,7 @@ struct DriveHud::Impl {
       const CGFloat h=std::min(cardH,blocksHeight(blocks,scale));
       const CGRect card=CGRectMake(cardX,top,cardW,h);
       plate(c,card,6,.95);
-      gradientRect(c,CGRectMake(card.origin.x,card.origin.y,card.size.width,2),cyan,{cyan.r,cyan.g,cyan.b,0},true);
+      gradientRect(c,CGRectMake(card.origin.x,card.origin.y,card.size.width,2),accent,{accent.r,accent.g,accent.b,0},true);
       drawBlocks(c,blocks,card,scale,&map);
     } else if(informational) {
       auto blocks=buildBlocks(panel,nullptr,520,.9);
@@ -687,7 +690,7 @@ struct DriveHud::Impl {
     gradientRect(c,CGRectMake(0,0,640,480),{.01,.02,.03,.94},{.01,.02,.03,.80},false);
     text(c,kHeavy,32,upper(panel.title),22,50,white,panel.subtitle.empty()?596:330,Align::Left,1.5,true);
     if(!panel.subtitle.empty()&&panel.subtitle!="RACER") text(c,kBody,20,panel.subtitle,618,48,muted,270,Align::Right);
-    gradientSkew(c,CGRectMake(22,60,260,3),8,cyan,{cyan.r,cyan.g,cyan.b,0});
+    gradientSkew(c,CGRectMake(22,60,260,3),8,accent,{accent.r,accent.g,accent.b,0});
     const auto menu=ui::selectable(panel);
     size_t selectedAt=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) selectedAt=i;
     // Status rows (warnings, notices, results headline) outrank the lower menu rows.
@@ -708,10 +711,10 @@ struct DriveHud::Impl {
     CGFloat y=top;
     for(size_t i=first;i<std::min(menu.size(),first+capacity);++i) {
       const auto& row=panel.rows[menu[i]];const CGRect r=CGRectMake(14,y,612,34);
-      if(row.selected) {skewFill(c,r,10,{.16,.52,.58,.95});skewFill(c,CGRectMake(12,y,5,34),10,amber);}
+      if(row.selected) {skewFill(c,r,10,accentScaled(.62,.95));skewFill(c,CGRectMake(12,y,5,34),10,amber);}
       else gradientSkew(c,r,10,{.05,.08,.10,i%2?.72:.5},{.05,.08,.10,.28});
       const CGFloat tx=40+(row.icon!=ui::Icon::None?32:0);
-      if(row.icon!=ui::Icon::None) icon(c,row.icon,{40,y+17},22,row.selected?amber:Ink{cyan.r,cyan.g,cyan.b,.8});
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{40,y+17},22,row.selected?amber:Ink{accent.r,accent.g,accent.b,.8});
       const bool valued=!row.value.empty();
       text(c,row.selected?kHeading:kBody,24,row.label,tx,y+25,row.selected?white:white.withAlpha(.86),valued?300-(tx-40):560-(tx-40));
       if(valued) text(c,kNumeric,26,row.value,606-(row.adjustable?30:0),y+26,row.selected?amber:white,260,Align::Right,.4);
@@ -748,8 +751,15 @@ struct DriveHud::Impl {
     if(bgfx::getAvailTransientVertexBuffer(6,layout)<6) return;
     bgfx::TransientVertexBuffer buffer;bgfx::allocTransientVertexBuffer(&buffer,6,layout);
     const float w=fit.logicalWidth,h=fit.logicalHeight,u=fit.uMax,v=fit.vMax;
-    const HudVertex vertices[]={{0,0,0,0xffffffff,0,0},{w,0,0,0xffffffff,u,0},{w,h,0,0xffffffff,u,v},
-                                {0,0,0,0xffffffff,0,0},{w,h,0,0xffffffff,u,v},{0,h,0,0xffffffff,0,v}};
+    // Menus slide in from the left and fade over 0.28 s when a screen opens.
+    float dx=0;uint32_t tint=0xffffffff;
+    if(mode==Mode::Panel) {
+      const double t=std::clamp((now()-panelAnimStart)/.28,0.,1.),ease=1-(1-t)*(1-t)*(1-t);
+      dx=float(-(1-ease)*72*(w/1280));
+      const uint32_t a=uint32_t(std::round(255*ease));tint=(a<<24)|(a<<16)|(a<<8)|a;
+    }
+    const HudVertex vertices[]={{dx,0,0,tint,0,0},{w+dx,0,0,tint,u,0},{w+dx,h,0,tint,u,v},
+                                {dx,0,0,tint,0,0},{w+dx,h,0,tint,u,v},{dx,h,0,tint,0,v}};
     static_assert(sizeof(HudVertex)==24);
     std::memcpy(buffer.data,vertices,sizeof(vertices));
     bgfx::setVertexBuffer(0,&buffer);bgfx::setTexture(0,sampler,texture);
@@ -783,6 +793,13 @@ DriveHud::DriveHud():impl(std::make_unique<Impl>()) {
     throw std::runtime_error("drive_hud_gpu");
 }
 DriveHud::~DriveHud()=default;
+void DriveHud::setAccent(int index) {
+  static constexpr Ink palette[DriveHud::accentCount]{cyan,{.42,.93,.62,1},{.66,.58,1,1},{.96,.42,.80,1},{.84,.92,1,1}};
+  index=((index%accentCount)+accentCount)%accentCount;
+  gAccent=palette[index];impl->accentIndex=index;
+  impl->mode=Impl::Mode::None;impl->driveKey.clear();impl->previousPanel.clear();
+}
+int DriveHud::accentIndex() const {return impl->accentIndex;}
 void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   if(!width||!height) return;
   DriveState s=input;
@@ -834,6 +851,7 @@ void DriveHud::drawPanel(uint16_t width,uint16_t height,
   const double scale=double(fit.width)/fit.logicalWidth;
   if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
   if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
+  if(p.mode!=Impl::Mode::Panel||p.previousPanel.empty()||lines.front()!=p.previousPanel.front()) p.panelAnimStart=Impl::now();
   if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest||optionCount!=p.previousOptions||mapKey.str()!=p.previousMapKey)
     p.paintPanel(lines,activeTest,optionCount,map,mapKey.str());
   p.submit(width,height);

@@ -121,6 +121,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double inspectionDistance = 0;
   bool postNeutral = false;
   bool hideHud = false, followGround = false, hideGuides = false;
+  int hudAccent = 0;
   int windowWidth = 1920, windowHeight = 1080;
   // Prefer the sixteen-tile RCRSURF4 atlas (window grids, sign sheets, shop
   // glazing), then the eight-tile RCRSURF3 file, then the four-tile one;
@@ -191,6 +192,16 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         nightAmount = .45f;
       else {
         std::cerr << "--time must be day, dusk or night\n";
+        return 1;
+      }
+    } else if (a == "--hud-accent" && i + 1 < argc) {
+      const std::string value = argv[++i];
+      const char *names[] = {"cyan", "green", "violet", "magenta", "ice"};
+      hudAccent = -1;
+      for (int k = 0; k < 5; ++k)
+        if (value == names[k]) hudAccent = k;
+      if (hudAccent < 0) {
+        std::cerr << "--hud-accent must be cyan, green, violet, magenta or ice\n";
         return 1;
       }
     } else if (a == "--hide-hud")
@@ -332,7 +343,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::cerr << "Capture/automation: [--background] [--shader-dir path] "
                    "[--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
-      std::cerr << "Asset inspection: [--hide-hud]\n";
+      std::cerr << "Asset inspection: [--hide-hud] [--hud-accent cyan|green|violet|magenta|ice]\n";
       return 1;
     }
   }
@@ -445,6 +456,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   lifetime.ready = true;
   racer::DriveHud driveHud;
+  driveHud.setAccent(hudAccent);
   std::cout << "Renderer: " << bgfx::getRendererName(bgfx::getRendererType())
             << " | " << width << 'x' << height << '\n';
   diagnostics.event(
@@ -1321,6 +1333,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           break;
         case SDLK_M:
           flow.action(Action::Map);
+          break;
+        case SDLK_H:
+          driveHud.cycleAccent(); // session-only HUD colour
           break;
         default:
           break;
