@@ -1,0 +1,1294 @@
+[0.24] I've been spending a lot more time
+[1.84] talking to engineers outside of my
+[3.76] little bubble in San Francisco recently.
+[6.00] It's a combination of the events I've
+[7.52] been going to, the courses I've been
+[9.12] helping with, and all sorts of other
+[10.48] things. I've been having a lot more of
+[12.40] these conversations about what it means
+[14.56] to code with AI and what even is an
+[16.56] engineer. Today, I've been thinking
+[18.08] about this a lot, and I've been kind of
+[19.44] wanting to do a video on it for a while,
+[21.20] but I'll be real with you guys. I know
+[23.12] what my comment section looks like and I
+[24.88] know how much a lot of you will hate
+[26.64] this video. So, honestly, I'm not doing
+[29.28] it for those people. I'm probably just
+[31.04] going to ignore the comments on this one
+[32.88] entirely because I I fear what they're
+[35.52] going to look like. But I'm not making
+[37.04] this video for the people who are going
+[38.24] to be leaving the nasty comments that
+[39.84] Theo's not a real engineer. He's just a
+[41.76] JavaScript dev that thinks AI is so
+[43.60] smart. It probably is smarter than him.
+[45.60] This video is just it. We can ignore
+[48.32] those people. This video is for
+[49.68] developers who are actually trying to
+[51.20] ship, take advantage of these
+[52.48] technologies, and figure out what their
+[54.32] role is over time. Because if you
+[56.72] haven't changed how you code over the
+[58.32] last year as a result of these tools,
+[60.24] you might not actually have a job in the
+[62.08] next year or two. We are at that point
+[63.76] now. I've danced around it for years and
+[65.92] I was wrong. Everything has changed. And
+[68.48] most importantly, the way that we work
+[70.40] and what our roles are has changed. It's
+[72.96] changed on a really deep fundamental
+[74.72] level. The simplest way I can put this
+[77.12] is that we're not really engineers
+[79.04] anymore. So if we're not engineers, what
+[81.84] are we? Are we tech leads? Are we
+[83.52] product managers? Are we designers? Are
+[85.36] we visionaries? What's our role? I'm
+[88.08] going to make the argument that our role
+[90.00] as gardeners. The best thing we can do
+[92.24] now is maintain a healthy garden. This
+[95.04] is going to take a lot of explanation.
+[98.48] And I'm going to do my best to explain
+[100.16] it. But if I am wrong about this whole
+[102.64] engineers are becoming gardeners thing,
+[104.56] then I guess I'm just an influencer. And
+[106.88] I'm not a very good influencer if I
+[108.40] don't take a quick break for today's
+[109.68] sponsor. I don't know if you guys have
+[110.96] noticed, but it seems like a lot of
+[112.40] stuff is being hacked recently. That's
+[114.16] because as good as AI is at writing
+[116.00] code, it's also pretty good at writing
+[117.92] exploits and finding these types of
+[119.60] things. There's a problem, though. The
+[121.36] models we use every day don't have the
+[123.44] capability to really scan and tell us
+[125.52] what could be insecure about our code.
+[127.44] But they're more than happy to write
+[128.56] insecure code. That's why we need to be
+[130.40] actively monitoring every change as it
+[132.00] goes in, understanding the blast radius
+[133.84] of the changes that we're making, and
+[135.36] also ideally give us the ability to deep
+[137.60] scan our work to find things that might
+[139.12] have been missed from the past. Wouldn't
+[140.96] it be nice if there was someone who
+[142.24] could do that? Good news. Today's
+[143.76] sponsor is Code Rabbit and their new
+[145.12] Code Rabbit rabbit secure product is
+[146.48] here for just this. They can do deep
+[148.48] scans to find things that you might have
+[150.08] missed in the past. And they can scan
+[151.92] every PR as they come in, making sure
+[154.00] they are as secure as possible. Back in
+[156.08] my day, an exploit being discovered
+[158.32] wouldn't be exploited for two or more
+[160.32] years relatively often. Now, as soon as
+[163.12] the patch is live on the repo, we see
+[165.52] people exploiting it immediately. Best
+[167.68] thing you can do to prevent this is to
+[169.12] make your code secure before it even
+[170.56] goes out. When you start shipping
+[172.08] faster, it's much easier to let things
+[173.84] slip through the cracks. That's what
+[175.20] Codepcure is here to help prevent.
+[177.36] Understanding the reachability,
+[178.72] exploitability, and the blast radius of
+[180.56] every change has never been more
+[182.00] important. You can get started now with
+[183.68] 14 days free at soyv.link/codabrabbit.
+[186.64] This is one of those videos that's going
+[188.48] to have a lot of layers to it and get a
+[190.96] little bit chaotic. So, sorry in advance
+[192.96] to you and also to my poor editor who's
+[195.68] going to have to figure out how to turn
+[196.64] this into a somewhat cohesive video. I
+[198.80] already see people in my chat who are
+[200.96] concerned that this is going to be a sad
+[203.92] video and I really don't want it to be
+[206.72] that. I'm going to start backwards here
+[208.96] a bit because I want people to stop
+[210.96] being scared of this part and instead be
+[213.84] excited about this one. So, let's fixate
+[216.72] first on this bit. The idea of
+[219.60] engineers. I don't know about y'all, but
+[222.32] the thing I love about engineering is
+[224.96] the feeling of finding the right pieces,
+[228.08] assembling them the right way, and
+[230.64] creating something that is really
+[232.88] meaningful and impactful. I love the
+[235.84] Lego building block aspect of things.
+[238.40] And most importantly, I love how you can
+[241.36] change the size of the blocks, so to
+[243.52] speak. Like with Legos, you always have
+[245.76] those same low-level building blocks.
+[248.08] Unlike with Legos where you just have
+[250.24] these single blocks you are assembling
+[252.24] in different ways. In engineering, you
+[254.64] have different levels of primitives. The
+[256.96] building blocks could be the actual
+[258.64] silicon in the chip or you can abstract
+[260.72] higher and be living in software writing
+[262.48] assembly or you can abstract higher to a
+[264.16] language like C or you can start using
+[266.08] runtimes or packages or other tools. You
+[269.20] can build your code in a way where the
+[270.72] lines are composable or the functions
+[272.32] are composable or the modules are
+[274.48] composable. The flexibility in where you
+[278.00] break things apart and the dynamic
+[280.88] nature of how we can assemble them
+[282.40] together is just so fun. I love
+[286.00] it. That's why I love writing software.
+[288.24] That's why I love building. That's why I
+[289.76] love all of the stuff that we've been
+[291.36] doing forever. And what I have been
+[293.04] scared of is losing that. And I know a
+[295.68] lot of people seem to have a fear that
+[298.08] that feeling of like tinkering and
+[300.08] finding the right pieces and getting
+[301.76] them together the right way is going to
+[303.52] be gone because when you start using AI
+[305.76] it is a lot of what we have loved about
+[308.40] software dev when you start going down
+[310.48] this rabbit hole just isn't there
+[312.32] anymore and that sucks. But the good
+[314.72] news that I hope you can get out of this
+[317.20] video is that when you get through it,
+[319.60] when you come out the other end, the
+[321.44] types of problems you'll be solving, the
+[323.20] types of tools you'll be assembling, the
+[324.96] types of building blocks you'll be
+[326.48] building and building with are so much
+[328.96] more fun than I've ever had building
+[330.80] software before. Like, I genuinely am
+[333.12] just unable like I've been going to bed
+[335.04] at 6 a.m. at least once or twice a week
+[336.88] recently because I get so sucked in to
+[338.96] the stuff that I'm building. It's just
+[340.24] so fun and rewarding. And I'm not doing
+[343.20] this out of fear or FOMO or worry that
+[345.92] I'll be left behind. I'm doing this
+[347.36] because I love it right now. So, if
+[349.12] you're coming in here fearing what's
+[351.68] happening, I hope you can open your mind
+[354.00] a little bit and just tone down that
+[356.00] fear slightly because I felt it a bit
+[358.00] too. I am lucky that my career is not
+[360.64] just software dev. So, I was able to get
+[362.24] through it faster because it didn't feel
+[363.52] like my world was crumbling. It just
+[364.80] felt like one of my hobbies was. But
+[366.56] then I found a deeper love for it on the
+[368.56] other side. Let me now explain how I got
+[371.28] here. I don't know how to make this
+[373.28] video in any way other than it being
+[375.76] really personal. So, I think I'm just
+[378.16] going to do that. I think the best place
+[380.64] to explain why I think this way starts
+[383.44] back with my time at Twitch. For those
+[385.60] who don't know, I was working at Twitch
+[387.36] from 2017 to 2021. I hopped around Teams
+[390.56] a decent bit when I was there, but I
+[393.04] want to focus on a specific
+[395.04] cross-section here, which is roughly
+[397.68] from 2019 to 2021. There's a couple
+[400.72] reasons I want to focus on this area,
+[402.40] but the simplest way to put it is from
+[404.48] 2017 to 2018, I did pretty well. From 18
+[407.20] to 19, I almost got fired because I just
+[410.88] did not like the things I was working
+[412.72] on. When the team I joined for at Twitch
+[415.04] folded and the exec who pulled me into
+[417.12] Twitch retired, I was just not happy.
+[420.00] The main reason I survived this window
+[423.52] where I was this unhappy was because my
+[426.24] new manager who I got thrown under with
+[428.56] a team shakeup internally had taken a
+[430.64] liking to me. Knew I was a decentish.
+[433.52] Still not great but like motivated. He
+[436.08] was a front-end guy. I was a deep
+[437.60] systems backend guy mostly doing like
+[439.84] video infrastructure and elixir. And I
+[442.08] had to move to a different video team
+[444.32] the VOD team and work in Go and was just
+[446.80] miserable. He saw how miserable I was.
+[448.48] He pulled me aside and told me I should
+[450.72] go try out this new React TypeScript
+[453.60] thing that we were starting to use more
+[454.80] internally. I didn't like it much at
+[456.96] first, but it made some sense. But then
+[459.92] hooks happened, which was when React
+[461.92] added more functional programming
+[463.36] patterns, and I got, for lack of a
+[465.92] non-pun way you're describing it, hooked
+[468.08] quite quickly because I was already a
+[470.08] huge functional programming nerd due to
+[471.36] Elixir. And the mental model for hooks
+[474.24] clicked so much better for me. And I
+[476.64] went from feeling like I didn't belong
+[478.56] when I joined in 2017 to like mid 2017,
+[481.36] mid 2018 being like, "Oh I
+[483.60] understand where everything is in my
+[484.80] head. I know how all these parts come
+[486.40] together. I understand the system. I can
+[489.36] change anything in the system and know
+[490.72] what will happen." And that feeling was
+[492.80] the first time I had that like a thing
+[494.32] that mattered. I understood the outside
+[497.12] and inside of and I could reason about
+[499.36] how things would behave when changes
+[501.12] were made. I did not get that same
+[503.44] intuition especially as I was joining a
+[505.04] team that already had a gigantic
+[506.80] codebase in a language I was not
+[508.24] familiar with and were they were
+[509.92] building in a way I was not used to at
+[511.44] all. I was really struggling to get that
+[513.44] same grasp around the VOD platform code.
+[517.20] So when React Hooks happened and at the
+[519.20] same time Twitch was starting to move
+[521.68] away from the old decrepit Ember plus
+[524.32] Rails codebase for the site and towards
+[526.40] a Go plus GraphQL plus React TypeScript
+[529.28] codebase. That was a huge shift for me
+[532.48] and I got to be there when the thing
+[534.48] started to be made and I got to be the
+[536.88] person advocating for this new way of
+[539.76] building that I got to like see a bit
+[542.32] earlier than others did like why it was
+[544.32] valuable because most of the people who
+[546.08] were part of this huge rewrite had been
+[548.00] writing React code for 5 years had been
+[549.68] writing web code for 10 years and I had
+[551.84] just moved to web code like a few weeks
+[554.16] prior with a bunch of weird niche
+[556.16] functional programming experience and I
+[558.24] was just so genuinely exced excited that
+[561.12] they pulled me under their wing for the
+[562.96] team running the like core web product.
+[566.08] I should give a little bit of background
+[568.40] on like how teams are structured at
+[570.24] Twitch. Most of the teams are feature
+[572.88] teams. So, right now I'm live and I have
+[575.12] a bunch of people in chat. The chat team
+[577.68] is a team. So, there's a team that is
+[579.92] chat. Their job is running all of the
+[582.00] chat related things. Then there's a team
+[583.84] that is the creator dashboard. The
+[585.68] creator dashboard is the view that I was
+[587.84] just in here where I could see
+[589.04] everything going on in my stream on
+[590.40] Twitch. Then one of my personal
+[591.68] favorites is the mod tools team. This is
+[593.68] the team that built a lot of the
+[594.80] moderation platform stuff that we used
+[596.48] at Twitch to allow mods to keep our chat
+[599.12] safe. Things like the mod view platform
+[601.60] that I built and talked about in a bunch
+[602.80] of other videos. These are just like,
+[604.48] funny enough, the three teams I was on
+[606.48] for like core product in my time at
+[608.56] Twitch. And all of these teams are
+[610.88] focused on like one specific surface
+[613.12] area that they own all of. So the mod
+[616.00] tools team owns the backend infra, the
+[618.80] database, the client, the web code, and
+[622.72] all of the things people interface with.
+[624.64] The chat team owns the backend, the
+[626.96] protocols, the way that messages go to
+[629.20] and from the chat, and of course like
+[631.04] all of the backend info side, as well as
+[632.96] all of like the emoji stuff and the
+[635.12] important like features built into T or
+[637.28] the chat inside of Twitch. Creator
+[639.76] dashboard is, as you expect, very
+[641.36] similar, but this is one of the two main
+[643.44] types of product and engine teams at
+[645.84] Twitch. There's a very hard separation
+[648.48] between them. I'll call this side
+[650.64] product. I'm going to call the other
+[652.48] side platforms because while mod tools,
+[655.92] chat, and creator dashboard, they owned
+[658.24] their portions of the website and their
+[659.92] portions of the back end, their portions
+[661.12] of the database, we still needed a team
+[663.20] to make sure the APIs didn't fall over
+[665.44] and could scale the way Twitch did. And
+[667.44] it's not the responsibility of each
+[669.12] product team to make sure that every
+[671.12] single thing they do scales and plugs in
+[672.88] perfectly with everything else. That
+[674.40] would just be insane if every single
+[675.84] team had to build their own scalable
+[677.92] infra for every single thing. It would
+[679.52] be hell. So we end up also with teams
+[681.12] like browser clients. Browser clients
+[683.36] was the team that managed the repo for
+[685.04] the website, the repo for the electron
+[686.64] app that was still being maintained, the
+[688.24] repo for all of the different web
+[690.56] product stuff that we had at Twitch,
+[692.00] like the smaller mobile site that we
+[693.60] were pushing in other countries at the
+[694.96] time. Then we had the GraphQL Edge team.
+[696.72] We referred to the GraphQL API as the
+[698.72] edge because it was just the
+[700.08] front-facing thing that the user APIs
+[702.72] would interface with. Like when you're
+[704.16] doing things on Twitch, the graphical
+[705.92] edge is what hits and then we would
+[707.68] federate out to the smaller services the
+[709.60] different teams owned. And of course
+[711.04] there's like the data database platforms
+[713.12] team, the video infrastructure platform
+[714.88] team. There were different teams for the
+[716.64] different platforms within Twitch. And
+[718.88] this meant that a relationship had to be
+[720.64] built between the product teams and the
+[723.44] platform that the product teams were
+[724.88] building on. This ended up being one of
+[727.52] my favorite parts of working at a
+[729.28] company like Twitch is that I got to
+[731.28] spend most of my time on product. I was
+[733.20] never at any point formally on a
+[735.60] platform team. But if you ask the
+[737.20] platform teams, they would possibly say
+[739.36] otherwise depending on who you're
+[740.56] talking to because I spent so much time
+[743.44] hanging out with the platform teams. For
+[745.52] example, with browser clients, the guys
+[746.96] who ran the repo for the Twitch site, I
+[749.12] was the only non browser clients or
+[752.72] platform team member that was in their
+[754.88] weekly planning meetings because I just
+[758.24] cared a lot about the platform. This all
+[760.64] started because of a conversation I had
+[762.24] early on when I was working on the site.
+[764.32] And I was reading through the docs for
+[766.56] this new Twitch rewrite in React. And I
+[769.44] was trying my best to take what I
+[770.72] learned from the docs and apply it to my
+[772.24] code. And I made a PR that was not very
+[774.72] good. And I remember a guy named Derek
+[777.28] jumped on it and like came over to my
+[779.28] desk and asked me just questions on like
+[781.28] why I wrote it this way. And I showed
+[782.96] him the pages in the docs that led me
+[784.56] there and the examples in the codebase
+[786.08] that I was referencing. He thanked me
+[787.76] for that. said it was super super
+[789.12] helpful. Ran back to his desk and within
+[791.52] 30 minutes had two PRs up. One getting
+[794.40] rid of the junk in the docs that misled
+[796.24] me and the other rewriting all the code
+[798.80] in the code base that confused me. And
+[801.20] that's when I realized how important
+[803.60] that work was. That if you weren't
+[806.40] setting up your team for success, then
+[809.68] that would just constantly be lowering
+[811.36] the bar. And every time something even
+[814.40] gets to the point where it's a poll
+[815.76] request that isn't good, that shows an
+[818.16] opportunity to improve things to make it
+[820.80] so the next person doesn't make those
+[823.12] mistakes. And if you don't take those
+[824.96] opportunities as soon as you see them,
+[826.88] the quality of everything around you is
+[828.56] going to erode so fast. And this is the
+[831.92] first time I'd like really seen that in
+[834.48] action. I like this framing from Twitch
+[836.56] chat. Thank you, Thus. Hopefully I
+[839.44] pronounced that right. Do not fix the
+[841.04] symptom, fix the cause. Exactly. And I
+[844.48] ended up really loving this. There was a
+[847.68] combination of other fun things like
+[848.88] when I was on the safety platform/safety
+[851.28] tooling team internally, not for mod
+[853.44] tools yet, but for internal safety
+[855.12] stuff, we were kind of running our own
+[856.96] like clone of the Twitch infrastructure
+[859.68] so that it was easy to hop between the
+[861.12] internal tools and external tools
+[862.40] without having your mind get all like
+[864.16] screwed up because everything was so
+[865.52] different. But our repo was smaller and
+[867.36] only had like 300 users instead of the
+[869.20] like millions that the core Twitch site
+[870.80] had. So I was able to experiment with
+[872.88] ideas that we weren't sure were ready
+[874.40] yet for the main Twitch repo and then
+[876.40] bring them to the browser client team
+[877.76] being like, "Yo, we dog fooded these
+[879.44] four ideas. These two kind of worked.
+[881.44] This one seems worth it. We should
+[883.28] figure out how to do this in the main
+[884.80] Twitch site." And they loved that so
+[886.56] much. Like to this day, a lot of my
+[887.92] friends from Twitch are still just
+[889.68] people from the browser clients team. I
+[891.44] absolutely love that team. They offered
+[893.28] multiple times to let me switch to their
+[894.88] team, but I just liked building product
+[897.20] too much to do it. I love building
+[899.28] things people actually use and play with
+[901.20] and interact with that make their lives
+[904.32] better in some small way. And I don't
+[906.72] like the platform side unless it's
+[908.40] making a product better. And I don't
+[909.84] like the product side unless the
+[911.36] platform is good and also honestly in
+[913.92] continuing to improve as well. And it's
+[915.60] this relationship between making product
+[917.68] that solves real problems for people and
+[919.92] building platforms that allow those
+[921.68] products to grow and succeed that made
+[924.64] this relationship just so fun and
+[926.72] enticing for me. So huge shout out to
+[928.96] the browser clients team in particular
+[930.40] at Twitch for really flipping how I
+[932.40] think about engineering. It was one of
+[933.84] the like the moments in my life that
+[935.84] formed the way I work now. And I have
+[938.40] been thinking back on this moment a lot
+[940.80] recently because I've been trying to
+[942.48] figure out why I was able to make the
+[944.32] move to working with agents so quickly.
+[946.24] I already see the comment below this
+[948.48] video. The reason Theo could make the
+[950.32] move so fast is because he was writing
+[951.60] shitty JavaScript slop so he doesn't
+[953.84] care about the quality of the code. I
+[955.76] hope that what I'm describing here shows
+[957.84] exactly the opposite. that the quality
+[960.64] of the code is as much a communication
+[963.36] and like organization problem as it is
+[967.28] like the code that you're writing and
+[968.80] the quality of the engineers. And
+[970.56] ideally, if all goes well in the world,
+[973.52] an okay engineer and a phenomenal
+[975.92] engineer can both write good enough code
+[978.80] to merge where it will not degrade the
+[980.72] quality of your codebase. Before we go
+[982.48] to this next section, I want to call out
+[983.76] a few of the things I didn't say at any
+[986.08] point so far. I did not talk about
+[988.08] becoming a manager. I did not talk about
+[990.80] super intense code review processes. I
+[993.28] did not talk about building a bunch of
+[995.12] guard rails and unit tests to prevent
+[997.28] things from going certain ways. I didn't
+[998.96] talk about code coverage. I didn't talk
+[1000.32] about any of that All I've talked
+[1002.00] about is this relationship between
+[1004.88] setting up a platform that good product
+[1007.60] can grow out of and setting up product
+[1010.40] to give feedback to the platform so that
+[1012.64] they can grow together. So what happened
+[1015.12] next? What happened next is that I quit
+[1017.12] my job at Twitch. And this was a big
+[1020.80] forcing function for how I worked. Both
+[1023.60] because I'm now out of a job, but also
+[1026.40] just cuz it it changed why I cared. Not
+[1030.40] just what I cared about, but more
+[1031.92] importantly the why. Because a lot of
+[1033.92] the reasons I would care about the
+[1035.60] platform the way I did before is that it
+[1037.28] would set up my co-workers to do better
+[1039.44] things. It would set up other teams to
+[1041.12] make better product. And I got to evolve
+[1043.04] everyone around me by making these
+[1045.20] changes. Everything I had done at Twitch
+[1047.04] was trying to make it easier for all of
+[1048.80] us to ship good stuff. It was not
+[1051.20] necessarily focused on faster, although
+[1053.12] that was a nice consequence of things. I
+[1055.36] was regularly pulled in to try and get
+[1057.20] timelines back on track when road maps
+[1059.60] started to get blown up, but I really
+[1061.28] just wanted to focus on like building
+[1063.04] the platform out so it was easy to do
+[1065.52] the right thing and there was no
+[1067.60] examples of how to do the wrong thing.
+[1069.44] But then I went from working at a
+[1070.80] company with 1500 employees to a company
+[1072.88] with one me. And my priorities
+[1076.56] necessarily had to shift because when I
+[1079.44] started paying, it was just me. And now
+[1082.72] I don't have a platform client team to
+[1085.44] rely on for making sure our Webpack
+[1087.52] bundle works properly across all the
+[1089.44] different ways it can be used. I don't
+[1091.04] have a back-end video infrastructure and
+[1092.96] platform team. I don't have a GraphQL
+[1094.88] edge distribution team. I didn't have
+[1097.20] the teams who owned these things
+[1098.80] anymore. And my first instinct was to
+[1101.44] try and replicate the things those teams
+[1103.84] did and to try and build out all of the
+[1105.68] stuff I love. And I was spinning up
+[1107.28] GraphQL backends with Elixir powering
+[1109.76] them and spinning up crazy complex
+[1112.56] client bundles where I was going through
+[1114.08] and manually managing the way the
+[1115.44] bundles were split and stuff like that.
+[1116.72] I was able to make a product that kind
+[1117.92] of worked, but I ended up just doing all
+[1120.24] of the jobs of all of these different
+[1122.00] people that no longer were my
+[1123.36] co-workers. And I realized that I had to
+[1126.24] change the way I was thinking about
+[1128.00] these things. I still wanted to set up
+[1130.48] everything in my codebase for success so
+[1132.48] that the right thing was easy and the
+[1134.16] wrong thing was hard. But I had to make
+[1136.24] all of the things faster and easier to
+[1138.48] do and less work to maintain. And then a
+[1141.44] thing happened that the people who have
+[1143.68] been here for a while have heard of. T3
+[1146.16] stack. The T3 stack happened because I
+[1149.04] needed the confidence of the platforms I
+[1151.92] was used to without the friction that
+[1154.56] was necessary to build them. And I
+[1156.56] created this set of tools that to be
+[1159.04] clear, I didn't really create the tools.
+[1160.96] My innovation here wasn't particularly
+[1163.12] innovative. I took three sets of tools
+[1165.52] people were using well and assembled
+[1167.68] them into one. And it was Nex.js
+[1169.92] TypeScript client with Nex.js as the
+[1172.48] server alongside of course React on the
+[1175.84] client. I brought in Tailwind because I
+[1177.28] started finally to like Tailwind around
+[1178.48] this point. The more important pieces
+[1179.84] were how the front end and back end
+[1181.04] worked together though. The back end was
+[1183.52] using Prisma for the database because it
+[1185.28] was full stack type safety from the
+[1187.20] database to the back end. And then I
+[1189.12] used a new tool called TRPC that I'd
+[1191.20] fallen in love with that made it easy to
+[1193.04] define functions on the back end in
+[1194.48] Typescript and then call them on the
+[1196.08] front end without having to define a
+[1197.76] bunch of contracts between the two. You
+[1199.68] still got a contract out of it, but the
+[1201.20] contract was TypeScript. wasn't another
+[1203.04] language like GraphQL or another weird
+[1205.36] standard like Open API or something. And
+[1207.84] this was the thing that blew me up
+[1209.44] initially on YouTube when I started
+[1211.44] telling people about my stack cuz I made
+[1213.60] this before I'd even started doing
+[1214.80] YouTube videos. And my first video was
+[1216.88] actually just me streaming trying to
+[1218.24] explain it to people I'd met on Twitter
+[1219.52] when I was a nobody. And yes, chat, you
+[1221.84] remembered correctly. I learned TRRPC
+[1224.08] because Tanner Lindsley gave it to me as
+[1225.84] homework because he saw Fred Shot, the
+[1228.08] creator of Astro, and Ryan Carnegie, the
+[1231.04] creator of SolidJS, were following me on
+[1232.72] Twitter. So, when I requested to join
+[1234.80] one of his Twitter spaces back in the
+[1236.24] day, he let me up. We talked about some
+[1238.00] weird proposals I had for making it
+[1239.36] easier to make these contracts between
+[1240.56] back end and front end. He brought up
+[1242.00] TRPC. I went and explored it and fell in
+[1244.48] love immediately. Alex, the main creator
+[1247.20] maintainer of TRPC, is still a good
+[1248.56] friend. This is the community that we
+[1250.08] got Julius from, who is now the T3 code
+[1252.24] guy. So much happened because of this T3
+[1254.72] stack moment. And that moment happened
+[1257.20] because I loved how good it felt to have
+[1260.80] a platform you understood and could
+[1263.92] build on top of confidently. And most of
+[1266.40] T3 stack came out of my product. I was
+[1268.96] building the best stack I could within
+[1271.84] Ping to make the Ping product as easy
+[1273.92] and like able to be maintained as
+[1276.00] possible while I also was doing my
+[1277.68] YouTube channel and was also doing all
+[1280.08] of the like fundraising for what became
+[1282.16] T3 tools which is now T3 Code and T3
+[1284.64] Chat getting into Y Combinator doing all
+[1286.48] the business side there doing all the
+[1287.92] sales marketing and everything I
+[1289.92] couldn't be spending 10 to 15 hours a
+[1292.48] day coding like I wanted to so I was
+[1294.48] putting all this effort in to make sure
+[1296.00] that when I did have time to code it was
+[1297.92] very clear where the time should go and
+[1300.00] that I was probably 50/50 split between
+[1301.92] my time spent doing platform code making
+[1304.08] it easier to work on Ping to the actual
+[1306.48] product code making the product itself
+[1308.00] better. This sounds insane when you
+[1310.08] think about it that like half the poll
+[1311.76] requests I was filing as a solo dev did
+[1314.32] not affect the users at all. They did
+[1316.56] not see any difference from half the
+[1317.92] poll requests I was filing and merging.
+[1319.84] But those poll requests made it so the
+[1321.44] other half were way easier to land. And
+[1323.60] that was the back and forth, the the
+[1325.92] pendulum swing between the two that I've
+[1328.00] been doing my whole career since.
+[1329.68] Knowing when to tap out on product
+[1331.92] because the thing is harder than it
+[1333.52] should be. Give it up for a minute, go
+[1335.68] back to the platform, make the platform
+[1337.84] easier to build on top of. And then once
+[1340.08] that is in a good state again, go back
+[1341.76] and build the feature. That back and
+[1343.92] forth is what leveled me up more than
+[1346.24] almost anything in my career is learning
+[1348.80] when and how to tap out of one side and
+[1351.28] go to the other and to not treat them as
+[1353.28] different like roles or teams or things
+[1357.12] that you can only do one of but to blur
+[1359.36] the lines more. And this is why I was
+[1361.44] able to like make all the friends I made
+[1363.12] at Twitch because I was the platform
+[1365.04] team's favorite product guy and the
+[1366.96] product people loved me because I was
+[1368.24] their connection to the platform. And I
+[1369.84] cannot tell you how many times I was
+[1371.68] getting blocked in a product meeting
+[1373.52] because the other engineers or some team
+[1375.84] leader, someone was convinced there was
+[1377.76] no way that the GraphQL Edge team would
+[1380.32] let us do this thing that was obviously
+[1382.00] the right call. So, I would hop on a
+[1384.08] quick meeting with the guy running that
+[1385.84] team, Tony, and say, "Hey, I'm probably
+[1387.76] not the right person for this because
+[1388.72] I'm not the backend engineer on my
+[1390.08] team." But the backend engineers are
+[1391.76] convinced that this weird recursive data
+[1394.72] structure we need for the layout of the
+[1396.64] dashboard in here, funny enough, like
+[1398.32] cuz everything here is mobile and can be
+[1400.08] like built like nested. The best way to
+[1403.20] encode this is just a JSON blob. And my
+[1406.00] team was insisting that the GraphQL team
+[1408.24] would not let us just put a JSON blob in
+[1410.00] the GraphQL API and that we had to make
+[1412.56] this super complex node system to fetch
+[1415.68] them all as a flat array and then
+[1417.20] reconstruct it into the dynamic layout.
+[1421.28] I knew this was wrong and stupid. I
+[1423.20] couldn't convince my team. So I went to
+[1425.44] my friend who ran the other team, the
+[1428.00] GraphQL Edge team, and I explained the
+[1430.24] situation to him. I didn't tell him what
+[1431.92] the options were. I just told him what
+[1433.36] the problem was. to which he responded
+[1435.44] like he interrupted me to say why don't
+[1437.12] you just store the JSON blob I asked him
+[1438.88] if there's any reason not to he thought
+[1440.32] about it for a second said no that seems
+[1441.92] like the right call here like okay how
+[1444.00] do I convince my team that this is the
+[1445.68] right call he said I don't know none of
+[1447.36] them ever hit me up and then he vented
+[1448.88] to me we he ended up using the rest of
+[1450.32] the call to vent to me about how
+[1452.00] frustrating it is to be on platforms in
+[1455.12] GraphQL land and to feel like nobody on
+[1457.76] the other side like no one from product
+[1459.60] cares at all about what he's doing and
+[1461.20] he's just stuck saying no on shitty PRs
+[1462.88] all day and he was so thankful to have
+[1465.52] somebody from the front-end teams on the
+[1467.60] product side hit him up for a call that
+[1469.44] we ended up chatting all the time and to
+[1470.80] this day Tony is still a very good
+[1471.92] friend he runs a lot of the platform for
+[1473.44] Netflix now if I recall love Tony
+[1475.20]  death but like these are the
+[1476.80] conversations that shaped who I am now
+[1478.72] was the realization that so many of
+[1481.04] these things so many of the pieces of
+[1483.12] friction you encounter as a dev are like
+[1486.00] one conversation and one small change in
+[1488.32] the platform away from not needing to
+[1490.56] happen and all of this is such a
+[1493.44] waste of our time. Like I put more time
+[1496.88] into those conversations trying to just
+[1500.08] get a JSON blob stored than I spent just
+[1503.20] building the dashboard itself. It was
+[1505.52] insane. I was going mad. Those were the
+[1508.32] moments that shaped me the most. And one
+[1510.48] of the things I was really thankful
+[1511.52] about when I left is that I could just
+[1514.40] do the thing on both sides. I could
+[1516.08] constantly be refining both ends. When I
+[1518.16] was working on teams like the creator
+[1519.52] dashboard, every conversation was one
+[1522.00] around which costs us the least internal
+[1524.24] political Is it better for us
+[1526.56] to invent our own node graph system in
+[1529.52] order to represent some pretty basic
+[1531.68] data? Or is it worse to have a
+[1534.08] conversation with this team that might
+[1535.28] say no, lose the time, and have to do it
+[1537.04] this way? Anyways, some of this was
+[1538.88] internal politics, but a lot of this was
+[1540.80] just the platform and the way it worked
+[1542.72] and the lack of understanding one side
+[1544.32] had of the other. This is why I got so
+[1546.08] deep in like blurring the lines between
+[1548.08] them. And I think that's the biggest
+[1550.40] part of why I have had so much fun. Now,
+[1553.52] fast forward a whole bunch into the
+[1555.20] future. I want to talk about instead of
+[1557.76] the start of something, I want to talk
+[1558.96] about the end of something. I want to
+[1560.64] talk about my last big handcoded
+[1562.80] overhaul. The last time probably for the
+[1565.52] rest of my life where I sat down and
+[1568.32] rebuilt something by hand. And the few
+[1570.88] times I tried to have agents help, they
+[1572.48] just couldn't do it. So, I gave up and
+[1574.08] did it all myself. I see people in chat
+[1576.08] already guessing what it is. I'm curious
+[1578.00] if any of y'all remember what it is.
+[1580.08] Someone already got it was T3 chat
+[1582.24] convex. I went from super skeptical
+[1585.28] about Convex because it at the time to
+[1587.60] me seemed like a closed source
+[1588.80] alternative to the T3 stack that I
+[1590.08] didn't love. Since then, Convex has
+[1592.08] become both open- source and way more
+[1594.08] mature than anything I had built for
+[1595.44] this type of stuff. It is a combination
+[1596.88] of a backend, a database, an API layer,
+[1599.76] a SDK for the client and the server.
+[1602.40] talked about convex a lot in my videos.
+[1604.32] Definitely search convex seal. You'll
+[1605.92] find a ton of them. Still how I love to
+[1607.52] build most like full stack services when
+[1609.52] I'm building things. Absolutely love
+[1610.96] Convex. Up until I was ready to use
+[1613.04] Convex and T3 chat, I was building my
+[1614.96] own sync engine by hand and it was
+[1617.28] horrible. It worked, but maintaining it
+[1619.52] was hell. The T3 chat port from my
+[1623.60] custom sync engine to Convex was one of
+[1626.72] the hairiest and most difficult
+[1629.04] overhauls I've ever done. And for the
+[1631.92] most part, when I finally could merge
+[1634.32] that like 25 plus thousand line of code
+[1637.36] PR where I shifted everything over, most
+[1639.92] people didn't feel a difference beyond
+[1642.16] like if they were using it on their
+[1643.36] phone and their computer at the same
+[1644.32] time, it was more likely to keep things
+[1645.76] in sync. This is probably the most I've
+[1647.60] worked on one big underlying tech change
+[1650.48] in my life. I spent a whole month cuz I
+[1652.72] I started the month with COVID, funny
+[1654.56] enough, and I got the news at the end of
+[1656.40] the month that I had to have my hand
+[1657.44] reconstructed. So, I knew this was going
+[1658.64] to be my last time like sitting in
+[1659.84] coding for a while. So, I spent the
+[1661.36] whole month on this and it had its rough
+[1663.20] edges. We ended up at the time being one
+[1665.44] of the biggest convex customers. So, it
+[1667.36] caused a lot of like not outages, but
+[1669.68] like weird edges breaking for certain
+[1671.60] things we were doing a lot of that other
+[1673.04] customers weren't. All got smoothed out
+[1674.72] really quick by them. But god damn, this
+[1676.88] was so much work and it was so much fun
+[1679.60] and none of our users could possibly
+[1681.60] have really noticed the difference until
+[1683.60] it was done and then it was shipped and
+[1685.76] then after is when we really got to
+[1688.00] start doing the fun The reason I
+[1690.24] did this overhaul wasn't because I was
+[1692.80] tired of maintaining the custom sync
+[1694.32] code, although I was. It wasn't because
+[1696.56] the database costs for how I was doing
+[1698.56] things were absurd, because they were.
+[1700.16] It was because at this point in time, we
+[1702.16] had scaled up the team a bit. I had
+[1703.60] pulled Julius full-time. I had Mark
+[1705.60] constantly putting up the fires I was
+[1707.12] creating, and I was the only person who
+[1709.28] could touch the backend code for the
+[1711.68] database stuff because it was the
+[1713.68] rightish platform for what we need at
+[1715.28] the time, but I was the only person who
+[1717.44] understood it. And as a result, I was
+[1719.44] blocking my team constantly. And it was
+[1722.80] really fragile and breaking all the
+[1724.08] time, too. The move to Convex fixed that
+[1726.80] and allowed me to not be able to code
+[1728.80] for a few months because of my hand and
+[1730.48] still continue iterating on top of T3
+[1732.48] chat and shipping and improving the
+[1734.08] product. What I'm trying to say is I
+[1735.60] love these overhauls, the ones where no
+[1737.68] one outside can or should feel a
+[1739.92] difference, but we know it sets us up to
+[1742.40] work much more effectively. and then
+[1744.88] feeling, seeing, and experiencing the
+[1748.08] increased movement that I and my
+[1750.40] teammates get on the product side once
+[1753.28] this stuff lands. The thing that was
+[1755.36] exciting about this overhaul was
+[1757.60] watching how many more PRs Mark and
+[1760.00] Julius were putting up and landing as a
+[1762.48] result of how much easier they could
+[1763.92] move around in the codebase. Hopefully,
+[1766.08] you can kind of see where we're going
+[1767.76] now. I was writing slop before agents
+[1770.08] were. The setup we had for T3 chat
+[1773.68] before we had convex was a bunch of
+[1776.64] theosync engine slop and it was
+[1778.64] constantly causing friction. It was
+[1780.40] getting in the way of my team. It just
+[1782.56] wasn't good. I was an incredibly
+[1784.08] effective chef when it came to cooking
+[1785.68] slop. Even at the time, I wouldn't have
+[1787.44] defended how it was implemented. I would
+[1789.28] just defend why it was implemented. And
+[1791.68] this is why, as chat pointed out, I had
+[1793.44] the five videos of me switching the
+[1795.20] database in T3 chat. It was a great
+[1797.52] opportunity for me to try out different
+[1798.96] things, learn stuff, and build a
+[1800.72] scalable platform at an absurd pace
+[1803.20] while also having to run my channel and
+[1804.96] my company all at the same time. And it
+[1806.72] was such a fun era. I I loved every
+[1808.32] moment of it. But the important thing to
+[1809.76] know about my slop is that my slop was
+[1811.76] blocking my team. The reality is that
+[1814.08] where the slop comes from doesn't
+[1815.68] matter. Neither does who your team is.
+[1817.76] Let me reframe this now. Sonnet 4.5 slop
+[1820.96] was blocking Opus 5.5. Do you see where
+[1823.84] we're going now? all of the time and
+[1826.40] effort I was spending on the right side
+[1828.96] of this line doing this platform work,
+[1832.40] setting up my team and setting up myself
+[1835.12] to be more successful building. That was
+[1837.92] always one of the things I loved doing,
+[1839.52] but I loved it both because it's fun,
+[1841.44] but also because I would see the impact
+[1842.88] it had on the other side. It would take
+[1844.48] a long time to see that impact. It would
+[1846.08] take even longer to do the changes in
+[1847.60] the first place, but it was very
+[1849.92] satisfying work that really made me feel
+[1851.92] like an engineer. This work has gotten
+[1854.64] 10 times more important than it's ever
+[1857.44] been. I remember one of the first like
+[1860.56] cool conversations I ever had like where
+[1862.72] I felt like I should not be allowed to
+[1864.24] do this was when I was tweeting back
+[1866.56] when I had like 50 followers about
+[1869.04] TypeScript stuff we were doing at Twitch
+[1870.56] because our TypeScript times for checks
+[1872.32] had gotten to like 15 to 20 minutes and
+[1875.20] our like npm rundev command time was at
+[1878.48] like the 3 to 5 minute mark just to
+[1880.80] start working on a project at a given
+[1883.04] time like on a random day and I was so
+[1886.32] desperate to fix this that I just
+[1888.72] randomly replied to a certain person on
+[1891.28] the TypeScript team, Daniel Rosen Bosser
+[1893.36] on Twitter, asking for some info on some
+[1895.36] stuff he was talking about on Twitter
+[1896.56] about performance for TypeScript. He DM'
+[1898.80] me, we chatted and I got to intro him to
+[1901.84] the browser clients team and somehow be
+[1904.16] the one to broker this meeting between
+[1906.24] the platform team at Twitch and the
+[1907.84] TypeScript team at Typescript when I was
+[1910.48] 21 years old and felt like I didn't
+[1912.56] belong anywhere yet. That was the like,
+[1914.64] oh all of these things are
+[1916.88] malleable. All of these things can be
+[1918.88] changed and improved. All of these
+[1920.16] things are made by people no more
+[1922.96] special than you or I. And you can just
+[1925.12] talk to them about things and work with
+[1927.28] them on things and get things changed.
+[1929.68] And to this day, like when I just put
+[1931.28] out TS Rust, the TypeScript team hit me
+[1932.88] up and we did a great talk and I got to
+[1934.40] chat with Hellsburg, the creator of
+[1936.16] Typescript, about the language that
+[1938.32] changed my life. And it's just so
+[1939.84]  cool. And that this is the stuff
+[1941.68] I love. And the reason I bring up the TS
+[1943.92] Rust thing is because all of the
+[1946.80] that got me where I am now and that I
+[1949.04] loved then matters more and is making
+[1952.32] more cool opportunities. The same
+[1954.16] mindset that led to me replying to Rose
+[1956.24] and Waser on Twitter to get this meeting
+[1958.16] between the browser clients team at
+[1959.68] Twitch and the TypeScript team is the
+[1961.44] mindset that led to me building TS Rust.
+[1964.32] And the best way I can describe this
+[1966.40] mindset is gardening. I use gardening as
+[1970.00] the analogy here because I want to
+[1972.00] emphasize that we shouldn't be the ones
+[1974.80] growing the code. We now need to build
+[1977.60] environments where the code can grow in
+[1980.24] the right direction, have the right
+[1981.92] nutrients, have the right support
+[1983.36] systems, and have the right monitoring
+[1985.20] and everything else in place that the
+[1987.12] likelihood the plant grows successfully
+[1988.72] is as high as possible. And the
+[1990.40] likelihood that you can recover it
+[1991.68] before it becomes a weed and infects
+[1993.76] your garden is as high as possible, too.
+[1995.76] I know this because I was already doing
+[1997.76] it. The time I was spending trying to
+[2000.48] improve the type checks at Twitch were
+[2003.28] to make it so everybody could work on
+[2005.76] the codebase more easily and check
+[2008.32] things faster, work on things more
+[2009.92] confidently and just grow. And it was a
+[2013.04] few months ago when I was working on T3
+[2014.64] code, I was seeing how much time was
+[2016.80] spent in our CI and how much RAM and CPU
+[2019.20] is spent on my machines typeing the
+[2021.20] code. Even with the TypeScript Go
+[2023.12] rewrite, T3 code is just a massive
+[2025.28] project and it took a lot of CPU time to
+[2028.48] check. Previously, when you end up in
+[2030.72] those scenarios, the amount of effort it
+[2032.88] would take to make things better was so
+[2035.12] high and the amount of value that people
+[2037.44] would get was so low that it was rarely
+[2039.76] worth it. For example, when I was at
+[2041.36] Twitch working on this giant repo, we
+[2043.60] could have rewritten TypeScript and Go
+[2045.12] then. We had a bunch of incredible Go
+[2046.64] engineers at Twitch. absolutely could
+[2048.16] have dedicated like 20 people to
+[2050.08] rewriting TypeScript in Go before the
+[2052.16] TypeScript team even thought to do it.
+[2053.68] But that would have been an absurd
+[2055.20] undertaking that would not have been
+[2056.80] worth our effort or time to unblock a
+[2059.28] measly 600 to 800 front-end engineers
+[2061.92] from having to wait as long for their
+[2063.52] dev servers to start. Now I am rewriting
+[2065.76] TypeScript in Rust so that a threeperson
+[2067.92] team can move slightly faster. The
+[2070.32] costbenefit analysis there was just like
+[2074.00] it was really difficult but we still
+[2075.76] would do it. I remember one of the
+[2077.20] changes we made in order to like more
+[2078.88] heavily adopt hooks in the codebase, we
+[2081.12] had to move from Apollo GraphQL 2 to
+[2083.12] three on the client. This resulted in a
+[2085.92] bunch of legacy stuff that Apollo had
+[2087.68] removed that we were using heavily
+[2088.96] across Twitch. So what we ended up doing
+[2090.72] is we made one shared PR with the move
+[2093.68] to Apollo 3. We took every single
+[2096.08] TypeScript file that was broken as a
+[2097.92] result, put them in a Google sheet, and
+[2100.56] then would go through the sheet and had
+[2102.48] volunteers take chunks of this sheet
+[2105.20] that was sorted alphabetically and
+[2107.28] assign them to ourselves. And it was our
+[2109.60] job to manually go through each of these
+[2111.44] files and fix the type errors and then
+[2114.24] test and make sure that the code
+[2115.44] actually worked. This was for thousands
+[2117.20] of files across this gigantic codebase.
+[2119.28] We literally had an Excel spreadsheet,
+[2120.96] well Google sheet that we would share to
+[2123.60] figure out who owned what to get all of
+[2125.60] this through cuz that's what it took to
+[2128.00] make a change to our GraphQL client
+[2132.00] connection. This is the one package that
+[2134.48] lets us define the GraphQL syntax to get
+[2136.72] the data. And this took a team of like
+[2138.64] eight people plus a bunch of assistants
+[2140.64] like a month plus to do. That's one
+[2143.20]  prompt now. And this is what's
+[2145.44] so cool. Historically, gardening work
+[2148.24] was only really worth it if you were
+[2150.96] shipping at such a scale and the
+[2152.88] friction was so high that you could
+[2154.88] justify the insane investment necessary
+[2157.36] to do it. And this only happened at big
+[2160.48] companies that were architected
+[2162.16] correctly to split between platforms and
+[2164.00] product. There's a lot of companies that
+[2165.36] are right now because they didn't
+[2167.52] separate product and platforms properly.
+[2169.52] And now the product engines are stuck
+[2171.12] doing platform work. they don't
+[2172.32] understand well enough and they just
+[2174.08] cannot keep up or move fast enough. But
+[2176.48] the calculus is very different. Now,
+[2178.48] I've been hinting at the fact that
+[2179.52] agents make it way easier to do these
+[2181.92] types of changes, to make these types of
+[2183.84] wins. That's just one side of the
+[2185.36] equation. The other side is arguably
+[2187.20] even more interesting. All of the things
+[2189.04] I've talked about here that were
+[2190.88] blocking me or slowing me and my
+[2192.48] teammates down were annoying, but they
+[2195.04] would like maybe like best case if I
+[2197.44] could have filed 10 poll requests a week
+[2199.60] with these things being broken, fixing
+[2201.52] them could get me up to like 12 to 15.
+[2203.36] Maybe your agents get blocked much
+[2205.52] harder by these things. If it takes 5
+[2208.24] minutes to spin up the dev server to
+[2211.20] even check if the code works or not,
+[2214.24] your agent is going to be blocked
+[2215.92] insanely deeply by that. Hell, if you're
+[2218.24] using five minute TTLs, you're also
+[2220.00] going to be wasting a ton of tokens
+[2221.36] because you're not going to be hitting
+[2222.48] cache reads when you wait that long to
+[2224.88] validate a change. If your CI is too
+[2227.44] slow or it takes too much RAM and CPU to
+[2229.84] use, you become heavily limited by how
+[2232.00] much you can parallelize the work. If
+[2233.92] your release pipeline is too slow and
+[2236.56] you're scared of doing a release because
+[2238.40] it might take too long or worse, there's
+[2240.32] something bad in it, then the next
+[2241.60] release to fix it takes even longer,
+[2243.84] then you're not going to be hitting
+[2244.80] merge as much. The constant maintenance
+[2247.92] of the platform has never been more
+[2250.24] important because not doing this blocks
+[2252.88] your agents even harder than it blocked
+[2254.96] us. And all the work that you can
+[2256.88] possibly do to trim these pieces of
+[2260.00] friction, to kill these weeds, to get
+[2261.68] these problems out of your
+[2263.28] garden is so important. And there's one
+[2266.80] really big reason why that I've been
+[2268.80] dancing around. Slop grows faster than
+[2271.68] weeds do. If you are not constantly
+[2275.20] maintaining your garden, you will very
+[2277.28] quickly come back to a garden that is
+[2279.12] composed primarily of weeds. This is the
+[2282.24] problem that is destroying so many
+[2285.12] things. And this is what our job
+[2287.44] actually is going to be. We have to
+[2289.36] spend a ton of time making sure we're
+[2290.48] putting the right fertilizer in the
+[2291.76] garden. We have to spend a lot of time
+[2293.12] making sure that once the plants start
+[2294.72] to sprout that we put the right post up
+[2297.44] and like wrap the right material around
+[2300.16] the plant so that it keeps growing
+[2301.36] vertically and doesn't fall over and
+[2303.92] break in a terrible way. And you have to
+[2306.08] be removing the weeds as soon as you
+[2307.92] notice them appearing. Just to give an
+[2310.16] example of the type of work I'm talking
+[2311.76] about here, here's a PR that I was
+[2313.52] particularly proud of. This PR involved
+[2316.08] me deleting around half of all the unit
+[2319.76] tests in T3 code because the more I was
+[2322.64] looking at them and the more I was
+[2324.64] working in the codebase, the more I
+[2326.16] realized how many of these tests are
+[2328.16] useless and more importantly how much
+[2330.72] the useless tests multiply and result in
+[2333.76] more and more unnecessary edge cases
+[2335.76] being tested for no good reason
+[2337.20] whatsoever. And that's why I was able to
+[2338.88] delete 250,000 lines of code from the
+[2341.12] codebase in one PR. And we've had no
+[2343.52] regressions that any of the deleted
+[2344.88] tests would have caught. I think of the
+[2346.08] 11,000 tests, I brought back four of
+[2348.56] them total. This is a phenomenal example
+[2351.12] of gardening. This is the type of thing
+[2354.08] that is our job. Now, I just got a
+[2356.40] fantastic follow-up question. How are we
+[2358.80] preventing it from happening again? By
+[2360.80] monitoring it. We can put a lot of
+[2362.56] things and we made some guidance changes
+[2364.72] to the repo to the agents and things
+[2367.12] like that to steer agents away from
+[2369.12] making bad tests. But even just deleting
+[2371.20] all of the slop, killing all the weeds
+[2372.80] was enough to help a lot. But there were
+[2374.88] still bad tests popping up here and
+[2376.72] there. So whenever one of us noticed
+[2378.64] one, we would ask the person who
+[2380.80] contributed it to go find the thread
+[2382.40] where it happened and ask their agent
+[2384.40] why. What led to you adding this test?
+[2386.80] Why did you think this test was a good
+[2388.00] idea? and we would use the info it would
+[2390.40] give us to go to the root of the
+[2392.48] problem, whatever stem this weed grew
+[2395.36] from and kill that. And this is just
+[2397.60] like one of the types of examples of the
+[2399.92] gardening I'm talking about. If we
+[2401.36] scroll through the PR, we'll see a few
+[2402.80] others. This one in particular is one
+[2404.72] I'm really fond of. I was getting tired
+[2407.44] of the performance regressions I was
+[2409.44] seeing in the wire protocol for how we
+[2411.76] get data from your server on your
+[2413.60] machine where everything is running over
+[2415.60] to the client on your phone or the
+[2417.36] computer that has all of the data that
+[2420.08] you're actually interfacing with. I had
+[2421.68] put a ton of time into making this as
+[2424.08] efficient as possible so that it would
+[2426.08] be as little as like 5 kilobytes to load
+[2428.88] even a big thread. I had put a ton of
+[2431.20] work into this, but it kept regressing.
+[2433.28] After a week of improving the
+[2434.80] performance here, subtle small PRs that
+[2437.28] didn't seem like they were going to
+[2438.48] cause problems here did. So, I built the
+[2441.44] thread transfer impact tool, which is an
+[2443.76] action that runs on every PR that has a
+[2446.24] bunch of real event data from real
+[2448.72] codeex threads and cloud threads, runs
+[2451.20] it through a fully simulated endto-end
+[2453.52] pipe, and checks how much data goes
+[2455.44] through the pipe. and then it would
+[2457.52] print it in every PR and flag a bunch of
+[2460.88] big red X's when anything caused a
+[2462.96] meaningful regression whatsoever. This
+[2464.96] worked incredibly well for a bunch of
+[2466.88] reasons. It puts feedback in the PR that
+[2469.60] a babysitting agent will notice and
+[2471.60] address. It gives the developers and the
+[2474.40] reviewers clear feedback on whether or
+[2476.32] not this is getting regressed or not and
+[2478.64] if these metrics we care about are
+[2479.84] changing. But the most important thing,
+[2481.44] this is really silly. It gives the agent
+[2484.00] the information. This is a thing we care
+[2485.76] about and it should be optimized for. To
+[2487.92] go back to the garden analogy, this is
+[2489.76] like the wood stake you put in next to a
+[2492.24] plant. So, the plant will grow in that
+[2493.68] direction. I put a wood stake in with
+[2496.08] this action. This CI tool, this one
+[2499.20] additional check that actually takes
+[2500.96] like almost no time. I think it takes
+[2502.24] under 45 seconds to run. It might be 30.
+[2504.32] This one small check I added to RCI has
+[2507.60] been an incredibly useful wooden post in
+[2510.08] the garden, guiding the plants to grow
+[2512.64] up the right way and away from the weeds
+[2515.60] and the other things I don't want them
+[2516.80] near in the garden. Do you know how much
+[2518.08] fun it was to do this work? By the way,
+[2519.68] I know I'm a bit of a nerd about this
+[2521.04] protocol stuff, but I really like
+[2523.52] representations of data and finding the
+[2526.00] right set of data to send to and from
+[2528.88] like different platforms, product,
+[2530.32] feature, whatever. It's just so fun. And
+[2533.20] that side of my brain has never been so
+[2536.08] valuable. The vast majority of my work
+[2538.16] for T3 Chat after like month two was
+[2541.52] unblocking my team by improving the
+[2543.60] platform so everyone else could build
+[2545.68] the features that our users needed. Now
+[2547.60] I'm doing that with and for agents. I am
+[2550.80] building up the best possible code base
+[2553.36] to contribute to. That might have some
+[2555.28] parts that are tedious. It might have
+[2556.64] some checks that are strict, but it is
+[2558.64] the best godamn garden I've ever been
+[2560.72] lucky enough to see, much less work in.
+[2563.36] And I am constantly quadruple checking
+[2566.08] my agents to see where they're getting
+[2567.92] stuck, what weeds they're tripping over,
+[2570.08] what fertilizer they're most confused
+[2571.92] by, what posts they need to grow
+[2574.00] against. And if you don't think this is
+[2575.84] engineering, I don't know if you ever
+[2577.60] were an engineer, cuz I've never felt
+[2579.76] more like I was building a platform than
+[2582.56] I do today. And it's just so goddamn
+[2585.20] fun. Even if you don't love this type of
+[2587.12] like maintenance and platform work, I
+[2589.44] think you'll love what happens on the
+[2590.88] other side. Because that was the magic
+[2592.96] that made me go from enjoying doing this
+[2595.60] for the sake of doing it to almost
+[2598.24] feeling bad for any second I'm not
+[2600.24] spending doing this because I've seen
+[2601.52] how much impact it has. This is PRs
+[2604.08] merged per day over time since T3 code
+[2606.88] started. And my face is covering these
+[2609.04] vertical lines because of how vertical
+[2610.64] they are. This is what happens when you
+[2613.20] maintain your garden. Well, we went from
+[2615.76] pretty consistently like 2 to 20 PRs
+[2618.88] merged a day to a bad like weekend day
+[2622.16] where we're busy being 60 merged and
+[2624.48] active days being in the 400 plus range.
+[2627.28] This is because our garden is really
+[2629.36] healthy. This is what happens when you
+[2631.84] make a good garden. Don't tell me
+[2634.08]  potato stumbled on the same
+[2636.48] goddamn analogy as me. Why do I learn
+[2639.12] this now? I didn't even see this post. I
+[2642.08] would have liked it if I saw it. Thank
+[2644.00] you, chat. But god damn. Apparently, I'm
+[2646.88] not as unique as I like to think. I
+[2648.64] don't think I'm that unique, but Lauren
+[2649.76] and I are too aligned recently. It's
+[2651.36] dangerous. Anyways, she seems to fully
+[2653.92] agree. Every team needs a gardener.
+[2655.60] Someone quietly watching the stream of
+[2656.88] PR flowing in the codebase, noticing the
+[2658.40] smells. The third is record this week.
+[2660.48] The lint suppressions creeping like ivy
+[2662.32] across your carefully planned garden.
+[2664.72] Steady hand tending the weeds that would
+[2666.56] engulf it if in slop if left unchecked.
+[2669.20] Yep. If I go any longer, this video is
+[2671.04] going to literally go on forever. So, I
+[2673.20] think I am going to stop it here. Let me
+[2676.00] know if you enjoyed this. And if you can
+[2678.24] fight the obnoxious commenters, cuz I
+[2680.08] know they're going to be obnoxious for
+[2681.36] this one. And if you did like this
+[2682.88] enough, let me know if I should do more
+[2685.36] things like this because I would love to
+[2687.68] talk more about the techniques I've been
+[2689.28] using to maintain my garden and make my
+[2691.44] codebases pleasant to work in. Some of
+[2693.28] them are working great. Some of them I
+[2694.72] don't know if they are yet or not, but
+[2696.00] it's just a really fun time to be trying
+[2698.00] to build these ways. I've never enjoyed
+[2700.00] my work more than I do today. And I hope
+[2701.92] some of what I shared here will help you
+[2703.36] enjoy it the same. I know that this
+[2705.04] whole world is changing really fast and
+[2706.56] that it is scary, but if you find the
+[2708.96] magic within it, it is also the most fun
+[2711.12] it's ever been. And if even one of you
+[2713.12] can now see the magic where you might
+[2714.48] have missed it before, then this was
+[2715.92] worth all the shitty comments I'm about
+[2717.36] to see. Until next time, peace nerds.
