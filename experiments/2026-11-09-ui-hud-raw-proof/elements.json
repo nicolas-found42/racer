@@ -1,0 +1,903 @@
+{
+ "canvas": [
+  1280,
+  720
+ ],
+ "captures": "output/captures",
+ "extracts": "../2026-11-08-ui-source-extracts/output",
+ "judgments": "output/judgments.json",
+ "candidates": "output/raw-candidates.json",
+ "out": "output",
+ "elements": [
+  {
+   "id": "E01",
+   "name": "speedometer dial",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    985,
+    490,
+    240,
+    210
+   ],
+   "kinds": [
+    "gauge_dial"
+   ],
+   "prefer": [
+    "mc3:hud_speed_1.tex",
+    "gt4:image/speed_240km.png",
+    "slrr:gauges/general__general_gauge.png"
+   ],
+   "min_side": 48,
+   "max_n": 3,
+   "evidence": "Racer: round dial, 0-160 MPH sweep, tick ring, numerals, blue progress arc, needle hub. MC3 hud config bounds the same element: ZeroSpeedAngle -130, MaxSpeedAngle 119 (garage -130..130), speed centre (52,58), needle 9x50 px with rotation origin (118,38).",
+   "claim": "Racer's E01 crop and the listed raw assets are the same interface element class: a speedometer gauge dial with a tick ring, numerals and a needle."
+  },
+  {
+   "id": "E02",
+   "name": "gear indicator",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    1078,
+    638,
+    44,
+    30
+   ],
+   "kinds": [
+    "gear_or_label"
+   ],
+   "prefer": [
+    "mc3:hud_tac_2.tex",
+    "gt4:image/gear_base.png",
+    "slrr:gauges/SL2_Digital_Font_render.png"
+   ],
+   "min_side": 24,
+   "max_n": 3,
+   "evidence": "Racer: rounded gear pill under the dial showing D / N / R. MC3 ships hudGear anchors (PosX 55 PosY 35, number at 64,46) and a gear strip texture; GT4 ships gear_base; SLRR ships a digital gear font strip.",
+   "claim": "Racer's E02 crop and the listed raw assets are the same interface element class: a gear-position indicator plate."
+  },
+  {
+   "id": "E03",
+   "name": "pedal input bars",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    1222,
+    525,
+    44,
+    140
+   ],
+   "kinds": [
+    "input_bar"
+   ],
+   "prefer": [
+    "gt4:image/pedals.png",
+    "gt4:image/pedal_bar.png",
+    "mc3:hud_turbo_nitrobars.tex",
+    "slrr:gauges/LongOSDGauge.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: two thin vertical bars (throttle green, brake red) with digit labels at the screen edge. GT4 ships a two-pedal bar texture and a bar fill; MC3 ships segmented nitro/turbo bars; SLRR's OSD gauge carries the same segmented meter band.",
+   "claim": "Racer's E03 crop and the listed raw assets are the same interface element class: a segmented pedal/throttle/brake input bar."
+  },
+  {
+   "id": "E04",
+   "name": "radar minimap",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    38,
+    505,
+    172,
+    195
+   ],
+   "kinds": [
+    "map"
+   ],
+   "prefer": [
+    "mc3:hud_map_sd.tex",
+    "mc3:hud_map_tokyo.tex",
+    "mc3:hud_map_atlanta.tex"
+   ],
+   "min_side": 64,
+   "max_n": 3,
+   "evidence": "Racer: round radar with street grid, car sprite, heading chevron, cardinal letters and a RANGE readout. MC3 ships decoded navigator city maps for the same role (hud_map_sd, hud_map_tokyo, hud_map_atlanta); its map config fixes the minimap angles and zoom.",
+   "claim": "Racer's E04 crop and the listed raw assets are the same interface element class: a minimap/radar with a map image and a frame or ring."
+  },
+  {
+   "id": "E05",
+   "name": "compass rim and cardinals",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    40,
+    512,
+    168,
+    160
+   ],
+   "kinds": [
+    "gauge_dial"
+   ],
+   "prefer": [
+    "mc3:hud_map_damage.tex",
+    "slrr:frontend/textures/interface/sections/gamemodes/gauges/debug_gauge/debug_gauge_frame.png",
+    "slrr:cars/textures/gauges/general/general_gauge.png"
+   ],
+   "min_side": 32,
+   "max_n": 3,
+   "evidence": "Racer: tick ring around the radar with N/E/S/W letters. No donor game in the four extracted UI sets ships a literal compass rose (verified over 1,780 decoded assets); the closest shipped counterparts are the radial gauge rings that the same rim is composed from.",
+   "claim": "Racer's E05 crop and the listed raw assets are the same interface element class: a radial ring with bearing ticks as used around a dial."
+  },
+  {
+   "id": "E06",
+   "name": "range readout",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    58,
+    672,
+    132,
+    24
+   ],
+   "kinds": [
+    "glyphs_font",
+    "gear_or_label"
+   ],
+   "prefer": [
+    "gt4:image/mph.png",
+    "gt4:image/kmph.png",
+    "mc3:hud_navsys_default.tex"
+   ],
+   "min_side": 8,
+   "max_n": 3,
+   "evidence": "Racer: small uppercase label 'RANGE 210 M' under the radar. GT4 ships mph/kmph unit plates for the same readout slot; MC3 ships the navsys label bar.",
+   "claim": "Racer's E06 crop and the listed raw assets are the same interface element class: a short unit/status label plate under a gauge."
+  },
+  {
+   "id": "E07",
+   "name": "world waypoint marker",
+   "section": "HUD / driving",
+   "capture": "drive-marker.png",
+   "crop": [
+    600,
+    198,
+    92,
+    120
+   ],
+   "kinds": [
+    "waypoint_arrow"
+   ],
+   "prefer": [
+    "mc3:icon_arrow.tex",
+    "mcla:checkpoint_sphere/icon_checkpoint.dds",
+    "slrr:frontend/textures/interface/sections/event_list/arrow_right.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: world-space diamond marker with a vertical light beam above the objective. MC3 ships its HUD arrow with OffsetScaling/Scale and cyan GlowColor (0,1,1,0.3); MCLA ships a glowing checkpoint sphere; SLRR ships a route arrow.",
+   "claim": "Racer's E07 crop and the listed raw assets are the same interface element class: a world-space waypoint/destination marker."
+  },
+  {
+   "id": "E08",
+   "name": "waypoint label chip",
+   "section": "HUD / driving",
+   "capture": "drive-marker.png",
+   "crop": [
+    558,
+    330,
+    172,
+    34
+   ],
+   "kinds": [
+    "tile_chip",
+    "banner_message",
+    "panel_plate"
+   ],
+   "prefer": [
+    "mc3:prompt_background.tex",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_green_small.png",
+    "mc3:whitechip.tex"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: compact chip 'GRID-INTRO \u00b7 80 m' pinned under the world marker. MC3's prompt background and white chip are the shipped label plates; SLRR's small message box is the same chip role.",
+   "claim": "Racer's E08 crop and the listed raw assets are the same interface element class: a compact label chip carrying a name and a distance."
+  },
+  {
+   "id": "E09",
+   "name": "off-screen edge arrow",
+   "section": "HUD / driving",
+   "capture": "drive-edge.png",
+   "crop": [
+    1102,
+    152,
+    176,
+    70
+   ],
+   "kinds": [
+    "waypoint_arrow"
+   ],
+   "prefer": [
+    "mcla:icon_arrow2/icon_arrow2.dds",
+    "mc3:ui_arrowright.tex",
+    "slrr:frontend/textures/interface/sections/event_list/arrow_right.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: yellow edge triangle plus the objective chip clamped to the screen border when the waypoint leaves frame. MCLA ships chevron arrows, MC3 ships a UI arrow pair, SLRR ships the same chevron for list/edge affordances.",
+   "claim": "Racer's E09 crop and the listed raw assets are the same interface element class: a directional edge chevron/arrow pinned to the screen border."
+  },
+  {
+   "id": "E10",
+   "name": "HUD identity block",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    26,
+    34,
+    300,
+    78
+   ],
+   "kinds": [
+    "wordmark"
+   ],
+   "prefer": [
+    "mc3:logo_manufacturer.tex",
+    "mc3:navsys_title01_en.tex",
+    "slrr:frontend/textures/interface/sections/main_menu/streetlegal.png",
+    "gt4:image/option/GT4logo.png"
+   ],
+   "min_side": 12,
+   "max_n": 4,
+   "evidence": "Racer: 'RACER' wordmark, car model line 'Acura NSX '04' and district line, with a short accent rule. Each donor ships its wordmark/logo band for the same slot: MC3 logo_manufacturer and navsys titles, SLRR streetlegal mark, GT4 logo.",
+   "claim": "Racer's E10 crop and the listed raw assets are the same interface element class: a wordmark/identity block anchored at a screen corner."
+  },
+  {
+   "id": "E11",
+   "name": "drive control hints",
+   "section": "HUD / driving",
+   "capture": "drive.png",
+   "crop": [
+    214,
+    644,
+    430,
+    62
+   ],
+   "kinds": [
+    "keycap_prompt"
+   ],
+   "prefer": [
+    "mc3:prompt_a.tex",
+    "mc3:prompt_b.tex",
+    "mc3:prompt_background.tex",
+    "slrr:frontend/textures/buttons/icons/Ok.png"
+   ],
+   "min_side": 16,
+   "max_n": 4,
+   "evidence": "Racer: two rows of keycap prompts (W/S throttle, A/D steer, R reset, M events, F9 report, ESC menu). MC3 ships the Xbox prompt glyph set (A/B/X/Y/circle/cross/triangle) on a prompt background; SLRR ships keyboard/button icons.",
+   "claim": "Racer's E11 crop and the listed raw assets are the same interface element class: a row of keycap/button control hints."
+  },
+  {
+   "id": "E12",
+   "name": "announcement banner",
+   "section": "HUD / event state",
+   "capture": "test-go.png",
+   "crop": [
+    492,
+    226,
+    316,
+    112
+   ],
+   "kinds": [
+    "banner_message"
+   ],
+   "prefer": [
+    "mc3:msg_go.tex",
+    "mc3:hud_messageon_en.tex",
+    "slrr:frontend/textures/interface/sections/gamemodes/finish_window/title_win.png"
+   ],
+   "min_side": 32,
+   "max_n": 3,
+   "evidence": "Racer: full-width gradient banner 'GO!' with a sub-line naming the course. MC3 ships msg_go and the hud message-on plate; SLRR ships YOU WIN/LOSE/ESCAPED banners for the same announcement slot.",
+   "claim": "Racer's E12 crop and the listed raw assets are the same interface element class: a centred banner announcing an event state."
+  },
+  {
+   "id": "E13",
+   "name": "countdown ring",
+   "section": "HUD / event state",
+   "capture": "test-countdown.png",
+   "crop": [
+    460,
+    70,
+    360,
+    200
+   ],
+   "kinds": [
+    "countdown_go"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/test_track/lap_time.png",
+    "gt4:image/timing_lamp.png",
+    "mc3:hud_pu_go.tex"
+   ],
+   "min_side": 8,
+   "max_n": 3,
+   "evidence": "Racer: outlined arc ring with a countdown numeral, eyebrow label and GET READY line. SLRR ships the GO! badge with a ring, GT4 ships its timing lamp, MC3 ships a GO power-up plate.",
+   "claim": "Racer's E13 crop and the listed raw assets are the same interface element class: a start countdown ring/badge."
+  },
+  {
+   "id": "E14",
+   "name": "test timer plate",
+   "section": "HUD / event state",
+   "capture": "test-gate.png",
+   "crop": [
+    428,
+    20,
+    424,
+    112
+   ],
+   "kinds": [
+    "timer_plate"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/test_track/holder_timer.png",
+    "gt4:image/GT4_meter_texture_laptime.png",
+    "gt4:image/panel_base.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: top-centre plate with course name, large elapsed time, gate counter, distance and a next-gate hint. SLRR ships the timer holder plate and lap-time plate; GT4 ships the lap-time meter texture and panel base.",
+   "claim": "Racer's E14 crop and the listed raw assets are the same interface element class: a timer/lap plate used during an event."
+  },
+  {
+   "id": "E15",
+   "name": "gate counter",
+   "section": "HUD / event state",
+   "capture": "test-gate.png",
+   "crop": [
+    700,
+    24,
+    150,
+    96
+   ],
+   "kinds": [
+    "counter_badge"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/position_font/active/pos_2_a.png",
+    "gt4:image/position_base.png",
+    "gt4:image/mark_1st.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: '1/5' gate counter beside the timer with a vertical divider. SLRR ships big position numerals and GT4 ships the position base and place marks.",
+   "claim": "Racer's E15 crop and the listed raw assets are the same interface element class: a position/gate counter numeral with a divider or base."
+  },
+  {
+   "id": "E16",
+   "name": "test state chip",
+   "section": "HUD / menus",
+   "capture": "tests.png",
+   "crop": [
+    92,
+    188,
+    180,
+    26
+   ],
+   "kinds": [
+    "tile_chip",
+    "gear_or_label",
+    "list_row"
+   ],
+   "prefer": [
+    "mc3:barround_center.tex",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_green_small.png",
+    "slrr:frontend/textures/interface/icons/event_list/denied.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: small rounded state chips 'AUTOMATIC' / 'PLAYER RUN' at the head of a test row. GT4 ships tab shades, MC3 ships rounded bar segments, SLRR ships the info splitter used between label and value.",
+   "claim": "Racer's E16 crop and the listed raw assets are the same interface element class: a small state chip/label used on a list row."
+  },
+  {
+   "id": "E17",
+   "name": "compact HUD cluster",
+   "section": "HUD / compact",
+   "capture": "drive-compact.png",
+   "crop": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "kinds": [
+    "gauge_dial",
+    "gear_or_label"
+   ],
+   "prefer": [
+    "slrr:gauges/LongOSDGauge.png",
+    "mc3:hud_speed_1.tex",
+    "slrr:gauges/general__general_gauge.png"
+   ],
+   "min_side": 48,
+   "max_n": 3,
+   "evidence": "Racer at 640x480: the cluster reflows (dial right, single pedal column, identity and objective on one line, hint bar along the bottom). SLRR's LongOSD gauge is the shipped compact cluster of the same kind.",
+   "claim": "Racer's E17 frame and the listed raw assets are the same interface element class: a compact gauge cluster that combines dial, gear and meters.",
+   "full": true
+  },
+  {
+   "id": "E18",
+   "name": "menu backdrop scrim",
+   "section": "UI / chrome",
+   "capture": "garage.png",
+   "crop": [
+    0,
+    0,
+    640,
+    720
+   ],
+   "kinds": [
+    "backdrop"
+   ],
+   "prefer": [
+    "mc3:background_top.tex",
+    "mc3:background_left.tex",
+    "gt4:image/option/opt_bg_4.png",
+    "mcla:pause_screen/pausebg_ps3.dds"
+   ],
+   "min_side": 32,
+   "max_n": 4,
+   "evidence": "Racer: dark vertical scrim over the live scene with a soft top-left gradient and a menu-list column. MC3 ships the HUD background tiles (top/left/corners), GT4 ships menu backgrounds, MCLA ships a pause backdrop plate.",
+   "claim": "Racer's E18 crop and the listed raw assets are the same interface element class: a menu backdrop scrim or background plate."
+  },
+  {
+   "id": "E19",
+   "name": "screen header",
+   "section": "UI / chrome",
+   "capture": "garage.png",
+   "crop": [
+    30,
+    34,
+    420,
+    130
+   ],
+   "kinds": [
+    "wordmark",
+    "panel_plate"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/main_menu/streetlegal.png",
+    "slrr:frontend/textures/interface/sections/main_menu/redline.png",
+    "mc3:navsys_title01_en.tex",
+    "slrr:frontend/textures/interface/sections/main_menu/center_line.png"
+   ],
+   "min_side": 24,
+   "max_n": 4,
+   "evidence": "Racer: eyebrow 'RACER', large title 'GARAGE', subtitle line and a glow rule beneath. SLRR ships its wordmark, redline mark and center line; MC3 ships the navsys title strip.",
+   "claim": "Racer's E19 crop and the listed raw assets are the same interface element class: a screen header consisting of a wordmark/title and an underline rule."
+  },
+  {
+   "id": "E20",
+   "name": "menu row plate",
+   "section": "UI / menus",
+   "capture": "garage.png",
+   "crop": [
+    46,
+    156,
+    580,
+    180
+   ],
+   "kinds": [
+    "list_row"
+   ],
+   "prefer": [
+    "mc3:orange_bar_center.tex",
+    "slrr:frontend/textures/interface/sections/main_menu/center_line.png",
+    "mc3:bar_center.tex"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: selection band with amber left accent strip, icon, label, value column, chevrons and a footer hint bar. MC3 ships the orange bar segments (left/center/right) and the neutral bar; SLRR ships the long center-line row plate.",
+   "claim": "Racer's E20 crop and the listed raw assets are the same interface element class: a menu list row plate or selection highlight."
+  },
+  {
+   "id": "E21",
+   "name": "menu row icon",
+   "section": "UI / menus",
+   "capture": "garage.png",
+   "crop": [
+    91,
+    165,
+    30,
+    30
+   ],
+   "kinds": [
+    "icon_pictogram"
+   ],
+   "prefer": [
+    "mc3:icon_star.tex",
+    "slrr:frontend/textures/buttons/icons/engine_icon.png",
+    "mcla:icon_timetrial/icon_timetrial.dds"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: small monochrome line icons at the head of each menu row (sliders, warehouse, steering wheel). MC3 ships an icon pictogram set, SLRR ships button icons, MCLA ships large white pictograms that are downscaled for the same slot.",
+   "claim": "Racer's E21 crop and the listed raw assets are the same interface element class: a small monochrome pictogram used as a menu row icon."
+  },
+  {
+   "id": "E22",
+   "name": "slider row",
+   "section": "UI / menus",
+   "capture": "garage-edit.png",
+   "crop": [
+    60,
+    183,
+    545,
+    32
+   ],
+   "kinds": [
+    "slider_switch"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/dialog/slider_stripe.png",
+    "slrr:frontend/textures/interface/sections/dialog/slider_knob.png",
+    "gt4:image/common/slider/base.png",
+    "slrr:frontend/textures/interface/sections/dialog/switch_stripe.png"
+   ],
+   "min_side": 8,
+   "max_n": 4,
+   "evidence": "Racer: label, horizontal track with fill, round knob, and a right-aligned value '1.15x'. SLRR ships the slider stripe and knob plus the switch stripe/knob; GT4 ships a slider base.",
+   "claim": "Racer's E22 crop and the listed raw assets are the same interface element class: a horizontal slider row with a track and knob."
+  },
+  {
+   "id": "E23",
+   "name": "field chevrons",
+   "section": "UI / menus",
+   "capture": "garage.png",
+   "crop": [
+    466,
+    162,
+    136,
+    60
+   ],
+   "kinds": [
+    "waypoint_arrow",
+    "icon_pictogram"
+   ],
+   "prefer": [
+    "mc3:ui_arrowleft.tex",
+    "mc3:ui_arrowright.tex",
+    "slrr:frontend/textures/interface/sections/event_list/arrow_right.png",
+    "mcla:icon_arrow2/icon_arrow2.dds"
+   ],
+   "min_side": 12,
+   "max_n": 4,
+   "evidence": "Racer: paired left/right chevrons at the value column for adjustable fields. MC3 ships the UI arrow pair, SLRR and MCLA ship chevron arrows.",
+   "claim": "Racer's E23 crop and the listed raw assets are the same interface element class: paired directional chevrons that mark an adjustable field."
+  },
+  {
+   "id": "E24",
+   "name": "info card plate",
+   "section": "UI / cards",
+   "capture": "results.png",
+   "crop": [
+    640,
+    170,
+    585,
+    425
+   ],
+   "kinds": [
+    "panel_plate"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/dialog/large.png",
+    "slrr:frontend/textures/interface/sections/dialog/tuning.png",
+    "slrr:frontend/textures/interface/sections/dialog/wide.png",
+    "gt4:image/panel_base.png"
+   ],
+   "min_side": 32,
+   "max_n": 4,
+   "evidence": "Racer: right-hand card with a header rule, stat tiles, hero value, key-value grid, hint rows and an applied row. SLRR ships the dialog plates (large, tuning, wide) that fill the same role; GT4 ships panel_base.",
+   "claim": "Racer's E24 crop and the listed raw assets are the same interface element class: a large info panel/card plate that groups readouts."
+  },
+  {
+   "id": "E25",
+   "name": "stat tiles",
+   "section": "UI / cards",
+   "capture": "results.png",
+   "crop": [
+    672,
+    212,
+    530,
+    66
+   ],
+   "kinds": [
+    "tile_chip"
+   ],
+   "prefer": [
+    "gt4:image/setting/tab1_o.png",
+    "gt4:image/setting/tab1.png",
+    "slrr:frontend/textures/interface/sections/dialog/raceresult_top.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: three tiles ACCEL / BRAKE / STEER, each with an accent tick, label and value. GT4 ships closed/open tab art (tab1, tab1_o) and SLRR ships the results header block for the same grouped readouts.",
+   "claim": "Racer's E25 crop and the listed raw assets are the same interface element class: a small stat tile or tab with a label and value."
+  },
+  {
+   "id": "E26",
+   "name": "result hero",
+   "section": "UI / cards",
+   "capture": "results.png",
+   "crop": [
+    660,
+    282,
+    300,
+    80
+   ],
+   "kinds": [
+    "counter_badge",
+    "wordmark"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/gamemodes/finish_window/title_pos_font/title_pos_1st.png",
+    "gt4:image/mark_1st.png",
+    "mc3:icon_trophy.tex"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: eyebrow 'RESULT', oversized hero value '7.450 s', and a place/trophy glyph slot. SLRR ships 1st/2nd/3rd title art, GT4 ships place marks, MC3 ships a trophy icon.",
+   "claim": "Racer's E26 crop and the listed raw assets are the same interface element class: a hero result/place readout with a large numeral."
+  },
+  {
+   "id": "E27",
+   "name": "detail hint block",
+   "section": "UI / cards",
+   "capture": "results.png",
+   "crop": [
+    660,
+    462,
+    545,
+    72
+   ],
+   "kinds": [
+    "banner_message",
+    "panel_plate"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/dialog/tuning.png",
+    "mc3:prompt_background.tex",
+    "gt4:image/DesignWork/txtarea_1.png"
+   ],
+   "min_side": 12,
+   "max_n": 3,
+   "evidence": "Racer: two muted explanation lines under the results grid. SLRR's tuning dialog and MC3's prompt background are the shipped text plates; GT4 ships txtarea frames.",
+   "claim": "Racer's E27 crop and the listed raw assets are the same interface element class: a small text block/plate used for explanatory detail."
+  },
+  {
+   "id": "E28",
+   "name": "key-value rows",
+   "section": "UI / cards",
+   "capture": "results.png",
+   "crop": [
+    660,
+    398,
+    545,
+    62
+   ],
+   "kinds": [
+    "list_row",
+    "glyphs_font"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/misc/raceinfo_splitter.png",
+    "slrr:frontend/textures/interface/sections/gamemodes/finish_window/splitter.png",
+    "gt4:image/panel_base.png"
+   ],
+   "min_side": 8,
+   "max_n": 3,
+   "evidence": "Racer: TIME / DISTANCE / INITIAL key-value row with a divider rule. SLRR ships the race-info and finish splitter rules; GT4 ships the panel base used under the same rows.",
+   "claim": "Racer's E28 crop and the listed raw assets are the same interface element class: a key-value row with a divider rule."
+  },
+  {
+   "id": "E29",
+   "name": "warning block",
+   "section": "UI / notices",
+   "capture": "results-invalid.png",
+   "crop": [
+    660,
+    272,
+    345,
+    34
+   ],
+   "kinds": [
+    "warning_sign",
+    "notice_block"
+   ],
+   "prefer": [
+    "gt4:image/sign_asm.png",
+    "gt4:image/cursor/caution.png",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_red_long.png"
+   ],
+   "min_side": 8,
+   "max_n": 3,
+   "evidence": "Racer: destructive-red plate with a leading bar and 'PARTIAL (INVALID): 0.000 s' on the invalid-results card. GT4 ships warning signs/caution cursor; SLRR ships the red message box.",
+   "claim": "Racer's E29 crop and the listed raw assets are the same interface element class: a red warning plate/block that flags a failed or invalid state."
+  },
+  {
+   "id": "E30",
+   "name": "notice block",
+   "section": "UI / notices",
+   "capture": "pending-dialog.png",
+   "crop": [
+    388,
+    358,
+    506,
+    44
+   ],
+   "kinds": [
+    "notice_block"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_yellow_long.png",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_green_long.png",
+    "gt4:image/sign_asm.png"
+   ],
+   "min_side": 16,
+   "max_n": 3,
+   "evidence": "Racer: amber notice strip with a leading '!' marker above the applied row. SLRR ships yellow and green long message boxes for the same informational notice role.",
+   "claim": "Racer's E30 crop and the listed raw assets are the same interface element class: an informational notice strip/box."
+  },
+  {
+   "id": "E31",
+   "name": "event map",
+   "section": "UI / event board",
+   "capture": "events.png",
+   "crop": [
+    648,
+    172,
+    568,
+    260
+   ],
+   "kinds": [
+    "map"
+   ],
+   "prefer": [
+    "mc3:hud_sd_autox_all.tex",
+    "mc3:hud_detroit_autox_all.tex",
+    "mc3:hud_map_atlanta.tex"
+   ],
+   "min_side": 64,
+   "max_n": 3,
+   "evidence": "Racer: city street map with route grid, event pins and labels in a card. MC3 ships per-city route maps (hud_sd_autox_all, hud_detroit_autox_all, hud_map_atlanta) that carry the same event-route information.",
+   "claim": "Racer's E31 crop and the listed raw assets are the same interface element class: a city/event route map."
+  },
+  {
+   "id": "E32",
+   "name": "footer hints",
+   "section": "UI / chrome",
+   "capture": "results.png",
+   "crop": [
+    46,
+    668,
+    560,
+    34
+   ],
+   "kinds": [
+    "keycap_prompt"
+   ],
+   "prefer": [
+    "mc3:prompt_a.tex",
+    "mc3:prompt_b.tex",
+    "mc3:prompt_background.tex",
+    "slrr:frontend/textures/buttons/icons/Ok.png"
+   ],
+   "min_side": 16,
+   "max_n": 4,
+   "evidence": "Racer: bottom-left hint bar 'SELECT / ADJUST / CONFIRM / BACK' with keycap pills and mouse hints. MC3 ships the prompt keycaps and background; SLRR ships button icons.",
+   "claim": "Racer's E32 crop and the listed raw assets are the same interface element class: a footer bar of keycap prompts."
+  },
+  {
+   "id": "E33",
+   "name": "page counter",
+   "section": "UI / chrome",
+   "capture": "results.png",
+   "crop": [
+    1158,
+    672,
+    88,
+    26
+   ],
+   "kinds": [
+    "counter_badge"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/position_font/active/pos_1_a.png",
+    "gt4:image/position_base.png",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/position_font/active/pos_2_a.png"
+   ],
+   "min_side": 12,
+   "max_n": 3,
+   "evidence": "Racer: bottom-right '1 OF 4' page counter. SLRR ships position numerals and GT4 ships the numeral base plate for the same counter role.",
+   "claim": "Racer's E33 crop and the listed raw assets are the same interface element class: a small numeral/page counter."
+  },
+  {
+   "id": "E34",
+   "name": "compact menu",
+   "section": "UI / compact",
+   "capture": "garage-compact.png",
+   "crop": [
+    0,
+    0,
+    640,
+    480
+   ],
+   "kinds": [
+    "panel_plate",
+    "list_row"
+   ],
+   "prefer": [
+    "slrr:frontend/textures/interface/sections/dialog/medium.png",
+    "slrr:frontend/textures/interface/sections/gamemodes/general_osd/message_boxes/msgBox_green_small.png",
+    "mc3:bar_left.tex"
+   ],
+   "min_side": 32,
+   "max_n": 3,
+   "evidence": "Racer at 640x480: menu list, card and footer reflow into a narrower column with the same chrome. SLRR's medium dialog and small message box are the shipped compact plates.",
+   "claim": "Racer's E34 frame and the listed raw assets are the same interface element class: a compact menu/panel layout.",
+   "full": true
+  },
+  {
+   "id": "E35",
+   "name": "showroom stage",
+   "section": "UI / garage",
+   "capture": "garage.png",
+   "crop": [
+    640,
+    296,
+    580,
+    372
+   ],
+   "kinds": [
+    "showroom_bg"
+   ],
+   "prefer": [
+    "gt4:image/gtmode/home/garage_bg.png",
+    "gt4:image/gtmode/home/garage_in_bg.png",
+    "slrr:frontend/textures/interface/sections/garage/garage_top.png",
+    "mcla:garage/dyntextures/showroom/sh_default.dds"
+   ],
+   "min_side": 32,
+   "max_n": 4,
+   "evidence": "Racer: turntable rings and a lit stage behind the car in the garage. GT4 ships the garage and showroom art, SLRR ships the garage top strip, MCLA ships the showroom stage texture.",
+   "claim": "Racer's E35 crop and the listed raw assets are the same interface element class: a garage/showroom stage backdrop."
+  },
+  {
+   "id": "E36",
+   "name": "accent palette",
+   "section": "HUD / palette",
+   "capture": "drive-accent.png",
+   "crop": [
+    985,
+    490,
+    240,
+    210
+   ],
+   "kinds": [
+    "icon_pictogram"
+   ],
+   "prefer": [
+    "mc3:hud_arrowcolor.tex",
+    "mc3:hud_arrowcolor_classic.tex",
+    "mc3:hud_pu_nitro.tex",
+    "mc3:hud_pu_go.tex"
+   ],
+   "min_side": 12,
+   "max_n": 4,
+   "evidence": "Racer: a single accent hue drives the arc, eyebrow, chevrons and markers; the magenta run proves the palette is a parameter. MC3's shipped colour constants are the same device: clock RegularColor (1.000,0.527,0.0195), arrow GlowColor (0,1,1,0.3), damage RegularColor (0.875,0,0,0.402), plus per-colour arrow variants.",
+   "claim": "Racer's E36 crop and the listed raw assets are the same interface element class: a HUD accent-colour variant/palette plate."
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+# Car and wheel standardization kit (examples of each game's cars and wheels)
+
+- Question: how does each donor game's car, rim and tyre look in the files Racer actually loads, and what would a shared car/rim/tyre/material standard have to replace? Goal behind it: each car its own file, one lighting/material model for all games, rims and tyres split, any tyre on any rim resized to match.
+- Targets (Racer-prepared GLBs in `assets/local/vehicles/`, SHA-256 = file stem, verified identical to the copies in the kit):
+  - GT4 Acura NSX '04 `4c157f28…8e` · Ford Racing 2 Mustang 1973 `207871bc…6d` · MC3 Corvette Z06 `bf016ebb…3f` · MCLA 350Z Roadster `71a6d4ab…d6` · Juiced 2 350Z `77a9becc…fb` · SLRR Furrano GT54 `e2a0ef64…25`
+- Tools: Blender 5.2.2 LTS (EEVEE, headless), Chrome 156.0.8078.81 (headless print-to-PDF), poppler 26.11.0 `pdftoppm` (page rasterising for review; installed via Homebrew on the user's instruction, which also upgraded jpeg-turbo and lz4), Python 3.15 + PIL 13. REA and Jev were not used (static glTF/JSON inspection only).
+- Commands (from `games/racer`, scratch dir any writable path): see the README in the kit, "Reproduce"; scripts in `scripts/`: `analyze_glb.py`, `render_kit.py` + `render_all.sh`, `wheel_summary.py`, `build_kit_docs.py`.
+- Limits: 6 Blender runs of about 25 s each, 60 renders at 1600×900 or 1200×900; total output 114 MB (limit 512 MiB per experiment); 376 GiB free at start.
+- Output (not tracked; copyrighted game assets, gitignored): `assets/local/car-standardization-kit/` containing `README.md`, `car-standardization-deck.pdf` (33 slides, sha256 changes per rebuild), `models/`, `renders/`, `data/analysis.json`, `data/wheel_summary.json`, `tools/`.
+- Result:
+  - Rim and tyre are separate meshes in 5 of 6 cars; Ford Racing 2 is one fused mesh (split in the renders is a radius heuristic).
+  - Tyre inner radius sits 53 mm (GT4) and 43 mm (Juiced 2) inside the rim outer radius; MC3 and MCLA meet exactly; SLRR within 3 mm.
+  - GT4, MC3 and Ford tyres have no inboard sidewall (open shells); Juiced 2, MCLA and SLRR are closed.
+  - Visible sidewall 49–116 mm; one uniform scale cannot retarget tyres (sidewall factors 0.42–2.35 across the five split cars).
+  - Materials are one metallic/roughness pair per car with per-game metadata (`gt4_material`, MC3 `shader_category`, MCLA `sourceShader`); no metallic-roughness textures anywhere.
+  - Only Juiced 2 has brake parts (rolling disc, steering-only caliper carrier) and descriptor format v2.
+- Limitations: Blender importer + studio rig, not Racer's renderer; front-left wheel rendered only (all four are measured); rim 'diameter' and 'aspect' come from mesh radii, not recovered nominal sizes; the GT4 window colours and white SLRR body are properties of the data, the GT4 window cause was not investigated; Ford GLB has 124 nodes outside the scene that were not examined; redistribution rights of donor meshes not assessed.
+- Checks: hub `python3 tools/check.py` PASS. Not run: Racer build and `ctest` (this experiment changed no project source; `src/main.cpp`, `src/tyre_contact.h` and `tests/tyre_contact_checks.cpp` show uncommitted edits that are not from this experiment).
+- Next action: user picks units (mm/in), stock-wheel policy and the pilot car; then freeze the spec and a validator, and pilot the GT4 NSX (rim origin/axle normalisation, barrel authoring, first normalised tyre).
+
+## v2 (same car across games), 2026-11-09 follow-up
+
+- Request: use a car present in all games; if none is, the game that lacks it gets another matching candidate via the bridge game (the game with the most cars in common); do not trust names, years matter, look at the models; make decisions with Jev (TypeSafe jev-1.14-20261014 through the `jev_*` MCP tools).
+- Inventory: 730 GT4 (coverage audit names), 106 MCLA, 94 MC3, 35 Ford Racing 2 (catalog codes), 94 Juiced 2 (configuration-archive names), 70 SLRR (chassis aliases). 21 car families shortlisted by token, then checked per game with `jev_verify`. Result: no family in all five real-car games; widest is 4 of 5.
+- First picks were name-based and one was wrong: Jev chose the 1973 Mach 1 for Ford Racing 2 (0.93). Rendering the models (shared rig, `render_compare.py`) showed it is a different generation from the 2005 Mustang in GT4/MCLA, so it was dropped.
+- Acquisition (user-approved in chat, "fetch anything you need from the carmodels repo"): 7 preview GLBs from `raw.githubusercontent.com/nicolas-found42/carmodels/ce047799fc550cdf92e4f7b62d97ef5c603e53ad/dealership/public/…` via `scripts/fetch_previews.py`, each matched to the catalog's size and SHA-256 (`sources/receipt.json`): GT4 ford0011, ford0006, ford0015, niss0032; MCLA vp_frd_mustang_06, vp_frd_gt_06, va_350z_04. GT4 Ford GT ford0006 was prepared with `scripts/prepare_gt4_vehicle.py` (first attempt failed because the output directory already existed; retried with a fresh path).
+- Result: common car = Nissan 350Z (GT4 coupe '03, MC3 coupe, MCLA 2006 roadster plus traffic coupe as reference only, Juiced 2 coupe with tuner body); Ford Racing 2 stand-in = Ford GT (mesh-identical to GT4 '05 and MCLA 2006 GT); bridge game = GT4; SLRR unmatched. Jev's model-based pick for the common car was split (Ford GT 0.51, 350Z 0.25, confidence 0.41, recommended pick contradicted "most games") and for the Ford stand-in it returned `none` (0.76) with Ford GT best among candidates (0.20); I decided with the stated truth table and recorded the overrides. Full log in `data/selection-evidence.json` and the kit README.
+- Output: `assets/local/car-standardization-kit-v2/` (223 MB: README.md, 45-slide car-standardization-deck.pdf, 8 models, renders, compare, sources, prepared, data, tools). v1 kit left untouched (114 MB).
+- Limits: Jev saw text only (names, measured extents, my notes from the renders); no automated shape comparison; Juiced 2 Mustang, SLRR cars and facelift status unverified; GT4 Ford GT has no scale review; MCLA traffic coupe is reference only, never installed.
+- Next action: user decides units, stock-wheel policy, whether to keep the traffic coupe, and whether to extract SLRR's Kurumma Z35C / Stallion to look for a real match; then freeze the spec and pilot the GT4 350Z.
+
+### SLRR follow-up (user: "Yes, extract them")
+
+- Question: is SLRR's Kurumma Z35C a 350Z, or Stallion 3.5 Turbo a Mustang, judged on the assembled meshes?
+- Method: new `scripts/slrr_assemble_generic.py` applies `scripts/slrr_vehicle.py`'s static source-CFG assembly to other cars (package, chassis resource and Java stock wheel/tyre ids are parameters; Java stock wheels read from `Kurumma_Z35C.java` rim 0x400/tyre 0x404 and `Stallion_3_5_Turbo.java` rim 0x2EE/tyres 0x42D, 0x3DD). Inputs: `../raw/slrr-231` cars/racers/Kurumma.rpk resource 343, Stallion.rpk resource 343. Outputs in `assets/local/car-standardization-kit-v2/slrr/`.
+- Result: Kurumma Z35C placed 29 parts, Stallion 33 parts (one part lost: 'R', unsupported reference syntax); neither has exhaust parts. Mesh length 4.50 m (350Z copies 4.30-4.34) and 3.97 m (2005 Mustang copies 4.80-4.82). Renders show a late-1990s American-style coupe and a short fastback with a big wing. Jev: Z35C is a 350Z contradicted 0.98; Stallion is a 2005 Mustang contradicted 0.92; kit decision no-match 0.98. SLRR stays unmatched; Furrano kept for wheel coverage.
+- Limits: static assemblies (no ride height, no exhaust); the wheels of these two cars were not analysed; 68 of 70 SLRR cars not inspected; my visual notes were the only visual evidence Jev had.

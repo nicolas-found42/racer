@@ -1,0 +1,80 @@
+{
+  "format": "unified diff, git apply -p1",
+  "files": {
+    "setup.h": {
+      "original_sha256": "7f202749f9e88f7b0f678e6cd96f9fd24a8d077c3639fe50c0c9ca07d60bd7eb",
+      "patched_sha256": "f355eda6f50888d5a391f47ca813bf733ea7fc6922c4f83f0c5597273d29388f"
+    },
+    "setup.cpp": {
+      "original_sha256": "9e86a0a78aa4ba3387848d1439d60ca48001be2539364f021ebe1ab1bd8b4172",
+      "patched_sha256": "ac0719349daf95a407c9adac607b947d0556cd49c00afcd6019efb3693da4ecf"
+    },
+    "tyre_contact.h": {
+      "original_sha256": "31473750ca92a578ad3910685d627dbbf7938c5b69937ac9c28598dd220bd125",
+      "patched_sha256": "a1d865d51a6a5ce5acb5a63b3baac6886fd871cee0f64d2a47b4d6a1d8cac567"
+    },
+    "simulation.h": {
+      "original_sha256": "df014dc0397a98e5de32a630ed041e508b1e01861e7e49ebc7c84661721e25d5",
+      "patched_sha256": "fba69dc954eb9146b0e09d010259900a214906ea77c918c99875812923e66681"
+    },
+    "simulation.cpp": {
+      "original_sha256": "19d86958e7f8c23d6930676ee8b8c0962965aa3dbc8e8700810f3965679a5e36",
+      "patched_sha256": "ef31add0ea62790f8e817e4586a466612913bc81a1d72054ed13ce6e9850e0e4"
+    },
+    "vehicle_geometry.h": {
+      "original_sha256": "35504aab01c50995e349d146d725c0d8be811a09ac6377eda5193406a49e0055",
+      "patched_sha256": "0fd36d57845b801de93efed38198fb5bafcf14fd4b9fbf00d727085c246ddb06"
+    },
+    "vehicle_geometry.cpp": {
+      "original_sha256": "d52a50b4ac3c0911ce91dc91ff0aff7aca0b2e52227d990f460aa16d6f54fe8f",
+      "patched_sha256": "61d52aa9f1f402f462d259734c3ac75a45399f899afbb6861821650a2cb47f72"
+    },
+    "surface_follow.h": {
+      "original_sha256": "615a8a64ddc1e53f66ddc027d206f1d5d55b2b2ed7c8c91702f0840d6dc89bac",
+      "patched_sha256": "3c8f927172169a3bf30c903104837382f805ce3b202c688345f7a249a02f6207"
+    },
+    "test_session.h": {
+      "original_sha256": "f0494b67bbf2856a396d40b9f6285b8913f5ff06f62f5ffda2369f1c81c149c4",
+      "patched_sha256": "b8ba2683da4a025f7a106b7a0d85441bb1270d04981b902b667720a4cdfbd037"
+    },
+    "test_session.cpp": {
+      "original_sha256": "df7313d68423c08eb69bdf371a1d8dd9584643ea37a442b8a1024a338234d533",
+      "patched_sha256": "eee7f18285bb5ff56bb69d70e1c5c568fbec72fdbbc3c56ef58bbe8ecccc5012"
+    }
+  },
+  "patches": [
+    {
+      "filename": "0001-physical-parameters-and-tyres.patch",
+      "sha256": "9d1469d5a59fd5da7438cc243511335bec5088fef12b810d6a26e3f52ee11e7f",
+      "files": [
+        "setup.h",
+        "setup.cpp",
+        "tyre_contact.h"
+      ]
+    },
+    {
+      "filename": "0002-chassis-drivetrain-and-road-contact.patch",
+      "sha256": "276e0572d9edb9a13fdfcde83bc6c559c45247e4be97ea7fd0e82b874e1f5e83",
+      "files": [
+        "simulation.h",
+        "simulation.cpp",
+        "vehicle_geometry.h",
+        "vehicle_geometry.cpp",
+        "surface_follow.h"
+      ]
+    },
+    {
+      "filename": "0003-physics-aware-benchmarks.patch",
+      "sha256": "97b0225d84501938056300df6d6deee50328e440e0376e3016e2caa191c1bf8d",
+      "files": [
+        "test_session.h",
+        "test_session.cpp"
+      ]
+    }
+  ],
+  "verification": {
+    "clean_apply": true,
+    "patched_bytes_match_working_sources": true,
+    "files_changed": 10
+  }
+}

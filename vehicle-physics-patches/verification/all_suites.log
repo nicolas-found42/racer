@@ -1,0 +1,48 @@
+PASS parameter_validation_is_transactional
+PASS extreme_vertical_geometry_rejected_transactionally
+PASS extreme_suspension_micro_roll_is_passive
+PASS stationary_support_and_no_steering_teleport
+PASS straight_acceleration_and_load_transfer
+PASS gearbox_full_throttle_does_not_hunt
+PASS coasting_dissipates_energy
+PASS benchmark_acceleration
+PASS benchmark_braking
+PASS benchmarks_frame_partition
+PASS mirrored_turns
+PASS integration_frame_partition
+PASS complete_state_copy_replays
+PASS invalid_dt_and_controls
+PASS public_state_bounds_and_recovery
+PASS head_on_wall_keeps_lateral_symmetry
+PASS reverse_and_pedal_latch
+PASS low_grip_limits_acceleration
+PASS combined_force_budget
+PASS airborne_gravity_and_zero_grip
+PASS independent_wheel_support
+PASS grade_gravity
+PASS boundary_is_bounded
+PASS ackermann_shared_geometry
+PASS tyre_shape_symmetry_and_saturation
+PASS surface_multilevel_and_missing
+PASS mesh_validation_and_empty_rim
+PASS benchmark_configuration_invalidation
+PASS benchmark_observed_braking_event
+PASS deterministic_input_soak
+METRIC coast_speed_loss_2s_mps 1.37464991406
+METRIC dry_speed_3s_mps 9.98654642524
+METRIC extreme_micro_roll_peak_kinetic_j 2.56502296403e-08
+METRIC front_load_under_power_n 6670.92290063
+METRIC full_throttle_upshifts_12s 2
+METRIC grade_downhill_speed_mps 0.997307038544
+METRIC hundred_to_stop_distance_m 41.8160450815
+METRIC hundred_to_stop_seconds 2.91824994399
+METRIC low_grip_speed_3s_mps 1.52788121344
+METRIC speed_after_6s_mps 22.0356295401
+METRIC static_load_n 14219.6425
+METRIC turn_slip_angle_rad -0.0551335253961
+METRIC turn_yaw_rad 0.756264901061
+METRIC zero_to_100_distance_m 110.446544503
+METRIC zero_to_100_seconds 7.91646082763
+RESULT 30/30 passed
+3630 combined-slip cases passed; profile, load-sensitivity, relaxation, camber and mesh bounds passed
+Dynamic transform and separated bridge-deck checks passed

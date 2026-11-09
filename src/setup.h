@@ -17,7 +17,8 @@ struct TyreParameters {
   double friction = 1.05, slidingFrictionRatio = .82, loadSensitivity = .12;
   // Small-slip slopes at referenceLoad: N per slip ratio / N per tan(alpha).
   double longitudinalStiffness = 85000, corneringStiffness = 65000;
-  double camberStiffness = 7500; // N/rad; positive camber thrust points +wheel X.
+  double camberStiffness =
+      7500; // N/rad; positive camber thrust points +wheel X.
   double longitudinalRelaxation = .3, lateralRelaxation = .45;
   double pneumaticTrail = .055;
   bool valid() const;
@@ -42,9 +43,12 @@ struct VehicleDynamics {
   double wheelInertia = 1.4; // Per wheel, including tyre and brake disc.
 
   double engineInertia = .25, engineIdleRpm = 850, engineRedlineRpm = 6800;
+  // Closed-throttle pumping torque quoted at the redline; the simulation
+  // scales it with engine speed (see engineBrakeTorqueAt in simulation.cpp).
   double engineBrakeTorque = 35, engineViscousDrag = .02;
   double clutchTorque = 450, clutchStiffness = 15;
-  std::array<double, 8> torqueRpm{{850, 1500, 2200, 3000, 3800, 4600, 5800, 6800}};
+  std::array<double, 8> torqueRpm{
+      {850, 1500, 2200, 3000, 3800, 4600, 5800, 6800}};
   std::array<double, 8> torqueNm{{140, 190, 225, 260, 282, 290, 265, 210}};
   std::array<double, 6> gearRatios{{3.5, 2.19, 1.52, 1.18, .97, .81}};
   double finalDrive = 3.9, reverseRatio = 3.2, drivetrainEfficiency = .92;
@@ -56,7 +60,7 @@ struct VehicleDynamics {
   double differentialMaxTorque = 300;
 
   double maxBrakeTorque = 6500, frontBrakeBias = .64; // Total over FOUR wheels.
-  double handbrakeTorque = 2500;                   // Total over TWO rear wheels.
+  double handbrakeTorque = 2500; // Total over TWO rear wheels.
   bool absEnabled = true, tractionControlEnabled = false;
   double absTargetSlip = .15, tractionTargetSlip = .12;
   double absReleaseRate = 15, absApplyRate = 5;

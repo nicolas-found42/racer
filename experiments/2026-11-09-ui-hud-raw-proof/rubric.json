@@ -1,0 +1,52 @@
+{
+  "frozen": "2026-11-09T20:40Z",
+  "unit": "one shipped UI/HUD image asset decoded from a raw game file (game, original asset path/name, dimensions, alpha, dominant colours, optional 16x8 luminance thumbnail)",
+  "questions": {
+    "kind": {
+      "type": "choice",
+      "instructions": "One UI/HUD image asset decoded from a racing game's shipped files. Classify what part of the interface the image itself depicts, judged from its shipped name/path, dimensions, alpha, dominant colours and (where present) luminance thumbnail.",
+      "criteria": {
+        "gauge_dial": "Speedometer/tachometer face or arc with ticks, numbers or a dial scale.",
+        "gauge_pin": "Bare needle/pin/pointer art used on a gauge.",
+        "gear_or_label": "Gear-position or short status-letter plate (R, N, D, 1..6, gear_base).",
+        "input_bar": "Pedal/throttle/brake/nitro segmented bar or bar fill.",
+        "map": "City/minimap/route map image or route overlay.",
+        "compass": "Compass rose, heading ring, north marker or bearing ticks.",
+        "waypoint_arrow": "World marker, checkpoint, direction or off-screen arrow.",
+        "counter_badge": "Place/lap/gate/position numeral or badge (1st, 2/5, pos_2).",
+        "progress_meter": "Horizontal progress/fill/refuel/rev bar or slider stripe used as a meter.",
+        "banner_message": "Full-width message/banner/prompt plate carrying a sentence (PRESS X, GO, RACE FINISHED).",
+        "countdown_go": "Start lights, countdown ring or GO badge.",
+        "timer_plate": "Timer/clock/lap-time plate, frame or timer bar.",
+        "keycap_prompt": "Button glyph, keycap or controller-button prompt (A/B/X/circle/cross).",
+        "wordmark": "Game title, manufacturer or screen wordmark/logotype.",
+        "glyphs_font": "Font atlas or numeral/letter glyph art.",
+        "icon_pictogram": "Small pictogram (tool, trophy, warning, car, flag, wrench...).",
+        "panel_plate": "Dialog/frame/card/window plate or 9-slice panel background.",
+        "list_row": "Menu/list row plate, selection highlight or alternating row tint.",
+        "slider_switch": "Slider track, knob or switch control.",
+        "tile_chip": "Small stat tile, chip or tab.",
+        "warning_sign": "Road/alert sign or warning symbol art.",
+        "notice_block": "Informational message box background (green/amber) or notice plate.",
+        "showroom_bg": "Garage/showroom/man turntable background or stage art.",
+        "backdrop": "Screen scrim, gradient backdrop or background frame tile.",
+        "other_content": "Car photo/render, vinyl/livery decal, brand logo or other non-chrome content."
+      }
+    },
+    "usable_element": {
+      "type": "bool",
+      "instructions": "Is this image a complete, self-contained piece of interface chrome that could serve as the raw-game counterpart for a HUD/menu element (not a car photo, decal, mip, shadow, mask-only or fragment too small to identify)?"
+    }
+  },
+  "prefilter": {
+    "exclude_name_substrings": ["garage_dyntextures_thumb", "garage_dyntextures_managerides", "_vp_", "vinyl", "_rw_", "mr_vp", "sh_vp", "vpd_"],
+    "exclude_suffixes": [".json", ".txt", ".bin", ".jfshdr"],
+    "exclude_dirs": ["fonts"]
+  },
+  "escalation": {
+    "read_top_probability_below": 0.55,
+    "read_bool_between": [0.3, 0.7],
+    "read_on_error": true
+  },
+  "cap_state_chars": 2000
+}

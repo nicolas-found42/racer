@@ -74,4 +74,4 @@ Regeneration: `scripts/capture_ui.sh experiments/2026-11-08-ui-hud/output/cur 12
 
 ## Next action
 
-Add true floor reflection and richer studio props; add a unit test for the accent sidecar by moving its read/write out of `main.cpp`.
+Add true floor reflection and richer studio props; add a unit test for the accent sidecar by moving its read/write out of `main.cpp`. The Jev-backed element review is complete in the sibling leaf [2026-11-09-ui-hud-raw-proof](../2026-11-09-ui-hud-raw-proof/README.md): 36 elements, 119 shipped-asset pairings, per-element proof sheets, hash-verified provenance, jev element likelihood (mean 0.848; the 12 uncertain elements are the ones no donor ships), and MC3's exact gauge constants. Use its sheets, not this leaf's rebuild rounds, as the element-level raw comparison.
