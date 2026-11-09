@@ -157,6 +157,24 @@ Mesh buildStudio() {
   }
   return m;
 }
+// Alpha-blended floor gloss under the showroom car: a bright pool that fades
+// outward plus faint rim-light reflection rings, drawn above the floor and
+// below the contact shadow so the floor reads as polished.
+Mesh buildFloorGloss() {
+  Mesh m;
+  auto withAlpha = [](uint32_t rgb, float a) {
+    return (uint32_t(std::clamp(a, 0.f, 1.f) * 255.f + .5f) << 24) | (rgb & 0x00ffffffu);
+  };
+  constexpr int steps = 18;
+  for (int i = 0; i < steps; ++i) {
+    const float r0 = 9.f * float(i) / steps, r1 = 9.f * float(i + 1) / steps;
+    const float f = std::pow(1.f - (r0 + r1) * .5f / 9.f, 2.2f);
+    annulus(m, r0, r1, .04f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
+  }
+  annulus(m, 4.35f, 4.5f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
+  annulus(m, 6.9f, 7.0f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
+  return m;
+}
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -1213,12 +1231,19 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   Mesh studioMesh = buildStudio();
   auto studioBuffer = bgfx::createVertexBuffer(
       bgfx::copy(studioMesh.data(), uint32_t(studioMesh.size() * sizeof(Vertex))), layout);
+  Mesh floorGloss = buildFloorGloss();
+  auto floorGlossBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(floorGloss.data(), uint32_t(floorGloss.size() * sizeof(Vertex))), layout);
   Mesh shadowBlob;
   ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
   auto shadowBlobBuffer = bgfx::createVertexBuffer(
       bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
   Mesh turntable;
-  annulus(turntable, 0, 3.9f, .05f, 0xff3a312c);        // dark plate
+  // Lit slate plate: lighter at the centre so dark paint separates from it.
+  for (int i = 0; i < 28; ++i)
+    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, .05f,
+            lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
+                    std::pow(float(i) / 27.f, 1.3f)));
   annulus(turntable, 3.55f, 3.72f, .06f, 0xffebdb57);    // cyan rim (ABGR)
   annulus(turntable, 3.86f, 3.92f, .06f, 0xff4db8ff);    // amber outer hairline
   auto turntableBuffer = bgfx::createVertexBuffer(
@@ -2173,6 +2198,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                      BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS);
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
+      bgfx::setVertexBuffer(0, floorGlossBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS |
+                     BGFX_STATE_BLEND_ALPHA);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
       racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, shadowBlobBuffer);
@@ -3051,6 +3081,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bgfx::destroy(eventBuffer);
   bgfx::destroy(turntableBuffer);
   bgfx::destroy(studioBuffer);
+  bgfx::destroy(floorGlossBuffer);
   bgfx::destroy(shadowBlobBuffer);
   bgfx::destroy(worldBuffer);
   bgfx::destroy(skyBuffer);
