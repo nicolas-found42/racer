@@ -99,6 +99,64 @@ void annulus(Mesh &m, float r0, float r1, float y, uint32_t c, int segments = 72
       m.push_back({q[k][0], y, q[k][1], c, .95f, 0.f, 0.f, 1.f, 0.f});
   }
 }
+uint32_t packRgb(float r, float g, float b) {
+  auto q = [](float v) { return uint32_t(std::clamp(v, 0.f, 1.f) * 255.f + .5f); };
+  return 0xff000000u | (q(b) << 16) | (q(g) << 8) | q(r);
+}
+uint32_t lerpRgb(uint32_t a, uint32_t b, float t) {
+  auto ch = [&](int shift) {
+    const float x = float((a >> shift) & 255), y = float((b >> shift) & 255);
+    return uint32_t(x + (y - x) * t + .5f) << shift;
+  };
+  return 0xff000000u | ch(16) | ch(8) | ch(0);
+}
+// Inward-facing wall band between two heights with a vertical vertex-colour ramp.
+void wallBand(Mesh &m, float radius, float y0, float y1, uint32_t c0, uint32_t c1, int segments = 64) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    const float x0 = std::sin(a0) * radius, z0 = std::cos(a0) * radius, x1 = std::sin(a1) * radius, z1 = std::cos(a1) * radius;
+    const float nx = -std::sin((a0 + a1) / 2), nz = -std::cos((a0 + a1) / 2);
+    const Vertex q[4] = {{x0, y0, z0, c0, .95f, 0.f, nx, 0.f, nz}, {x1, y0, z1, c0, .95f, 0.f, nx, 0.f, nz},
+                         {x1, y1, z1, c1, .95f, 0.f, nx, 0.f, nz}, {x0, y1, z0, c1, .95f, 0.f, nx, 0.f, nz}};
+    for (int k : {0, 1, 2, 0, 2, 3}) m.push_back(q[k]);
+  }
+}
+// Ground ellipse (contact shadow) centred on the origin of its transform.
+void ellipse(Mesh &m, float rx, float rz, float y, uint32_t c, int segments = 40) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    m.push_back({0, y, 0, c, .95f, 0.f, 0.f, 1.f, 0.f});
+    m.push_back({std::sin(a1) * rx, y, std::cos(a1) * rz, c, .95f, 0.f, 0.f, 1.f, 0.f});
+    m.push_back({std::sin(a0) * rx, y, std::cos(a0) * rz, c, .95f, 0.f, 0.f, 1.f, 0.f});
+  }
+}
+// Closed studio cyclorama: glossy floor pool, graded walls, softboxes and ceiling
+// strip lights, so garage screens read as a lit showroom instead of the street.
+Mesh buildStudio() {
+  Mesh m;
+  constexpr float radius = 14.f;
+  const uint32_t floorIn = packRgb(.62f, .66f, .74f), floorOut = packRgb(.11f, .12f, .15f);
+  for (int i = 0; i < 14; ++i)
+    annulus(m, float(i), float(i + 1), .03f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
+  const float ys[] = {0.f, 1.2f, 3.5f, 6.f, 9.f};
+  const uint32_t cs[] = {packRgb(.10f, .11f, .14f), packRgb(.30f, .33f, .40f), packRgb(.56f, .62f, .72f),
+                         packRgb(.26f, .29f, .36f), packRgb(.07f, .08f, .10f)};
+  for (int b = 0; b < 4; ++b) wallBand(m, radius, ys[b], ys[b + 1], cs[b], cs[b + 1]);
+  annulus(m, 0.f, radius, 9.f, packRgb(.03f, .035f, .045f));
+  const uint32_t strip = packRgb(1.f, .98f, .95f);
+  for (float r : {3.f, 6.5f, 10.f}) annulus(m, r, r + .28f, 8.9f, strip);
+  // Softbox panels on the wall (evenly spaced, tall emissive quads).
+  for (int i = 0; i < 8; ++i) {
+    const float a = 6.2831853f * (float(i) + .5f) / 8, half = .16f;
+    const float x0 = std::sin(a - half) * (radius - .05f), z0 = std::cos(a - half) * (radius - .05f);
+    const float x1 = std::sin(a + half) * (radius - .05f), z1 = std::cos(a + half) * (radius - .05f);
+    const uint32_t lo = packRgb(.85f, .90f, 1.f), hi = packRgb(1.f, 1.f, 1.f);
+    const Vertex q[4] = {{x0, 2.2f, z0, lo, .95f, 0.f, 0.f, 0.f, 0.f}, {x1, 2.2f, z1, lo, .95f, 0.f, 0.f, 0.f, 0.f},
+                         {x1, 6.2f, z1, hi, .95f, 0.f, 0.f, 0.f, 0.f}, {x0, 6.2f, z0, hi, .95f, 0.f, 0.f, 0.f, 0.f}};
+    for (int k : {0, 1, 2, 0, 2, 3}) m.push_back(q[k]);
+  }
+  return m;
+}
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -1152,10 +1210,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
   for (float side : {-1.f, 1.f})
     box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff4db8ff);
+  Mesh studioMesh = buildStudio();
+  auto studioBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(studioMesh.data(), uint32_t(studioMesh.size() * sizeof(Vertex))), layout);
+  Mesh shadowBlob;
+  ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
+  auto shadowBlobBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
   Mesh turntable;
-  annulus(turntable, 0, 3.9f, .012f, 0xff241f1c);        // dark plate
-  annulus(turntable, 3.55f, 3.72f, .02f, 0xffebdb57);    // cyan rim (ABGR)
-  annulus(turntable, 3.86f, 3.92f, .02f, 0xff4db8ff);    // amber outer hairline
+  annulus(turntable, 0, 3.9f, .05f, 0xff3a312c);        // dark plate
+  annulus(turntable, 3.55f, 3.72f, .06f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, .06f, 0xff4db8ff);    // amber outer hairline
   auto turntableBuffer = bgfx::createVertexBuffer(
       bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
@@ -2101,6 +2166,22 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     if (showroom) {
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
       bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, studioBuffer);
+      // ALWAYS: the room is convex and seen from inside, so it can overwrite any
+      // street furniture drawn earlier in the frame; the car draws after it.
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
+      racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, shadowBlobBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
+      racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, turntableBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
                      BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS);
@@ -2969,6 +3050,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bgfx::destroy(gateBuffer);
   bgfx::destroy(eventBuffer);
   bgfx::destroy(turntableBuffer);
+  bgfx::destroy(studioBuffer);
+  bgfx::destroy(shadowBlobBuffer);
   bgfx::destroy(worldBuffer);
   bgfx::destroy(skyBuffer);
   bgfx::destroy(contactBuffer);
