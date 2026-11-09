@@ -97,6 +97,20 @@ bool clampVehicleToBoundary(const VehicleGeometry &geometry, double heading,
   x = nextX; z = nextZ;
   return contact;
 }
+double wheelSteeringAngle(const VehicleGeometry &geometry, std::size_t wheel,
+                          double centralAngle, double ackermann) {
+  require(geometry.valid() && wheel < geometry.wheels.size() &&
+          std::isfinite(centralAngle) && std::abs(centralAngle) < std::numbers::pi / 2 &&
+          std::isfinite(ackermann) && ackermann >= 0 && ackermann <= 1);
+  if (wheel >= 2 || centralAngle == 0 || ackermann == 0)
+    return wheel < 2 ? centralAngle : 0;
+  const double tangent = std::tan(centralAngle);
+  const double midpoint = (geometry.wheels[0].center.x + geometry.wheels[1].center.x) * .5;
+  const double offset = geometry.wheels[wheel].center.x - midpoint;
+  // atan2 avoids cancellation and a division by zero at very tight lock.
+  const double individual = std::atan2(tangent, 1 - tangent * offset / geometry.wheelbase());
+  return centralAngle + ackermann * (individual - centralAngle);
+}
 void wheelRenderTransform(float *m, const VehicleGeometry &geometry, std::size_t wheel,
                           double heading, double x, double z, double steering,
                           double spin, bool rolling) {
@@ -104,7 +118,7 @@ void wheelRenderTransform(float *m, const VehicleGeometry &geometry, std::size_t
           std::isfinite(heading) && std::isfinite(x) && std::isfinite(z) &&
           std::isfinite(steering) && std::isfinite(spin));
   if (!rolling) spin=0;
-  const double yaw = heading + (wheel < 2 ? steering : 0);
+  const double yaw = heading + wheelSteeringAngle(geometry, wheel, steering);
   require(std::isfinite(yaw));
   const double c = std::cos(yaw), s = std::sin(yaw);
   const double cp = std::cos(spin), sp = std::sin(spin);

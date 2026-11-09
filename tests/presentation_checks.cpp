@@ -80,10 +80,10 @@ int main() {
     choose(f, 4);
     f.startTest(TestKind::Acceleration);
     finish(f);
-    check(std::abs(f.session.result().seconds - 6.6666667) < .009,
+    check(std::abs(f.session.result().seconds - 6.5911) < .01,
           "tuned measurement unchanged");
     choose(f, 3);
-    check(has(f, "B [NEXT]") && has(f, "-1.333 s better than A"),
+    check(has(f, "B [NEXT]") && has(f, "-1.325 s better than A"),
           "active B and cross-setup delta");
     choose(f, 3);
     choose(f, 0);

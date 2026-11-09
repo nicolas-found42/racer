@@ -1,4 +1,5 @@
 #include "play_flow.h"
+#include "vehicle_tuning.h"
 #include <algorithm>
 #include <cmath>
 #include <sstream>
@@ -20,7 +21,8 @@ StoredResult stored(const TestResult &r) {
 } // namespace
 bool PlayFlow::configureVehicle(const std::string &id,const std::string &name,const VehicleGeometry &geometry) {
   StoredResult check;check.carId=id;check.modelRevision=2;check.testId="acceleration";check.seconds=1;
-  if (!check.valid() || !geometry.valid() || name.empty() || name.size()>96 || !sim.setGeometry(geometry)) return false;
+  if (!check.valid() || !geometry.valid() || name.empty() || name.size()>96 || !sim.setGeometry(geometry) ||
+      !sim.setDynamics(dynamicsFor(geometry))) return false;
   cancelCareer();session.cancel();vehicleId=id;vehicleName=name;
   resetPose();sim.setSetup(effectiveSetup(profile.garage.selected));observe("vehicle");return true;
 }

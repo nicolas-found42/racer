@@ -215,6 +215,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   std::vector<std::string> worldMeshes;
   std::string vehicleLibrary = RACER_VEHICLE_LIBRARY, requestedVehicle;
   std::string cameraView = "rear";
+  // Chase camera pitch below the horizon, degrees. Authored from the measured
+  // reference cameras (Assetto Corsa community presets of the Forza/Gran Turismo
+  // chase views: 3.4-10 degrees); the previous aim-at-the-body camera sat near 11.
+  double chasePitch = 5;
   bool startAtGiven = false, startAtApplied = false;
   double startAt[3] = {0, 0, 0}; // x, z (metres), heading (degrees)
   float worldOrigin[3] = {0, 0, 0};
@@ -355,6 +359,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       requestedVehicle = argv[++i];
     else if (a == "--camera-view" && i + 1 < argc)
       cameraView = argv[++i];
+    else if (a == "--camera-pitch" && i + 1 < argc) {
+      chasePitch = std::stod(argv[++i]);
+      if (!(chasePitch >= 0 && chasePitch <= 30))
+        throw std::runtime_error("camera_pitch_bounds");
+    }
     else if (a == "--start-at" && i + 3 < argc) {
       startAtGiven = true;
       for (double &component : startAt) {
@@ -425,7 +434,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                    "[--verify-controls] [--verify-garage keyboard|gamepad] "
                    "[--profile path] [--capture-loop directory] [--scene "
                    "garage|course|scale] [--camera-view "
-                   "rear|front|left|right|elevated|hood] [--start-at x z "
+                   "rear|front|left|right|elevated|hood] [--camera-pitch "
+                   "0..30] [--start-at x z "
                    "heading_degrees] [--screenshot path.ppm "
                    "[--screenshot-delay 2..30]] [--window width height] "
                    "[--review-script path] [--course-driver] "
@@ -884,9 +894,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   };
   for (const auto &path : worldMeshes)
     importedWorlds.push_back(loadStaticGraphics(path, "world_mesh"));
-  std::optional<racer::surfaceFollow::SurfaceIndex> groundIndex;
+  // Shared with the simulation's road sampler (the callback owns it too).
+  std::shared_ptr<const racer::surfaceFollow::SurfaceIndex> groundIndex;
   if (groundBuilder) {
-    groundIndex.emplace(groundBuilder->finish());
+    groundIndex = std::make_shared<const racer::surfaceFollow::SurfaceIndex>(
+        groundBuilder->finish());
     groundBuilder.reset();
     diagnostics.event(
         "surface_index",
@@ -1297,6 +1309,46 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   if (followGround && vehicles.empty())
     throw std::runtime_error("surface_follow_requires_vehicle");
   double groundReference = 0;
+  // Physics supports the car on the same triangles the renderer shows. Without
+  // a world mesh the simulation keeps its default flat plane at Y=0.
+  if (groundIndex)
+    sim.setRoadSampler(racer::surfaceFollow::makeRoadSampler(groundIndex));
+  // Teleports (reset, start-at, test starts) leave Y at the old pose: put the
+  // chassis on the road under it and clear stale suspension/tyre history.
+  auto placeOnGround = [&] {
+    if (!groundIndex || vehicles.empty())
+      return;
+    const auto &geometry = vehicles[activeVehicle].geometry;
+    double bottom = 0;
+    for (const auto &wheel : geometry.wheels)
+      bottom += (wheel.center.y - wheel.radius) / 4;
+    // Rest the four wheels on the road plane (pitch and roll included); fall
+    // back to a level chassis on the highest road under it. Prefer the road
+    // near the previous ground height (an overhead deck is not the road);
+    // after a far teleport nothing is near, so take the highest road there.
+    double reference = groundReference;
+    auto near = groundIndex->sampleBelow(sim.car.x, sim.car.z, reference + .75, 1.5);
+    if (!near) {
+      const auto any = groundIndex->sampleBelow(sim.car.x, sim.car.z, 1e5, 2e5);
+      if (!any)
+        return; // uncovered: the car is airborne, exactly as the physics reports
+      reference = any->height;
+    }
+    const auto pose = racer::surfaceFollow::restingPose(
+        *groundIndex, geometry, sim.car.heading, sim.car.x, sim.car.z, reference);
+    const auto hit = groundIndex->sampleBelow(sim.car.x, sim.car.z,
+                                              reference + .75, 1.5);
+    if (!pose && !hit)
+      return;
+    sim.car.y = pose ? pose->y : hit->height - bottom;
+    sim.car.pitch = pose ? pose->pitch : 0;
+    sim.car.roll = pose ? pose->roll : 0;
+    sim.car.velocityX = sim.car.velocityY = sim.car.velocityZ = 0;
+    sim.car.speed = sim.car.yawRate = sim.car.pitchRate = sim.car.rollRate = 0;
+    sim.tick({}, 0);
+    groundReference = hit ? hit->height : sim.car.y + bottom;
+  };
+  placeOnGround();
   unsigned poseRevision = flow.poseRevision;
   racer::Car previous = sim.car;
   SDL_Gamepad *pad = nullptr;
@@ -1548,18 +1600,21 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       sim.car.x = startAt[0];
       sim.car.z = startAt[1];
       sim.car.heading = startAt[2] * 3.14159265358979323846 / 180.0;
+      placeOnGround();
       previous = sim.car;
       cameraX = sim.car.x - std::sin(sim.car.heading) * cameraDistance();
       cameraZ = sim.car.z - std::cos(sim.car.heading) * cameraDistance();
+      cameraY = groundReference + cameraHeight();
       accumulator = 0;
     }
     if (poseRevision != flow.poseRevision) {
       poseRevision = flow.poseRevision;
       groundReference = 0;
+      placeOnGround();
       previous = sim.car;
       cameraX = sim.car.x - std::sin(sim.car.heading) * cameraDistance();
       cameraZ = sim.car.z - std::cos(sim.car.heading) * cameraDistance();
-      cameraY = cameraHeight();
+      cameraY = groundReference + cameraHeight();
       accumulator = 0;
     }
     auto keys = SDL_GetKeyboardState(nullptr);
@@ -1634,14 +1689,26 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       previous = sim.car;
     }
     const double alpha = accumulator / racer::step;
+    // Dynamic presentation: a copy of the simulation advanced by the unconsumed
+    // frame time. Under one step the input difference is below a millimetre, so
+    // this stays exact at any refresh rate (no matrix interpolation) and gives
+    // the real body pitch/roll/heave and per-wheel travel and spin.
+    racer::Simulation visual = sim;
+    const bool dynamicBody = !vehicles.empty();
+    if (dynamicBody && !paused && accumulator > 0)
+      visual.tick(input, accumulator);
     auto shown = sim.car;
-    shown.x = previous.x + (shown.x - previous.x) * alpha;
-    shown.z = previous.z + (shown.z - previous.z) * alpha;
-    shown.heading =
-        previous.heading + (shown.heading - previous.heading) * alpha;
-    shown.steering =
-        previous.steering + (shown.steering - previous.steering) * alpha;
-    shown.travel = previous.travel + (shown.travel - previous.travel) * alpha;
+    if (dynamicBody) {
+      shown = visual.car;
+    } else {
+      shown.x = previous.x + (shown.x - previous.x) * alpha;
+      shown.z = previous.z + (shown.z - previous.z) * alpha;
+      shown.heading =
+          previous.heading + (shown.heading - previous.heading) * alpha;
+      shown.steering =
+          previous.steering + (shown.steering - previous.steering) * alpha;
+      shown.travel = previous.travel + (shown.travel - previous.travel) * alpha;
+    }
     if (skidMarks && !vehicles.empty() && !paused) {
       const auto &geometry = vehicles[activeVehicle].geometry;
       size_t rear[2] = {0, 1};
@@ -1655,20 +1722,34 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           rear[1] = i;
       }
       const double speedNow = std::abs(shown.speed);
-      const double lateral = speedNow * speedNow *
-                             std::abs(std::tan(shown.steering)) /
-                             std::max(.5, sim.wheelbase());
-      const bool marking =
-          speedNow > 7 && (selectedInput.brake > .7 || lateral > 9);
-      // Launch smoke: hard throttle from near standstill (wheelspin is not
-      // simulated; authored trigger).
-      const bool launching =
-          !marking && selectedInput.throttle > .85 && speedNow < 8;
+      // Marks follow the simulated tyres: a wheel marks when it is on the road
+      // and slides (slip ratio or angle past the grip peak) or the car is near
+      // its measured lateral limit. ABS holds braking slip near .15, so hard
+      // braking keeps the authored pedal trigger.
+      const bool hardBraking = speedNow > 7 && selectedInput.brake > .7;
+      const double lateralLimit = std::abs(shown.accelerationLateral);
+      auto wheelMarking = [&](size_t index) {
+        const auto &state = shown.wheels[index];
+        return state.grounded && speedNow > 3 &&
+               (hardBraking || lateralLimit > 8 ||
+                std::abs(state.slipRatio) > .2 || std::abs(state.slipAngle) > .12);
+      };
       const double c = std::cos(shown.heading), sn = std::sin(shown.heading);
       for (int k = 0; k < 2; ++k) {
-        const auto &wheel = geometry.wheels[rear[size_t(k)]];
-        const double wx = shown.x + c * wheel.center.x + sn * wheel.center.z,
-                     wz = shown.z - sn * wheel.center.x + c * wheel.center.z;
+        const size_t index = rear[size_t(k)];
+        const auto &wheel = geometry.wheels[index];
+        const bool marking = wheelMarking(index);
+        // Launch smoke: hard throttle from near standstill. A launch at these
+        // settings spins the tyres only ~5%, so the trigger stays authored.
+        const bool launching = shown.wheels[index].grounded && !marking &&
+                               selectedInput.throttle > .85 && speedNow < 8;
+        const auto &contact = shown.wheels[index].contactPoint;
+        const double wx = shown.wheels[index].grounded
+                              ? contact.x
+                              : shown.x + c * wheel.center.x + sn * wheel.center.z,
+                     wz = shown.wheels[index].grounded
+                              ? contact.z
+                              : shown.z - sn * wheel.center.x + c * wheel.center.z;
         auto &track = skidTracks[k];
         if (marking && track.valid) {
           const double dx = wx - track.x, dz = wz - track.z,
@@ -1692,8 +1773,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         }
         if (marking)
           track.valid = true;
-        if ((marking || launching) && tyreSmoke && puffs.size() < 900) {
-          puffCarry[k] += dt * (launching ? 34.0 : 130.0);
+        if ((marking || launching) && tyreSmoke && puffs.size() < 260) {
+          // Light, short-lived tyre smoke: about half the earlier emission,
+          // puffs live ~0.6-0.9 s and stay low (they used to billow to 5 m
+          // wide over 1.5 s and hid the rear camera).
+          puffCarry[k] += dt * (launching ? 14.0 : 42.0);
           while (puffCarry[k] >= 1.0) {
             puffCarry[k] -= 1.0;
             ++puffCounter;
@@ -1710,11 +1794,11 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
             // (Juiced 2 names: smoke_tarmac / SKID_TARMAC emit at the contact
             // patch; parameters authored, not recovered constants).
             puffs.push_back(
-                {float(wx), .12f, float(wz),
-                 float(sn) * back * (launching ? .3f : 1.1f) + rnd(1) * 1.2f,
-                 .30f + rnd(2) * .30f,
-                 float(c) * back * (launching ? .3f : 1.1f) + rnd(3) * 1.2f, 0,
-                 1.5f + rnd(4) * .6f, (launching ? .38f : .60f) + rnd(5) * .18f,
+                {float(wx), .08f, float(wz),
+                 float(sn) * back * (launching ? .3f : 1.1f) + rnd(1) * 1.0f,
+                 .10f + rnd(2) * .12f,
+                 float(c) * back * (launching ? .3f : 1.1f) + rnd(3) * 1.0f, 0,
+                 .55f + rnd(4) * .25f, (launching ? .22f : .30f) + rnd(5) * .08f,
                  rnd(6) + (launching ? 2.f : 0.f), 0});
           }
         }
@@ -1787,30 +1871,112 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if (skidQuads.size() > 1400)
         skidQuads.erase(skidQuads.begin(), skidQuads.begin() + 400);
     }
+    // Contact frame for the shadow, tyre footprints and camera height. It is
+    // built from the simulation's own wheel contacts, not a fitted plane.
     std::optional<racer::surfaceFollow::GroundFrame> groundFrame;
-    if (groundIndex) {
-      groundFrame = racer::surfaceFollow::fit(
-          *groundIndex, vehicles[activeVehicle].geometry, shown.heading,
-          shown.x, shown.z, groundReference);
-      if (!groundFrame) {
-        diagnostics.event("surface_follow_uncovered",
-                          {{"frame", frameId},
-                           {"x", shown.x},
-                           {"z", shown.z},
-                           {"reference_y", groundReference}});
-        throw std::runtime_error("surface_follow_uncovered");
+    if (dynamicBody) {
+      racer::surfaceFollow::GroundFrame frame;
+      const auto &g = vehicles[activeVehicle].geometry;
+      const auto bodyUp = visual.bodyTransform();
+      double sumY = 0;
+      racer::GeometryPoint upSum;
+      int grounded = 0;
+      for (size_t i = 0; i < 4; ++i) {
+        const auto &w = visual.car.wheels[i];
+        auto &contact = frame.contacts[i];
+        if (w.grounded) {
+          contact.ground = w.contactPoint;
+          contact.hit.normal = w.contactNormal;
+          sumY += w.contactPoint.y;
+          upSum = {upSum.x + w.contactNormal.x, upSum.y + w.contactNormal.y,
+                   upSum.z + w.contactNormal.z};
+          ++grounded;
+        } else {
+          // A hanging wheel's footprint rests on the road below it.
+          const auto wheel = visual.wheelTransform(i, false);
+          const racer::GeometryPoint bottom{
+              wheel[12] - g.wheels[i].radius * bodyUp[4],
+              wheel[13] - g.wheels[i].radius * bodyUp[5],
+              wheel[14] - g.wheels[i].radius * bodyUp[6]};
+          contact.ground = bottom;
+          contact.hit.normal = {0, 1, 0};
+          if (groundIndex) {
+            if (const auto hit = groundIndex->sampleBelow(bottom.x, bottom.z,
+                                                          bottom.y + .3, 3)) {
+              contact.ground.y = hit->height;
+              contact.hit.normal = hit->normal;
+            }
+          } else {
+            contact.ground.y = 0;
+          }
+        }
+        contact.rendered = contact.ground;
+        contact.hit.height = contact.ground.y;
       }
-      groundReference = groundFrame->groundElevation;
+      frame.groundElevation = grounded ? sumY / grounded : groundReference;
+      frame.elevation = frame.groundElevation;
+      double ux = 0, uy = 1, uz = 0;
+      if (grounded) {
+        const double length = std::sqrt(upSum.x * upSum.x + upSum.y * upSum.y +
+                                        upSum.z * upSum.z);
+        if (length > 1e-9) {
+          ux = upSum.x / length;
+          uy = upSum.y / length;
+          uz = upSum.z / length;
+        }
+      }
+      // Ground-aligned frame (right, up, forward): used by the contact shadow.
+      const double sh = std::sin(shown.heading), ch = std::cos(shown.heading);
+      double fx = sh, fy = -(ux * sh + uz * ch) / uy, fz = ch;
+      const double fl = std::sqrt(fx * fx + fy * fy + fz * fz);
+      fx /= fl; fy /= fl; fz /= fl;
+      const double rx = uy * fz - uz * fy, ry = uz * fx - ux * fz,
+                   rz = ux * fy - uy * fx;
+      frame.body = {float(rx), float(ry), float(rz), 0,
+                    float(ux), float(uy), float(uz), 0,
+                    float(fx), float(fy), float(fz), 0,
+                    float(shown.x), float(frame.groundElevation), float(shown.z), 1};
+      groundFrame = frame;
+      groundReference = frame.groundElevation;
     }
     const double bodyElevation = groundFrame ? groundFrame->elevation : 0;
     auto bodyMatrix = [&](float *output) {
-      if (groundFrame)
-        std::copy(groundFrame->body.begin(), groundFrame->body.end(), output);
-      else
+      if (dynamicBody) {
+        const auto body = visual.bodyTransform();
+        std::copy(body.begin(), body.end(), output);
+      } else
         racer::worldTransform(output, shown.heading, shown.x, shown.z);
     };
     auto wheelMatrix = [&](float *output, size_t index, bool rolling = true,
                            double extraSpin = 0) {
+      if (dynamicBody) {
+        // Suspension travel, steering (Ackermann) and spin come from the
+        // simulation. Extra spin only drives the motion-blur ghosts.
+        auto m = visual.wheelTransform(index, rolling);
+        if (extraSpin != 0 && rolling) {
+          const float c = float(std::cos(extraSpin)), sn = float(std::sin(extraSpin));
+          for (int r = 0; r < 3; ++r) {
+            const float up = m[4 + r], fwd = m[8 + r];
+            m[4 + r] = c * up + sn * fwd;
+            m[8 + r] = -sn * up + c * fwd;
+          }
+        }
+        const auto &state = visual.car.wheels[index];
+        // Exact contact: slide the wheel along the contact normal until its
+        // lowest rim vertex lies on the tangent plane at the physical contact.
+        if (graphics && index < 4 && !graphics->tyreRim[index].empty() &&
+            state.grounded) {
+          const auto placed = visual.wheelTransform(index, true);
+          const auto &n = state.contactNormal;
+          const double lowest = racer::tyreLowestAlongNormal(
+              graphics->tyreRim[index], placed.data(), n, state.contactPoint);
+          m[12] -= float(lowest * n.x);
+          m[13] -= float(lowest * n.y);
+          m[14] -= float(lowest * n.z);
+        }
+        std::copy(m.begin(), m.end(), output);
+        return;
+      }
       const auto &g = vehicles[activeVehicle].geometry;
       const auto spin =
           racer::wheelSpinAfterTravel(0, shown.travel, g.wheels[index].radius) +
@@ -1824,36 +1990,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                                     spin, true);
         lift = racer::tyreLowestY(graphics->tyreRim[index], local);
       }
-      if (groundFrame) {
-        racer::surfaceFollow::wheelMatrix(output, *groundFrame, g, index,
-                                          shown.steering, spin, rolling);
-        // Exact contact on the fitted surface: slide the wheel along the surface
-        // normal until its lowest rim vertex lies on the tangent plane at this
-        // wheel's ground contact.
-        if (graphics && index < 4 && !graphics->tyreRim[index].empty()) {
-          float placed[16];
-          racer::surfaceFollow::wheelMatrix(placed, *groundFrame, g, index,
-                                            shown.steering, spin, true);
-          const auto &contact = groundFrame->contacts[index];
-          const auto &n = contact.hit.normal;
-          double lowest = 1e9;
-          for (const auto &v : graphics->tyreRim[index]) {
-            const double px = placed[0] * v[0] + placed[4] * v[1] + placed[8] * v[2] + placed[12];
-            const double py = placed[1] * v[0] + placed[5] * v[1] + placed[9] * v[2] + placed[13];
-            const double pz = placed[2] * v[0] + placed[6] * v[1] + placed[10] * v[2] + placed[14];
-            lowest = std::min(lowest, n.x * (px - contact.ground.x) +
-                                          n.y * (py - contact.ground.y) +
-                                          n.z * (pz - contact.ground.z));
-          }
-          output[12] -= float(lowest * n.x);
-          output[13] -= float(lowest * n.y);
-          output[14] -= float(lowest * n.z);
-        }
-      } else {
-        racer::wheelRenderTransform(output, g, index, shown.heading, shown.x,
-                                    shown.z, shown.steering, spin, rolling);
-        output[13] -= lift;
-      }
+      // Prototype car (no imported vehicle): flat-world kinematic wheel.
+      racer::wheelRenderTransform(output, g, index, shown.heading, shown.x,
+                                  shown.z, shown.steering, spin, rolling);
+      output[13] -= lift;
     };
     double targetX = shown.x - std::sin(shown.heading) * cameraDistance(),
            targetZ = shown.z - std::cos(shown.heading) * cameraDistance();
@@ -2128,8 +2268,21 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       lookX -= rx * .85f;
       lookZ -= rz * .85f;
     }
+    // Chase camera aims by pitch, not at a point on the body: the eye looks
+    // `chasePitch` degrees below the horizon along the line to the car, so the
+    // horizon rides near mid-frame and the car sits in the lower third (the
+    // framing of the reference chase cameras, see the camera experiment). The
+    // other review views keep aiming at the body.
+    float lookY = float(bodyElevation + lookHeight());
+    if (cameraView == "rear" && !showroom && inspectionDistance <= 0 &&
+        scene != "scale") {
+      const double run = std::hypot(lookX - cameraX, lookZ - cameraZ);
+      lookY = float(cameraY - std::tan(chasePitch * 3.14159265358979323846 /
+                                       180.0) *
+                                  run);
+    }
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
-                  {lookX, float(bodyElevation + lookHeight()), lookZ});
+                  {lookX, lookY, lookZ});
     // Chase-camera field of view widens with speed (up to +12 degrees by ~48
     // m/s), smoothed so it never jumps; inspection and scale cameras keep their
     // fixed lens.
@@ -2911,7 +3064,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float t = p->age / p->life;
         const bool spark = p->kind == 2;
         const float size =
-            spark ? p->size * (1 - .5f * t) : p->size * (1 + 3.2f * t);
+            spark ? p->size * (1 - .5f * t)
+                  : std::min(p->size * (1 + 1.5f * t), .7f);
+        // Smoke never fills the view: a puff fades out as it nears the lens
+        // (fully gone inside 1.5 m, full strength beyond 5 m), so a cloud the
+        // camera drives through or sits in cannot cover the screen.
+        const float lensFade =
+            spark ? 1.f
+                  : std::clamp((float(std::sqrt(dist2(p))) - 1.5f) / 3.5f, 0.f,
+                               1.f);
         const float fade = spark ? (1 - t) * (1 - t)
                                  : std::min(1.f, t * 8.f) * (1 - t) * (1 - t);
         uint32_t a, color;
@@ -2924,9 +3085,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         } else {
           a = uint32_t(
               255 * std::clamp((p->seed > 3.f   ? .26f
-                                : p->seed > 1.f ? .42f
-                                                : .62f) *
-                                   fade,
+                                : p->seed > 1.f ? .22f
+                                                : .27f) *
+                                   fade * lensFade,
                                0.f,
                                1.f)); // seed>1 launch, seed>3 exhaust: thinner
           // Start-to-end colour ramp (MCLA exposes
@@ -2950,8 +3111,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float spin = p->seed * 6.2831853f + p->age * .35f,
                     sc = std::cos(spin), ss = std::sin(spin);
         for (int i = 0; i < 4; ++i) {
-          const float lift = size * .9f; // keep the quad above the road so it
-                                         // is not cut by the ground plane
+          // Keep the quad above the road so the ground plane does not cut it;
+          // smoke hugs the tarmac, exhaust wisps (seed > 3) keep the old lift.
+          const float lift = size * (p->kind == 1 ? .9f : .55f);
           const float qx = cx[i] * sc - cy[i] * ss,
                       qy = cx[i] * ss + cy[i] * sc;
           v[i] = Vertex{p->x + (rx * qx + ux * qy) * size,
@@ -3029,7 +3191,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     };
     if (!hideHud && flow.screen == racer::Screen::Drive) {
       racer::DriveState hud;
-      hud.mph = std::abs(sim.car.speed) * 2.236936;
+      hud.mph = sim.groundSpeed() * 2.236936; // true ground speed incl. sliding
       hud.reverse = sim.car.direction != 1;
       hud.heading = sim.car.heading;
       hud.carX = sim.car.x;
@@ -3071,7 +3233,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                          flow.session.measuringBraking();
         test.elapsed = flow.session.elapsed();
         test.distance = flow.session.distance();
-        test.speedKmh = std::abs(sim.car.speed) * 3.6;
+        test.speedKmh = sim.groundSpeed() * 3.6;
         if (r.kind == racer::TestKind::Handling) {
           const auto &gates = racer::handlingCourse().gates;
           const size_t i = flow.session.nextGate();

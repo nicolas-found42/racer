@@ -162,6 +162,7 @@ std::vector<std::string> PlayFlow::lines() const {
       for (const char *id : {"acceleration", "braking", "handling"}) {
         StoredResult query;
         query.carId=vehicleId;query.modelRevision=vehicleId=="prototype" ? 1 : 2;
+        query.testRevision=TestResult{}.testRevision; // Only results of the current benchmark revision compare.
         query.testId = id;
         query.setup = effectiveSetup(s);
         auto best = profile.best(query);

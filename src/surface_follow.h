@@ -1,5 +1,6 @@
 #pragma once
 #include "mesh_asset.h"
+#include "simulation.h"
 #include "vehicle_geometry.h"
 #include <algorithm>
 #include <array>
@@ -7,6 +8,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -20,6 +22,14 @@ struct Limits {
   double cellSize=8,maxCoordinate=20000;
   size_t maxTriangles=200000,maxCells=65536,maxReferences=2000000;
   size_t maxCellsPerTriangle=4096,maxReferencesPerCell=4096,maxInputTriangles=1000000,maxSections=16384;
+  // Include banked/graded driveable faces up to 60 degrees by default. The
+  // optional visual plane fit below retains its original, shallower limit.
+  double minimumNormalY=.5;
+  // Legacy imported meshes can have inconsistent winding. For a consistently
+  // outward/upward-wound collision mesh, set false to exclude downward-facing
+  // bridge/ceiling undersides from suspension support. This is not a volume
+  // collision index and cannot infer which side of a two-sided face is solid.
+  bool twoSided=true;
 };
 struct Hit { double height;GeometryPoint normal;uint32_t triangle; };
 namespace detail {
@@ -34,6 +44,7 @@ inline GeometryPoint transform(const Matrix& m,GeometryPoint p){return {m[0]*p.x
 inline void validate(const Limits& l){
   require(std::isfinite(l.cellSize)&&l.cellSize>=.25&&l.cellSize<=1024&&std::isfinite(l.maxCoordinate)&&l.maxCoordinate>0&&l.maxCoordinate<=1e7,"surface_grid_limits");
   require(l.maxTriangles&&l.maxTriangles<=1000000&&l.maxCells&&l.maxCells<=262144&&l.maxReferences&&l.maxReferences<=8000000&&l.maxCellsPerTriangle&&l.maxCellsPerTriangle<=65536&&l.maxReferencesPerCell&&l.maxReferencesPerCell<=65536&&l.maxInputTriangles&&l.maxInputTriangles<=2000000&&l.maxSections&&l.maxSections<=65536,"surface_resource_limits");
+  require(std::isfinite(l.minimumNormalY)&&l.minimumNormalY>=.1&&l.minimumNormalY<=1,"surface_normal_limit");
 }
 inline void validate(const Matrix& m){
   for(float v:m)require(std::isfinite(v),"surface_mount_finite");
@@ -54,6 +65,21 @@ class SurfaceIndex {
   size_t references_=0,input_=0,sections_=0,peakCellReferences_=0;
   explicit SurfaceIndex(Limits limits):limits_(limits){detail::validate(limits);}
   Cell cell(double x,double z)const{return {int32_t(std::floor(x/limits_.cellSize)),int32_t(std::floor(z/limits_.cellSize))};}
+  std::optional<Hit> sampleRange(double x,double z,double minimumY,double maximumY)const {
+    if(!std::isfinite(x)||!std::isfinite(z)||!std::isfinite(minimumY)||!std::isfinite(maximumY)||minimumY>maximumY||std::abs(x)>limits_.maxCoordinate||std::abs(z)>limits_.maxCoordinate)return {};
+    auto it=cells_.find(cell(x,z));if(it==cells_.end())return {};
+    std::optional<Hit> result;
+    for(auto id:it->second){const auto&t=triangles_[id];
+      if(x<std::min({t.ax,t.bx,t.cx})||x>std::max({t.ax,t.bx,t.cx})||z<std::min({t.az,t.bz,t.cz})||z>std::max({t.az,t.bz,t.cz}))continue;
+      const double a=((t.bz-t.cz)*(x-t.cx)+(t.cx-t.bx)*(z-t.cz))*t.invDen;
+      const double b=((t.cz-t.az)*(x-t.cx)+(t.ax-t.cx)*(z-t.cz))*t.invDen;
+      if(a< -1e-10||b< -1e-10||a+b>1+1e-10)continue;
+      const double y=t.ay+t.sx*(x-t.ax)+t.sz*(z-t.az);
+      if(!std::isfinite(y)||y<minimumY||y>maximumY)continue;
+      if(!result||y>result->height)result=Hit{y,*detail::unit({-t.sx,1,-t.sz}),id};
+    }
+    return result;
+  }
 public:
   class Builder;
   size_t triangleCount()const noexcept{return triangles_.size();}
@@ -66,19 +92,15 @@ public:
   // neighbor, last-pose or uncovered-plane extrapolation. Barycentric 1e-10
   // tolerance is for edge arithmetic only, within each exact closed face AABB.
   std::optional<Hit> sample(double x,double z,double referenceY,double window=.75)const {
-    if(!std::isfinite(x)||!std::isfinite(z)||!std::isfinite(referenceY)||!std::isfinite(window)||window<0||window>.75||std::abs(x)>limits_.maxCoordinate||std::abs(z)>limits_.maxCoordinate)return {};
-    auto it=cells_.find(cell(x,z));if(it==cells_.end())return {};
-    std::optional<Hit> result;
-    for(auto id:it->second){const auto&t=triangles_[id];
-      if(x<std::min({t.ax,t.bx,t.cx})||x>std::max({t.ax,t.bx,t.cx})||z<std::min({t.az,t.bz,t.cz})||z>std::max({t.az,t.bz,t.cz}))continue;
-      const double a=((t.bz-t.cz)*(x-t.cx)+(t.cx-t.bx)*(z-t.cz))*t.invDen;
-      const double b=((t.cz-t.az)*(x-t.cx)+(t.ax-t.cx)*(z-t.cz))*t.invDen;
-      if(a< -1e-10||b< -1e-10||a+b>1+1e-10)continue;
-      const double y=t.ay+t.sx*(x-t.ax)+t.sz*(z-t.az);
-      if(!std::isfinite(y)||y<referenceY-window||y>referenceY+window)continue;
-      if(!result||y>result->height)result=Hit{y,*detail::unit({-t.sx,1,-t.sz}),id};
-    }
-    return result;
+    if(!std::isfinite(referenceY)||!std::isfinite(window)||window<0||window>.75)return {};
+    return sampleRange(x,z,referenceY-window,referenceY+window);
+  }
+  // A bounded downward suspension query. Each wheel queries independently;
+  // a missing hit means no support, including holes and edges. Never select a
+  // bridge/ceiling above the ray origin or a lower deck outside suspension reach.
+  std::optional<Hit> sampleBelow(double x,double z,double maxHeight,double maxDrop)const {
+    if(!std::isfinite(maxHeight)||!std::isfinite(maxDrop)||maxDrop<0)return {};
+    return sampleRange(x,z,maxHeight-maxDrop,maxHeight);
   }
 };
 
@@ -105,7 +127,7 @@ public:
         std::array<GeometryPoint,3> p;
         for(size_t j=0;j<3;++j){const auto& v=asset.triangles[i+j];p[j]=detail::transform(mount,{v.x,v.y,v.z});detail::require(detail::finite(p[j])&&std::max({std::abs(p[j].x),std::abs(p[j].y),std::abs(p[j].z)})<=l.maxCoordinate,"surface_position_bounds");}
         auto u=detail::plus(p[1],detail::times(p[0],-1)),v=detail::plus(p[2],detail::times(p[0],-1));const auto normal=detail::unit(detail::cross(u,v));
-        if(!normal||std::abs(normal->y)<=.9)continue;
+        if(!normal||(l.twoSided?std::abs(normal->y):normal->y)<l.minimumNormalY)continue;
         const double den=(p[1].z-p[2].z)*(p[0].x-p[2].x)+(p[2].x-p[1].x)*(p[0].z-p[2].z);
         if(std::abs(den)<1e-12)continue;
         detail::require(index_.triangles_.size()+pending.size()<l.maxTriangles,"surface_triangle_budget");
@@ -135,6 +157,22 @@ public:
 struct MountedMesh {const MeshAsset* asset;Matrix mount=identity;};
 inline SurfaceIndex build(std::span<const MountedMesh> meshes,Limits limits={}){
   SurfaceIndex::Builder builder(limits);for(const auto& m:meshes){detail::require(m.asset,"surface_null_mesh");builder.add(*m.asset,m.mount);}return builder.finish();
+}
+
+// Own the index for as long as the simulation callback exists. Friction and
+// rollingResistance are multipliers on the vehicle's calibrated tyre settings.
+// An empty mesh hit is deliberately not replaced by an infinite ground plane.
+inline RoadSampler makeRoadSampler(std::shared_ptr<const SurfaceIndex> index,
+                                   double friction=1,double rollingResistance=1){
+  detail::require(index&&std::isfinite(friction)&&friction>=0&&friction<=4&&
+                  std::isfinite(rollingResistance)&&rollingResistance>=0&&rollingResistance<=10,
+                  "surface_road_sampler");
+  return [index=std::move(index),friction,rollingResistance](double x,double z,double maxHeight,double maxDrop)
+      ->std::optional<RoadSample>{
+    const auto hit=index->sampleBelow(x,z,maxHeight,maxDrop);
+    if(!hit)return {};
+    return RoadSample{hit->height,hit->normal,friction,rollingResistance};
+  };
 }
 
 struct WheelContact {GeometryPoint ground,rendered;Hit hit;double error;};
@@ -184,11 +222,24 @@ inline std::optional<GroundFrame> fit(const SurfaceIndex& index,const VehicleGeo
   if(frame.maxFitError>options.maxFitError)return {};
   return frame;
 }
+// Chassis pose that rests the four wheel bottoms on the road under (x,z): origin
+// height plus pitch (nose up positive) and roll (right side down positive), in the
+// simulation's conventions. Teleporting a car with pitch=roll=0 onto a slope leaves
+// the uphill wheels above their suspension query band, so the car is wedged into the
+// road; use this for resets and test starts. Empty when the road is uncovered or
+// steeper than the visual fit accepts (the caller then keeps its flat placement).
+struct RestingPose {double y,pitch,roll;};
+inline std::optional<RestingPose> restingPose(const SurfaceIndex& index,const VehicleGeometry& geometry,double heading,double x,double z,double referenceY){
+  const auto frame=fit(index,geometry,heading,x,z,referenceY);
+  if(!frame)return {};
+  const auto& m=frame->body; // columns: right (0-2), up (4-6), forward (8-10)
+  return RestingPose{frame->elevation,std::atan2(double(m[9]),std::hypot(double(m[8]),double(m[10]))),std::atan2(-double(m[1]),double(m[5]))};
+}
 // Local Y is the receiver normal; caller vertices supply the small offset.
 // Unlike the vehicle body plane, this plane belongs to this tire's actual hit.
 inline Matrix footprintMatrix(GeometryPoint ground,GeometryPoint normal,double heading,double halfWidth,double halfLength){
   detail::require(detail::finite(ground)&&detail::finite(normal)&&std::isfinite(heading)&&std::isfinite(halfWidth)&&halfWidth>0&&std::isfinite(halfLength)&&halfLength>0,"surface_footprint_pose");
-  const auto up=detail::unit(normal);detail::require(up&&up->y>.9,"surface_footprint_normal");
+  const auto up=detail::unit(normal);detail::require(up&&up->y>=.1,"surface_footprint_normal");
   const double sh=std::sin(heading),ch=std::cos(heading);
   const auto forward=detail::unit({sh,(-up->x*sh-up->z*ch)/up->y,ch});
   const auto right=detail::cross(*up,*forward);

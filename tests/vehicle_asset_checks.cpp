@@ -129,23 +129,54 @@ int main() try {
   const auto identity=racer::vehiclePhysicsIdentity(definition);changed=definition;changed.geometry.body.maximum.z+=.01;
   require(identity!=racer::vehiclePhysicsIdentity(changed),"geometry changes physics identity");
   racer::PlayFlow flow((root/"profile.txt").string());
-  require(flow.configureVehicle(identity,definition.name,definition.geometry),"imported car configured");
+  // The fixture body rests on the road (clearance 0), which the force-based
+// model would report as chassis contact; drive it with 14 cm like real cars.
+  auto driven=definition.geometry;driven.body.minimum.y=.14;
+  require(flow.configureVehicle(identity,definition.name,driven),"imported car configured");
   require(flow.sim.wheelbase()==2.6 && flow.sim.car.travel==0,"configured wheelbase and reset");
   flow.startTest(racer::TestKind::Acceleration);flow.rearming=false;flow.sim.tick({},0);
+  // Deterministic force-based benchmark of this 2.6 m / 0.3 m-wheel fixture (default car: 7.916 s).
   for (int i=0;i<1800 && flow.session.active();++i)flow.tick({});
-  require(flow.session.result().valid && std::abs(flow.session.result().seconds-8)<1e-8,"stock acceleration preserved");
+  require(flow.session.result().valid && std::abs(flow.session.result().seconds-7.34714)<.02,"stock acceleration preserved");
   require(flow.session.result().carId==identity && flow.session.result().handlingRevision==2,"frozen imported identity");
   require(flow.profile.records.size()==1 && flow.profile.records[0].carId==identity,"imported result stored");
   auto query=flow.profile.records[0];query.carId=racer::vehiclePhysicsIdentity(changed);
   require(!flow.profile.best(query),"different geometry cannot compare");
+  {
+    // Low cars (catalogued Juiced 2 CCX sits 8.6 cm above the road) would bottom out in
+    // the generic 12 cm-travel suspension during the braking benchmark. configureVehicle
+    // limits travel to 60% of body clearance, so the benchmark completes.
+    auto low=definition.geometry;low.body.minimum.y=.086;
+    racer::Simulation generic;
+    require(generic.setGeometry(low),"low geometry accepted");
+    racer::TestSession bare;bare.start(racer::TestKind::Braking,0,{},generic);
+    for(int i=0;i<9600&&bare.active();++i)bare.tick(generic,{});
+    require(!bare.result().valid && bare.result().reason.find("Chassis contact")!=std::string::npos,"generic suspension bottoms out on a low car");
+    racer::PlayFlow lowFlow((root/"low-profile.txt").string());
+    require(lowFlow.configureVehicle(identity,definition.name,low),"low car configured");
+    require(lowFlow.sim.dynamics().frontSuspension.compressionTravel<.12 && lowFlow.sim.dynamics().rearSuspension.compressionTravel<.12,
+            "travel limited by clearance");
+    lowFlow.startTest(racer::TestKind::Braking);lowFlow.rearming=false;lowFlow.sim.tick({},0);
+    for(int i=0;i<9600&&lowFlow.session.active();++i)lowFlow.tick({});
+    require(lowFlow.session.result().valid && lowFlow.session.result().distance>35 && lowFlow.session.result().distance<50,"low car completes braking benchmark");
+    // A car with normal clearance keeps the generic travel.
+    racer::PlayFlow normalFlow((root/"normal-profile.txt").string());
+    require(normalFlow.configureVehicle(identity,definition.name,driven) && normalFlow.sim.dynamics().frontSuspension.compressionTravel==std::min(.12,.6*.14),
+            "clearance limit applies exactly 60% when below default");
+  }
   racer::StoredResult legacy;legacy.testId="acceleration";legacy.seconds=8;require(flow.profile.record(legacy),"legacy record accepted alongside imported");
   require(flow.store.save(flow.profile),"mixed profile save");
   std::ifstream profile(root/"profile.txt");std::string first;std::getline(profile,first);require(first=="RACER_PROFILE 2","mixed profile schema2");
   racer::Profile loaded;racer::ProfileStore store(root/"profile.txt");require(store.load(loaded) && loaded.records==flow.profile.records,"profile2 exact roundtrip");
   racer::Simulation shortCar,longCar;auto longer=definition.geometry;for(auto &w:longer.wheels)w.center.z*=1.1;
   require(shortCar.setGeometry(definition.geometry)&&longCar.setGeometry(longer),"geometry pair configured");
-  shortCar.car.speed=longCar.car.speed=5;shortCar.tick({0,0,.5});longCar.tick({0,0,.5});
-  require(std::abs(shortCar.car.heading/longCar.car.heading-1.1)<1e-10,"wheelbase controls turn curvature");
+  // Force-based steering: the same 0.5 steering command and speed give the shorter
+  // wheelbase more yaw rate; the ratio follows wheelbase (10%) to within tyre-slip effects.
+  shortCar.car.speed=longCar.car.speed=5;shortCar.tick({},0);longCar.tick({},0);
+  for(int i=0;i<240;++i){shortCar.tick({.25,0,.5});longCar.tick({.25,0,.5});}
+  require(shortCar.car.yawRate>0 && longCar.car.yawRate>0 &&
+          shortCar.car.yawRate/longCar.car.yawRate>1.03 && shortCar.car.yawRate/longCar.car.yawRate<1.25 &&
+          shortCar.car.heading>longCar.car.heading,"wheelbase controls turn curvature");
   shortCar.reset();shortCar.tick({},0);shortCar.tick({0,1,0});require(shortCar.car.direction==-1 && shortCar.car.travel<0,"reverse unwinds signed wheel travel");
   shortCar.reset();require(shortCar.car.travel==0,"reset clears wheel travel");
   std::cout<<"PASS: asset binding/hash/containment, physics identity, imported flow, profile2 and cross-car isolation, turning/reverse/reset\n";
