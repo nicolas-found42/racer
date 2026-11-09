@@ -79,4 +79,4 @@ Keep `vehicle-physics-patches/` (canonical input; tracked in git since commit `2
 
 ## Next action
 
-Drive it by hand (keyboard or gamepad) in the default city and on a `--world-mesh --follow-ground` slope; decide the reverse-speed limit and whether 5° chase pitch and the light smoke feel right (`--camera-pitch` to try others); then merge the `feat/vehicle-physics` PR (source, tests and evidence are committed there).
+Drive it by hand (keyboard or gamepad) in the default city and on a `--world-mesh --follow-ground` slope; decide the reverse-speed limit and whether 5° chase pitch and the light smoke feel right (`--camera-pitch` to try others). The `feat/vehicle-physics` PR is merged (patch series via PR #4, part-throttle stall fix via PR #5, merge `9e46a69`); the analog-trigger hand drive is the one remaining unexecuted acceptance step.
