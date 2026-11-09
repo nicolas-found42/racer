@@ -1796,10 +1796,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     if (showroom) {
       constexpr double pi = 3.14159265358979323846;
       const double angle = shown.heading + pi * .78 + elapsed * .22;
-      const double radius = std::max(9.0, cameraDistance() * 1.2);
+      const double radius = std::max(6.9, cameraDistance() * .9);
       targetX = shown.x + std::sin(angle) * radius;
       targetZ = shown.z + std::cos(angle) * radius;
-      cameraY = bodyElevation + 2.3;
+      cameraY = bodyElevation + 1.75;
     }
     double blend = 1 - std::exp(-8 * dt);
     cameraX += (targetX - cameraX) * blend;
@@ -2015,8 +2015,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const float fx = lookX - float(cameraX), fz = lookZ - float(cameraZ);
       const float len = std::max(1e-3f, std::hypot(fx, fz));
       const float rx = fz / len, rz = -fx / len; // camera right in the ground plane
-      lookX -= rx * 1.7f;
-      lookZ -= rz * 1.7f;
+      lookX -= rx * .85f;
+      lookZ -= rz * .85f;
     }
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
                   {lookX, float(bodyElevation + lookHeight()), lookZ});
