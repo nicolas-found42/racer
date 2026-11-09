@@ -42,6 +42,7 @@ struct RendererLifetime {
 #include "mesh_asset.h"
 #include "post_process.h"
 #include "scene_reflection.h"
+#include "tyre_contact.h"
 #include "static_texture_pool.h"
 #include "street_detail.h"
 #include "surface_follow.h"
@@ -61,6 +62,7 @@ struct CarGraphics {
   // Outer-rim vertices of each rolling wheel mesh (wheel-local, pivot-centred),
   // used to find the true lowest tyre point for the showroom floor contact.
   std::array<std::vector<std::array<float, 3>>, 4> tyreRim;
+  std::array<float, 4> tyreReach{};
   ~CarGraphics() {
     if (bgfx::isValid(vertices))
       bgfx::destroy(vertices);
@@ -70,21 +72,10 @@ struct CarGraphics {
 };
 using Vertex = racer::AssetVertex;
 void fillTyreRim(CarGraphics &graphics, const racer::MeshAsset &asset) {
-  for (auto &rim : graphics.tyreRim)
-    rim.clear();
-  for (const auto &section : asset.sections) {
-    if (section.wheel < 0 || section.wheel >= 4 || !section.rolling)
-      continue;
-    float radial = 0;
-    for (uint32_t i = 0; i < section.count; ++i) {
-      const auto &v = asset.triangles[section.first + i];
-      radial = std::max(radial, std::hypot(v.y, v.z));
-    }
-    for (uint32_t i = 0; i < section.count; ++i) {
-      const auto &v = asset.triangles[section.first + i];
-      if (std::hypot(v.y, v.z) >= .9f * radial)
-        graphics.tyreRim[size_t(section.wheel)].push_back({v.x, v.y, v.z});
-    }
+  for (int wheel = 0; wheel < 4; ++wheel) {
+    const float reach = racer::tyreRadialReach(asset, wheel);
+    graphics.tyreReach[size_t(wheel)] = reach;
+    graphics.tyreRim[size_t(wheel)] = racer::tyreRimVertices(asset, wheel, reach);
   }
 }
 using Mesh = std::vector<Vertex>;
@@ -1829,9 +1820,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if (groundFrame)
         racer::surfaceFollow::wheelMatrix(output, *groundFrame, g, index,
                                           shown.steering, spin, rolling);
-      else
+      else {
         racer::wheelRenderTransform(output, g, index, shown.heading, shown.x,
                                     shown.z, shown.steering, spin, rolling);
+        // Put the real lowest tyre point on the road (flat y=0) instead of
+        // trusting the authored centre height.
+        if (graphics && index < 4)
+          output[13] -= float(
+              racer::tyreContactLift(g, index, graphics->tyreReach[index]));
+      }
     };
     double targetX = shown.x - std::sin(shown.heading) * cameraDistance(),
            targetZ = shown.z - std::cos(shown.heading) * cameraDistance();
