@@ -11,7 +11,7 @@
   - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/homebrew && cmake --build build -j 8; ctest --test-dir build -j 6`
   - `./build/racer --verify-controls --profile /tmp/racer-vc-new/profile.txt`, `--verify-garage keyboard|gamepad --profile …`, `--smoke 14 --benchmark --autodrive`
 - Limits before running: builds ≤ a few minutes, ctest ≈ 7 s, each live check ≤ 150 s timeout; no large outputs (381 GiB free, `build/` is ignored). Isolated profiles under `/tmp` so the real profile was not written (its files keep their 2026-11-06/09 mtimes).
-- Output location: `build/` (ignored), the source/test edits in the working tree (not committed), and `evidence/` (contact sheets, scripts, generated ramp mesh, about 1.4 MB).
+- Output location: `build/` (ignored), the source/test edits in the working tree (uncommitted at evidence time; now committed on `feat/vehicle-physics`), and `evidence/` (contact sheets, scripts, generated ramp mesh, about 1.4 MB).
 - Started/finished and exit result: 2026-11-09; all checks exit 0 (final run below).
 
 ## Observations and evidence
@@ -41,7 +41,7 @@
 
 ## Renderer wiring and multi-car verification (user request: several cars, several angles, screenshots)
 
-Changes (all in the working tree, uncommitted): `src/main.cpp` (road sampler from the loaded `SurfaceIndex`, `placeOnGround` teleport placement, per-frame `Simulation visual` copy advanced by the leftover frame time so the car is drawn from `bodyTransform()`/`wheelTransform()` at any refresh rate, contact frame for shadow/footprints/camera from the simulation's wheel contacts, skid marks and smoke from simulated tyre slip, HUD speed from `groundSpeed()`; the fitted-plane `fit()` path and its `surface_follow_uncovered` abort are gone from the drive view, the flat kinematic path stays for the prototype car), `src/vehicle_tuning.h` (new), `src/tyre_contact.h` (`tyreLowestAlongNormal`), `src/surface_follow.h` (`restingPose`).
+Changes (uncommitted at evidence time; now committed on `feat/vehicle-physics`): `src/main.cpp` (road sampler from the loaded `SurfaceIndex`, `placeOnGround` teleport placement, per-frame `Simulation visual` copy advanced by the leftover frame time so the car is drawn from `bodyTransform()`/`wheelTransform()` at any refresh rate, contact frame for shadow/footprints/camera from the simulation's wheel contacts, skid marks and smoke from simulated tyre slip, HUD speed from `groundSpeed()`; the fitted-plane `fit()` path and its `surface_follow_uncovered` abort are gone from the drive view, the flat kinematic path stays for the prototype car), `src/vehicle_tuning.h` (new), `src/tyre_contact.h` (`tyreLowestAlongNormal`), `src/surface_follow.h` (`restingPose`).
 
 Defects found by the multi-car checks and fixed:
 - **Low cars scraped in the cornering handling course** (Juiced 2 CCX, 8.6 cm): a travel cap alone is not enough because load transfer overruns the bump stop. `dynamicsFor` now also scales spring and anti-roll rates by the travel reduction (damping by its square root). All 29 cars then complete acceleration, braking and the driven handling course (0-100 7.16–7.94 s, 100-0 40.6–41.8 m).
@@ -61,7 +61,7 @@ Jev `jev_gate` on the renderer diff: `escalate`, 0 contradicted, 3 verified at a
 
 ## Chase camera and tyre smoke retune
 
-Question: the default chase camera looked down too steeply and tyre smoke filled the screen. Target: `build/racer` from this working tree (uncommitted `src/main.cpp`), pre-change binary kept for comparison.
+Question: the default chase camera looked down too steeply and tyre smoke filled the screen. Target: `build/racer` from this working tree (then-uncommitted `src/main.cpp`, now committed), pre-change binary kept for comparison.
 
 References looked up (web search, then the images viewed in the browser pane; third-party frames are not stored here): Assetto Corsa chase presets that mimic other games give camera pitch below the horizon of 3.4° (Gran Turismo-style, 2.8 m back, 1.3 m up), 7° near and 10° far (Forza Motorsport 7-style, 3.5/1.8 m and 4/2.5 m), 3° (Forza Horizon-style, 4.9 m, 1.58 m), and AC's own default of 0.2° far and 14° near. Frames viewed for Forza Horizon 5, Gran Turismo 7, NFS Heat, Burnout Paradise and Juiced 2 (eyeballed, not measured) put the horizon near 40–45% from the top with the car in the lower middle; Juiced 2 sits more elevated. These are community approximations of the games' cameras, not recovered constants.
 
