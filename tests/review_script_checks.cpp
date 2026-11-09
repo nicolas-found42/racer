@@ -7,7 +7,7 @@ int main() {
            std::pair{"accept", SDLK_RETURN}, std::pair{"back", SDLK_ESCAPE},
            std::pair{"right", SDLK_RIGHT}, std::pair{"left", SDLK_LEFT},
            std::pair{"up", SDLK_UP}, std::pair{"down", SDLK_DOWN},
-           std::pair{"reset", SDLK_R}})
+           std::pair{"reset", SDLK_R}, std::pair{"accent", SDLK_H}})
     okay &= ReviewScript::keyCode(name) == expected;
   // The actual failed reload used "confirm" and silently selected Down.
   // Unsupported input must fail before an SDL event can be submitted.

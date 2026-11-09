@@ -198,6 +198,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bool postNeutral = false;
   bool hideHud = false, followGround = false, hideGuides = false;
   int hudAccent = 0;
+  bool hudAccentExplicit = false;
   int windowWidth = 1920, windowHeight = 1080;
   // Prefer the sixteen-tile RCRSURF4 atlas (window grids, sign sheets, shop
   // glazing), then the eight-tile RCRSURF3 file, then the four-tile one;
@@ -274,6 +275,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const std::string value = argv[++i];
       const char *names[] = {"cyan", "green", "violet", "magenta", "ice"};
       hudAccent = -1;
+      hudAccentExplicit = true;
       for (int k = 0; k < 5; ++k)
         if (value == names[k]) hudAccent = k;
       if (hudAccent < 0) {
@@ -532,6 +534,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   }
   lifetime.ready = true;
   racer::DriveHud driveHud;
+  // The accent is a display preference kept beside the profile (`<profile>.hud`),
+  // so it never touches the career schema. --hud-accent overrides it for the run.
+  const std::string accentPath = profilePath + ".hud";
+  if (!hudAccentExplicit) {
+    std::ifstream in(accentPath);
+    int saved = 0;
+    if (in >> saved && saved >= 0 && saved < racer::DriveHud::accentCount)
+      hudAccent = saved;
+  }
   driveHud.setAccent(hudAccent);
   std::cout << "Renderer: " << bgfx::getRendererName(bgfx::getRendererType())
             << " | " << width << 'x' << height << '\n';
@@ -1425,7 +1436,12 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           flow.action(Action::Map);
           break;
         case SDLK_H:
-          driveHud.cycleAccent(); // session-only HUD colour
+          driveHud.cycleAccent();
+          {
+            // Best effort: a failed write only loses the preference.
+            std::ofstream out(accentPath, std::ios::trunc);
+            if (out) out << driveHud.accentIndex() << '\n';
+          }
           break;
         default:
           break;
