@@ -42,6 +42,7 @@ struct RendererLifetime {
 #include "mesh_asset.h"
 #include "post_process.h"
 #include "scene_reflection.h"
+#include "tyre_contact.h"
 #include "static_texture_pool.h"
 #include "street_detail.h"
 #include "surface_follow.h"
@@ -58,6 +59,9 @@ struct CarGraphics {
   bgfx::VertexBufferHandle overlay = BGFX_INVALID_HANDLE;
   std::vector<racer::TextureRef> textures;
   std::vector<racer::AssetSection> sections;
+  // Outer-rim vertices of each rolling wheel mesh (wheel-local, pivot-centred),
+  // used to find the true lowest tyre point for the showroom floor contact.
+  std::array<std::vector<std::array<float, 3>>, 4> tyreRim;
   ~CarGraphics() {
     if (bgfx::isValid(vertices))
       bgfx::destroy(vertices);
@@ -66,6 +70,12 @@ struct CarGraphics {
   }
 };
 using Vertex = racer::AssetVertex;
+void fillTyreRim(CarGraphics &graphics, const racer::MeshAsset &asset) {
+  for (int wheel = 0; wheel < 4; ++wheel) {
+    const float reach = racer::tyreRadialReach(asset, wheel);
+    graphics.tyreRim[size_t(wheel)] = racer::tyreRimVertices(asset, wheel, reach);
+  }
+}
 using Mesh = std::vector<Vertex>;
 void box(Mesh &m, float x, float y, float z, float sx, float sy, float sz,
          uint32_t c, float surface = 0) {
@@ -137,7 +147,7 @@ Mesh buildStudio() {
   constexpr float radius = 14.f;
   const uint32_t floorIn = packRgb(.62f, .66f, .74f), floorOut = packRgb(.11f, .12f, .15f);
   for (int i = 0; i < 14; ++i)
-    annulus(m, float(i), float(i + 1), .03f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
+    annulus(m, float(i), float(i + 1), -.0030f, lerpRgb(floorIn, floorOut, std::pow(float(i) / 13.f, .6f)));
   const float ys[] = {0.f, 1.2f, 3.5f, 6.f, 9.f};
   const uint32_t cs[] = {packRgb(.10f, .11f, .14f), packRgb(.30f, .33f, .40f), packRgb(.56f, .62f, .72f),
                          packRgb(.26f, .29f, .36f), packRgb(.07f, .08f, .10f)};
@@ -169,10 +179,10 @@ Mesh buildFloorGloss() {
   for (int i = 0; i < steps; ++i) {
     const float r0 = 9.f * float(i) / steps, r1 = 9.f * float(i + 1) / steps;
     const float f = std::pow(1.f - (r0 + r1) * .5f / 9.f, 2.2f);
-    annulus(m, r0, r1, .04f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
+    annulus(m, r0, r1, -.0025f, withAlpha(packRgb(.80f, .88f, 1.f), .34f * f));
   }
-  annulus(m, 4.35f, 4.5f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
-  annulus(m, 6.9f, 7.0f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
+  annulus(m, 4.35f, 4.5f, -.0024f, withAlpha(packRgb(.55f, .90f, 1.f), .28f));
+  annulus(m, 6.9f, 7.0f, -.0024f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
   return m;
 }
 // Translucent plate-coloured disc drawn over the mirrored car so the floor
@@ -184,7 +194,7 @@ Mesh buildReflectionVeil() {
   };
   constexpr int steps = 28;
   for (int i = 0; i < steps; ++i)
-    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, .052f,
+    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, -.0015f,
             withAlpha(lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
                               std::pow(float(i) / 27.f * (3.4f / 3.9f), 1.3f)),
                       .80f + .15f * float(i) / (steps - 1)));
@@ -846,6 +856,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       groundBuilder->add(asset, worldMount);
     auto candidate = std::make_unique<CarGraphics>();
     candidate->sections = asset.sections;
+    fillTyreRim(*candidate, asset);
     try {
       candidate->textures = staticTextures.acquire(asset.images);
     } catch (const racer::StaticTexturePool::BudgetError &error) {
@@ -1010,6 +1021,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       context.stage = racer::AssetLoadStage::Upload;
       auto candidate = std::make_unique<CarGraphics>();
       candidate->sections = asset.sections;
+      fillTyreRim(*candidate, asset);
       for (const auto &image : asset.images) {
         candidate->textures.push_back(
             racer::ownedAssetTexture(image, racer::uploadAssetTexture));
@@ -1203,6 +1215,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         auto asset = racer::loadVehicleAsset(vehicles[index], &parkedContext);
         auto candidate = std::make_unique<CarGraphics>();
         candidate->sections = asset.sections;
+        fillTyreRim(*candidate, asset);
         for (const auto &image : asset.images)
           candidate->textures.push_back(
               racer::ownedAssetTexture(image, racer::uploadAssetTexture));
@@ -1264,17 +1277,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   auto reflectionVeilBuffer = bgfx::createVertexBuffer(
       bgfx::copy(reflectionVeil.data(), uint32_t(reflectionVeil.size() * sizeof(Vertex))), layout);
   Mesh shadowBlob;
-  ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
+  ellipse(shadowBlob, 1.15f, 2.35f, -.0001f, packRgb(.01f, .012f, .016f));
   auto shadowBlobBuffer = bgfx::createVertexBuffer(
       bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
   Mesh turntable;
   // Lit slate plate: lighter at the centre so dark paint separates from it.
   for (int i = 0; i < 28; ++i)
-    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, .05f,
+    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, -.0010f,
             lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
                     std::pow(float(i) / 27.f, 1.3f)));
-  annulus(turntable, 3.55f, 3.72f, .06f, 0xffebdb57);    // cyan rim (ABGR)
-  annulus(turntable, 3.86f, 3.92f, .06f, 0xff4db8ff);    // amber outer hairline
+  annulus(turntable, 3.55f, 3.72f, -.0005f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, -.0005f, 0xff4db8ff);    // amber outer hairline
   auto turntableBuffer = bgfx::createVertexBuffer(
       bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
@@ -1802,12 +1815,45 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const auto spin =
           racer::wheelSpinAfterTravel(0, shown.travel, g.wheels[index].radius) +
           extraSpin;
-      if (groundFrame)
+      // Exact contact: the lowest rim vertex of this wheel at this spin (local
+      // frame; flat-world Y equals local Y) is moved onto the ground plane.
+      float lift = 0;
+      if (graphics && index < 4 && !graphics->tyreRim[index].empty()) {
+        float local[16];
+        racer::wheelRenderTransform(local, g, index, 0, 0, 0, shown.steering,
+                                    spin, true);
+        lift = racer::tyreLowestY(graphics->tyreRim[index], local);
+      }
+      if (groundFrame) {
         racer::surfaceFollow::wheelMatrix(output, *groundFrame, g, index,
                                           shown.steering, spin, rolling);
-      else
+        // Exact contact on the fitted surface: slide the wheel along the surface
+        // normal until its lowest rim vertex lies on the tangent plane at this
+        // wheel's ground contact.
+        if (graphics && index < 4 && !graphics->tyreRim[index].empty()) {
+          float placed[16];
+          racer::surfaceFollow::wheelMatrix(placed, *groundFrame, g, index,
+                                            shown.steering, spin, true);
+          const auto &contact = groundFrame->contacts[index];
+          const auto &n = contact.hit.normal;
+          double lowest = 1e9;
+          for (const auto &v : graphics->tyreRim[index]) {
+            const double px = placed[0] * v[0] + placed[4] * v[1] + placed[8] * v[2] + placed[12];
+            const double py = placed[1] * v[0] + placed[5] * v[1] + placed[9] * v[2] + placed[13];
+            const double pz = placed[2] * v[0] + placed[6] * v[1] + placed[10] * v[2] + placed[14];
+            lowest = std::min(lowest, n.x * (px - contact.ground.x) +
+                                          n.y * (py - contact.ground.y) +
+                                          n.z * (pz - contact.ground.z));
+          }
+          output[12] -= float(lowest * n.x);
+          output[13] -= float(lowest * n.y);
+          output[14] -= float(lowest * n.z);
+        }
+      } else {
         racer::wheelRenderTransform(output, g, index, shown.heading, shown.x,
                                     shown.z, shown.steering, spin, rolling);
+        output[13] -= lift;
+      }
     };
     double targetX = shown.x - std::sin(shown.heading) * cameraDistance(),
            targetZ = shown.z - std::cos(shown.heading) * cameraDistance();
@@ -1827,6 +1873,32 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     const bool showroom = flow.screen != racer::Screen::Drive &&
                           flow.screen != racer::Screen::Pause &&
                           inspectionDistance <= 0 && scene != "scale";
+    // Showroom stage plane: the lowest point of any tyre mesh of the shown car,
+    // taken from the real wheel matrices. Each wheel is then shifted down onto
+    // that plane (a few cars author some tyres up to 5 mm higher), and every
+    // stage layer is modelled 0.1-3 mm below it, so no floor layer depth-hides a
+    // tyre and no tyre hovers.
+    float showroomStageY = 0;
+    float showroomWheelDrop[4] = {0, 0, 0, 0};
+    if (showroom && !vehicles.empty() && graphics) {
+      float bottoms[4];
+      float lowest = 1e9f;
+      for (size_t i = 0; i < 4; ++i) {
+        float m[16];
+        wheelMatrix(m, i, true);
+        float b = 1e9f;
+        for (const auto &v : graphics->tyreRim[i])
+          b = std::min(b, m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13]);
+        if (b > 1e8f)
+          b = float(vehicles[activeVehicle].geometry.wheels[i].center.y -
+                    vehicles[activeVehicle].geometry.wheels[i].radius);
+        bottoms[i] = b;
+        lowest = std::min(lowest, b);
+      }
+      showroomStageY = lowest;
+      for (size_t i = 0; i < 4; ++i)
+        showroomWheelDrop[i] = bottoms[i] - lowest;
+    }
     if (showroom) {
       constexpr double pi = 3.14159265358979323846;
       const double angle = shown.heading + pi * .78 + elapsed * .22;
@@ -2008,10 +2080,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         if (section.blend)
           continue;
         if (section.wheel >= 0)
+        {
           racer::wheelRenderTransform(
               model, vehicles[parked.vehicle].geometry, size_t(section.wheel),
               parked.heading, parked.x, parked.z, 0, 0, section.rolling);
-        else
+          if (section.wheel < 4 && !parked.graphics->tyreRim[size_t(section.wheel)].empty())
+            model[13] -= racer::tyreLowestY(
+                parked.graphics->tyreRim[size_t(section.wheel)], model);
+        } else
           racer::worldTransform(model, parked.heading, parked.x, parked.z);
         bgfx::setTransform(model);
         bgfx::setVertexBuffer(0, parked.graphics->vertices, section.first,
@@ -2224,6 +2300,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
     if (showroom) {
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, studioBuffer);
       // ALWAYS: the room is convex and seen from inside, so it can overwrite any
@@ -2238,6 +2315,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, shadowBlobBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2245,6 +2323,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      model[13] = showroomStageY;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, turntableBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2531,11 +2610,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           if (section.blend != transparent)
             continue;
           float placed[16];
-          if (section.wheel >= 0)
+          if (section.wheel >= 0) {
             racer::wheelRenderTransform(placed, geometry, size_t(section.wheel),
                                         parked.heading, parked.x, parked.z, 0,
                                         0, section.rolling);
-          else
+            if (section.wheel < 4 && !parked.graphics->tyreRim[size_t(section.wheel)].empty())
+              placed[13] -= racer::tyreLowestY(
+                  parked.graphics->tyreRim[size_t(section.wheel)], placed);
+          } else
             racer::worldTransform(placed, parked.heading, parked.x, parked.z);
           bgfx::setTransform(placed);
           bgfx::setVertexBuffer(0, parked.graphics->vertices, section.first,
@@ -2657,6 +2739,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float *base = model;
         if (section.wheel >= 0 && !vehicles.empty()) {
           wheelMatrix(wheelModel, size_t(section.wheel), section.rolling);
+          if (showroom && section.wheel < 4)
+            wheelModel[13] -= showroomWheelDrop[size_t(section.wheel)];
           base = wheelModel;
         }
         float flipped[16];
@@ -2664,6 +2748,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           float flip[16];
           bx::mtxIdentity(flip);
           flip[5] = -.55f; // squashed mirror: a gloss hint that stays on the plate
+          flip[13] = 1.55f * showroomStageY; // mirror about the stage plane
           bx::mtxMul(flipped, base, flip);
           base = flipped;
         }
@@ -2716,6 +2801,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if (pass == 0) {
         float veilModel[16];
         racer::worldTransform(veilModel, 0, float(shown.x), float(shown.z));
+        veilModel[13] = showroomStageY;
         bgfx::setTransform(veilModel);
         bgfx::setVertexBuffer(0, reflectionVeilBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
@@ -2725,6 +2811,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         // The reflection pass painted over the contact shadow; redraw it.
         float blobModel[16];
         racer::worldTransform(blobModel, float(shown.heading), float(shown.x), float(shown.z));
+        blobModel[13] = showroomStageY;
         bgfx::setTransform(blobModel);
         bgfx::setVertexBuffer(0, shadowBlobBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |

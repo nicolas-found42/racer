@@ -1,0 +1,32 @@
+# Garage tyres clip into the floor
+
+- Target: `build/racer` at `95dc4d2` (main, PR #2 merged), Acura NSX '04 (vehicle 0), Metal, 1280x720.
+- Question: why do the wheels clip through the floor in the garage, and does the game do it too?
+- Method: temporary env-driven orbit camera (not committed) plus per-layer hide mask; screenshots at several angles/zooms; tyre-bottom row measured against the analytic projection of y=0 (scan down from hub to first floor-bright pixel; 1 px ~ 2.5 mm at 1.73 m).
+- Evidence (real frames, not code reading):
+  - `wheel_geometry` diagnostics: every tyre bottom (centre.y - radius) is 0.000 m for vehicles 0-16 (<= 0.5 cm). Vehicles 17-23 emitted no wheel events and were not checked.
+  - Garage floor stack sits above y=0: studio floor .03, plate .05, rim .06, veil .052, contact blob .075; blob/plate/floor write depth, so they depth-hide the tyre bottoms.
+  - Buried tyre height, close side view: baseline 7.6/7.8 cm (front/rear); blob hidden 5.1/5.3; +plate hidden 3.1/3.3; +studio floor hidden 1.1/0.8 (noise floor). Steps match the layer heights.
+  - Floor-level horizon camera with all layers hidden: tyres are round and end on the horizon row, so the meshes and wheel transform are fine.
+  - Driving mode, stationary, floor-level camera: luma profile through the tyre contact rows identical to the all-layers-hidden garage control (zero burial).
+- Cause: garage stage geometry was authored in a plane above the tyre contact plane (y=0).
+- Fix: `showroomFloorDrop = .08f` lowers all stage layers (floor, gloss, blob, plate, veil, redrawn blob) below y=0 in `src/main.cpp`. After: 1.1/0.8 cm (noise floor); frames show round, grounded tyres and the reflection intact. `ctest`: 102/102.
+- Follow-up checks (all done, same method, debug camera since removed):
+  - Vehicle library has exactly 17 entries (`vehicle_library_load entries":17`); indices 17-23 do not exist (launch rejects them). The earlier "no data" for 17-23 was that, not a gap.
+  - All 17 vehicles in the fixed garage, floor-level camera: tyres complete and round, ending on the ground line. (A numeric row metric was discarded: it hit the plate edge, not the tyre.)
+  - Driving at 62 mph (scripted `drive-input 1 0 0`): luma edge at rows 358-359 vs 360-361 at rest, about 5 mm; frames from horizon, side, rear and front views show round tyres on the road with contact shadow.
+  - Other garage screens (garage, parts, livery, events, tests) and pause: tyres complete.
+- Gap removal (second pass, superseded by the third): stage layers compressed to -0.5..-3 mm and anchored to `min(center.y - radius)`. Judged by eye; this was not enough to claim zero.
+- Gap removal (third pass, superseded): per-wheel shift onto a stage plane in the showroom only. Its "gap_after = 0.0000 mm" debug print was circular (drop = bottom - lowest, plane = lowest) and is NOT evidence. Key finding that survives: `center.y - radius` is not the real tyre bottom. True gaps at the earlier commit (lowest tyre-mesh vertex vs plane): car 0 1.665/1.742 mm, car 2 front 1.219 mm, car 4 0, car 7 2.200 mm, car 12 front 5.493 mm, rear 0.431/0.332 mm.
+- Gap removal (final pass, game + garage + parked + ground-follow). Earlier passes were corrected in turn: a radial-reach lift still left faceted tyres hovering up to ~2 mm at rest (car 7), so the lift is now exact: `tyreLowestY` (src/tyre_contact.h) takes the lowest rim vertex of each wheel under its actual wheel matrix (current spin and steering) and moves the wheel by that amount, every time it is placed. Flat path: along world Y. Ground-follow path: along the surface normal onto the tangent plane at the wheel's ground contact. Parked cars: same helper at spin 0. Showroom: the stage plane is the lowest rendered tyre vertex (wheels already exact), layers 0.1-3 mm below.
+  - Numeric (independent): `tests/tyre_contact_checks.cpp` (ctest `tyre_contact_checks`): 17 vehicles x 4 wheels x 64 spin angles; at every spin the lowest point of the FULL wheel mesh (not the rim subset) after the production lift is on y=0 within 0.01 mm (worst measured 0.00003 mm; without the lift up to 9.67 mm). Mutation (helper neutered, verified by diff) fails on the first car at 1.665 mm.
+  - Rendered (pixel-exact silhouette, not brightness): the debug build draws only the wheel under test, with a floor-level camera 0.3 mm above the ground plane aimed at the wheel (about 0.65 mm per pixel), and the same view with every wheel hidden; the tyre silhouette is the set of pixels that differ, and the gap is the number of rows between its lowest pixel and the ground line (row 360). Fix off (switch) vs on, 4 wheels each:
+    - drive scene, cars 0, 2, 4, 7, 12: before 0-5 px (car 12 fronts 4-5 px, car 4 4 px, car 7 1-2 px, cars 0/2 fronts 1 px); after 0 px on all 20 wheels.
+    - garage showroom, same 5 cars: before 0-5 px (car 12 fronts 5 px; car 4 0 px because the old plane was raised to it); after 0 px on all 20 wheels.
+    - parked traffic cars (placed first in the parked line), cars 12 and 7: before 0-5 px; after 0 px on all 8 wheels.
+    - `--follow-ground` on a generated flat 400 m world mesh, same 5 cars: before up to 2 px hover and, for car 12 rears, 3 px SUNK below the ground; after 0 px on all 20 wheels.
+    - Image: evidence/car12-front-wheel-before-after.png (car 12 front-left wheel only, red line = ground, drive/garage/parked, fix off vs on).
+  - Normal-camera sanity frames in drive (62 mph) and garage; `ctest` 103/103.
+- Limits: "gap 0 px" is resolution-limited (~0.65 mm per pixel, silhouette threshold on pixel difference); the numeric test is the sub-millimetre evidence. Ground-follow was exercised on a flat generated ground only, not a slope (the code uses the surface normal, untested on slopes). Parked cars were rendered for 2 of the 5 cars. The tyre is exact per placement, so a faceted tyre makes the wheel move up/down by up to its facet height (about 2 mm on coarse tyres) as it spins. The car body is not moved. Debug camera/isolation switches were temporary and removed.
+- Retention: one before/after image kept in evidence/; other frames and scripts were scratchpad only. The debug camera/isolation patch was removed.
+- Next: none required.
