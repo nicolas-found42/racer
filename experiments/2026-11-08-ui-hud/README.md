@@ -52,8 +52,13 @@ Deliberately not built: an RPM tach / gear model. The simulation exposes only sp
 
 Closed this round: raw text walls everywhere; unaligned values; no selection affordance; debug-green gate tag; green posts and amber strips at screen edges in menus; redundant destination info in three places; menus unreadable below 1280x720; compact HUD plates; garage with no car view; no hierarchy in results; sliders without range cue.
 Closed in the follow-up round: lit studio garage, HUD accent colour option (session-only; not persisted in the profile), menu slide-in.
-Open: persisting the accent in the profile; lap/position elements (no race mode yet); minimap building texture; canvas is 1280x720 upscaled (no hi-DPI canvas); studio has no props or reflections; world-art defects outside the UI (flat neon sign blocks, tree cards) are not addressed here.
-Jev: still unavailable. `jev_decide` was retried after the first failure (same error: OPENROUTER_API_KEY not set in the MCP server environment). `jg doctor` reports a working Jev connection through saved credentials, but I did not copy those into the MCP server. A Jev-backed pass remains a TODO once the key is provided to the jev MCP.
+Closed after Jev was restored: garage floor gloss pool with rim-light reflection rings and a lit slate turntable plate (dark cars no longer merge into the plate); evidence in `output/j1/` (garage, parts, livery, events, drive).
+Open: persisting the accent in the profile; lap/position elements (no race mode yet); minimap building texture; canvas is 1280x720 upscaled (no hi-DPI canvas); studio has no props and no true mirrored car reflection (gloss pool only); default car paint still darker than references; world-art defects outside the UI (flat neon sign blocks, tree cards) are not addressed here.
+Jev (restored 2026-11-08, `typesafe/jev-1.14-20261014` via OpenRouter): the jev MCP was re-registered with a launcher that sources `~/.zshenv` (`zsh -c 'source ~/.zshenv; exec npx -y @jkudish/jev-mcp'`), so the key is not copied into `~/.claude.json`; the old server process of this session was stopped so the client picked the new registration. Jev calls made, none repeated to fish for a different answer:
+- `jev_decide` garage backdrop (keep studio / flat dark / add props): keep_studio 0.52, add_props 0.46, flat_dark 0; confidence 0.42, i.e. close; kept the studio and added floor polish.
+- `jev_decide` next gap (garage reflection and paint / hi-DPI canvas / persist accent / minimap buildings): garage_reflection_paint 0.96, the others at most 0.02; the two requirement checks on the others came back contradicted for "closes the weakest element".
+- `jev_review` of the floor-gloss and plate change: action `escalate`, composite 0.84, safe_to_apply 0.58, limiting rubric blast_radius with 0 confidence and test_gap 0.4 (no unit test covers the renderer). Mitigation done by hand, not by Jev: the new draw sits inside `if (showroom)`; ctest 102/102 passes; drive, parts, livery and events were recaptured and show no change outside the garage plate and floor. The escalation stands as a recorded caveat.
+Not done through Jev: per-element comparison sheets (judged manually) and the earlier 12 element comparisons; paint brightness is still open.
 
 ## Evidence / retention
 
@@ -62,4 +67,4 @@ Regeneration: `scripts/capture_ui.sh experiments/2026-11-08-ui-hud/output/cur 12
 
 ## Next action
 
-Provide OPENROUTER_API_KEY to the jev MCP and re-run the design decisions and element comparisons through Jev; persist the HUD accent in the profile.
+Run `jev_compare` or `jev_review` on the element comparison sheets (`output/compare`) and brighten the default showroom paint, then persist the HUD accent in the profile.
