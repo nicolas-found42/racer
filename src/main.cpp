@@ -190,6 +190,11 @@ Mesh buildReflectionVeil() {
                       .80f + .15f * float(i) / (steps - 1)));
   return m;
 }
+// Tyres are authored with their bottoms exactly at y=0, so every showroom floor
+// layer (studio floor .03, plate .05/.06, veil .052, contact blob .075) must sit
+// below that plane or it depth-hides the tyre bottoms. The whole stage is lowered
+// by more than the tallest layer.
+constexpr float showroomFloorDrop = .08f;
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -2224,6 +2229,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
     if (showroom) {
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      model[13] = -showroomFloorDrop;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, studioBuffer);
       // ALWAYS: the room is convex and seen from inside, so it can overwrite any
@@ -2238,6 +2244,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, float(shown.heading), float(shown.x), float(shown.z));
+      model[13] = -showroomFloorDrop;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, shadowBlobBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2245,6 +2252,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       bindUnlit(3, whiteTexture);
       bgfx::submit(1, visualProgram);
       racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      model[13] = -showroomFloorDrop;
       bgfx::setTransform(model);
       bgfx::setVertexBuffer(0, turntableBuffer);
       bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
@@ -2716,6 +2724,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       if (pass == 0) {
         float veilModel[16];
         racer::worldTransform(veilModel, 0, float(shown.x), float(shown.z));
+        veilModel[13] = -showroomFloorDrop;
         bgfx::setTransform(veilModel);
         bgfx::setVertexBuffer(0, reflectionVeilBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
@@ -2725,6 +2734,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         // The reflection pass painted over the contact shadow; redraw it.
         float blobModel[16];
         racer::worldTransform(blobModel, float(shown.heading), float(shown.x), float(shown.z));
+        blobModel[13] = -showroomFloorDrop;
         bgfx::setTransform(blobModel);
         bgfx::setVertexBuffer(0, shadowBlobBuffer);
         bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
