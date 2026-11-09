@@ -1,6 +1,6 @@
 # 2026-11-08 UI and HUD rebuild against six source games
 
-- Status: completed (this round); open items listed below
+- Status: completed (two rounds); open items listed below
 - Target/build/platform: Racer, branch `feat/ui-hud-fidelity` (from `main` 2a1913d), macOS Metal, `cmake --build build`, native captures at 1280x720 hidden/isolated profiles
 - Canonical inputs (read-only, `games/raw/`): `midnight-club-la`, `mc3.iso`, `gran-turidmo-4.iso`, `juiced-2`, `slrr-221`, `slrr-231` (hashes in `games/INPUTS.json`)
 - Question: how far is Racer's UI/HUD from the source games' UI/HUD element by element, and which of their layout/colour/typography rules transfer into a cleaner, more creative HUD without fabricating data the simulation does not provide?
@@ -25,7 +25,8 @@
 | World waypoint marker with beacon column, edge arrow + name chip when off-screen (replaces green posts, debug gate text, and a redundant top strip) | `drive_hud.mm`, `main.cpp` | MCLA yellow beacon + arrow, MC3 edge arrow |
 | Active-test HUD: timer plate, gate counter + guidance arrow, 0->100 / 100->0 progress bar, countdown ring with per-second pop, GO and gate-cleared banners with echo | `drive_hud.mm` | MC3 countdown scale/fade, J2 echo banners |
 | Menus: left rail with skewed selection, icons, tuning sliders, adjustable chevrons, alternating tint, `n of N`, info card (stat tiles, key/value, hero result, warnings/notices, hint callout), keycap footer | `drive_hud.mm` | GT4 alternating rows/help bar, MC3 single-colour selection, J2 darken-only-half |
-| Showroom: slow turntable camera framed right of the menu, ring plate; event board street map | `main.cpp`, `drive_hud.mm` | MC3/MCLA/J2 live garage car, J2 turntable ring, MC3 Nav System |
+| Showroom: lit studio cyclorama (graded floor/walls, softboxes, strip lights, contact shadow), slow turntable camera framed right of the menu, ring plate; event board street map | `main.cpp`, `drive_hud.mm` | MC3/MCLA/J2 lit garages and live car, J2 turntable ring, MC3 Nav System |
+| HUD accent colour (`--hud-accent`, `H` key, session-only) and menu slide-in/fade (0.28 s) | `drive_hud.mm`, `main.cpp` | MC3 theme-colour HUD, J2 0.2 s transitions |
 | Compact/medium windows: structured menus down to 0.75 scale; compact canvas rebuilt on the same model (scrolling rows, warnings pinned) | `hud_layout.h`, `drive_hud.mm` | - |
 | Career event rows now use the same two-space option prefix as every other flow | `career_flow.cpp` | - |
 
@@ -38,8 +39,8 @@ Deliberately not built: an RPM tach / gear model. The simulation exposes only sp
 | Speedometer | cleaner and more legible than all six games' | no analogue needle or redline (no RPM data) |
 | Minimap/radar | street grid + blips + compass; matches placement/size of MC3/MCLA/J2 | no building/parks texture; roads are the authored grid only |
 | Waypoint marker | beacon + diamond + chip, comparable to MCLA/MC3 | no GPS ribbon |
-| Pause menu | cleaner than MC3/SLRR/J2; icons + glow selection | static (no slide-in animation) |
-| Garage list/tuning | above GT4/SLRR/MCLA lists for clarity; live turntable car | showroom is the dark street; MC3/MCLA/J2 garages are lit interiors |
+| Pause menu | cleaner than MC3/SLRR/J2; icons + glow selection; slides in | - |
+| Garage list/tuning | above GT4/SLRR/MCLA lists for clarity; lit studio with turntable car matches the MC3/MCLA/J2 composition | default black NSX paint is darker than the references' bright cars; studio is a plain cyclorama, no props |
 | Results | hero numeral + stat tiles; clearer than SLRR/MCLA/J2 tables | no medal/cup art, no results table of rivals (no rival data) |
 | Countdown/GO | ring + pop + banner | no coloured GO ring per outcome |
 | Race timer/gate HUD | clearer than MC3/MCLA; lacks lap/position (single-car tests) | - |
@@ -50,7 +51,9 @@ Deliberately not built: an RPM tach / gear model. The simulation exposes only sp
 ## Adversarial-review ledger (strict UI/HUD persona, manual; no Jev gate)
 
 Closed this round: raw text walls everywhere; unaligned values; no selection affordance; debug-green gate tag; green posts and amber strips at screen edges in menus; redundant destination info in three places; menus unreadable below 1280x720; compact HUD plates; garage with no car view; no hierarchy in results; sliders without range cue.
-Open: lit garage interior / car-on-turntable lighting; HUD colour option; lap/position elements (no race mode yet); minimap texture; pause slide-in animation; canvas is 1280x720 upscaled (no hi-DPI canvas); world-art defects outside the UI (flat neon sign blocks, tree cards) are not addressed here.
+Closed in the follow-up round: lit studio garage, HUD accent colour option (session-only; not persisted in the profile), menu slide-in.
+Open: persisting the accent in the profile; lap/position elements (no race mode yet); minimap building texture; canvas is 1280x720 upscaled (no hi-DPI canvas); studio has no props or reflections; world-art defects outside the UI (flat neon sign blocks, tree cards) are not addressed here.
+Jev: still unavailable. `jev_decide` was retried after the first failure (same error: OPENROUTER_API_KEY not set in the MCP server environment). `jg doctor` reports a working Jev connection through saved credentials, but I did not copy those into the MCP server. A Jev-backed pass remains a TODO once the key is provided to the jev MCP.
 
 ## Evidence / retention
 
@@ -59,4 +62,4 @@ Regeneration: `scripts/capture_ui.sh experiments/2026-11-08-ui-hud/output/cur 12
 
 ## Next action
 
-Lit garage interior (floor/backdrop geometry with a key light) so the turntable car reads like the MC3/MCLA/J2 garages; then a HUD colour setting in the garage.
+Provide OPENROUTER_API_KEY to the jev MCP and re-run the design decisions and element comparisons through Jev; persist the HUD accent in the profile.
