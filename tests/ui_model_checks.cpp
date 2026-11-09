@@ -36,5 +36,9 @@ int main()try{
   require(livery.rows[5].kind==RowKind::Field&&livery.rows[5].value.starts_with("0 / 0")&&livery.rows[5].adjustable,"layer selector");
   auto events=parsePanel({"E","> Event: grid-intro [Left / Right]","  Start nearby event (within 25 m)","  Buy Touring ownership / 3000 credits"},3);
   require(events.rows[1].kind==RowKind::Option&&events.rows[2].kind==RowKind::Option,"prose with embedded numbers stays a command");
+  auto stats=parsePanel({"R","Time 8.000 s / Distance 111.227 m / Initial 0.00 km/h","Accel 1.00x / Brake 1.00x / Steer 1.00x","Heavy prose / with / slashes only"});
+  require(stats.rows[0].tiles.size()==3&&stats.rows[0].tiles[1].first=="Distance"&&stats.rows[0].tiles[1].second=="111.227 m","time/distance/speed tiles");
+  require(stats.rows[1].tiles.size()==3&&stats.rows[1].tiles[0].second=="1.00x","setup multiplier tiles");
+  require(stats.rows[2].tiles.empty(),"prose never becomes tiles");
   std::cout<<"PASS: ui view model classifies titles, hints, sliders, fields, notices and detail rows\n";
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}

@@ -421,8 +421,8 @@ struct DriveHud::Impl {
   }
   // ---- menus ------------------------------------------------------------
   struct Block {
-    enum Kind {Hero,Detail,KeyValue,Paragraph,Warning,Notice,Sub,Header,Gap} kind=Gap;
-    std::string label,value;std::vector<std::string> wrapped;CGFloat height=0;bool good=true;
+    enum Kind {Tiles,Hero,Detail,KeyValue,Paragraph,Warning,Notice,Sub,Header,Gap} kind=Gap;
+    std::string label,value;std::vector<std::string> wrapped;CGFloat height=0;bool good=true;std::vector<std::pair<std::string,std::string>> tiles;
   };
   static std::vector<Block> buildBlocks(const ui::Panel& panel,const ui::Row* selected,CGFloat width,CGFloat scale) {
     std::vector<Block> blocks;
@@ -442,6 +442,7 @@ struct DriveHud::Impl {
         b.kind=row.kind==ui::RowKind::Warning?Block::Warning:Block::Notice;
         b.wrapped=wrap(kBodyMedium,15*scale,row.label,width-52);b.height=CGFloat(b.wrapped.size())*21*scale+18*scale;break;
       default:
+        if(!row.tiles.empty()) {b.kind=Block::Tiles;b.tiles=row.tiles;b.height=58*scale;break;}
         if(!row.value.empty()&&row.label!="MEASUREMENT"&&row.label!="PARTIAL (INVALID)"&&
            measure(kBodyMedium,15*scale,row.label+": "+row.value)>width-40&&
            measure(kBody,15.5*scale,row.value)>(width-40)*.6) {
@@ -470,6 +471,16 @@ struct DriveHud::Impl {
     for(const auto& b:blocks) {
       switch(b.kind) {
       case Block::Gap:break;
+      case Block::Tiles: {
+        const CGFloat gap=8,tw=(w-gap*(b.tiles.size()-1))/b.tiles.size();
+        for(size_t i=0;i<b.tiles.size();++i) {
+          const CGRect r=CGRectMake(x+i*(tw+gap),y,tw,b.height-8*scale);
+          fill(c,r,{1,1,1,.06},5);fill(c,CGRectMake(r.origin.x,r.origin.y+4,2.5,r.size.height-8),{cyan.r,cyan.g,cyan.b,.8},1);
+          text(c,kLabel,11.5*scale,upper(b.tiles[i].first),r.origin.x+12,r.origin.y+17*scale,muted,tw-16,Align::Left,1.8);
+          text(c,kNumeric,27*scale,b.tiles[i].second,r.origin.x+12,r.origin.y+r.size.height-8*scale,white,tw-16);
+        }
+        break;
+      }
       case Block::Hero: {
         text(c,kLabel,13,b.label=="MEASUREMENT"?"RESULT":"PARTIAL / INVALID",x,y+14,muted,w,Align::Left,3);
         text(c,kNumeric,66,b.value,x,y+72,b.good?green:red,w,Align::Left,0,true);break;

@@ -34,6 +34,7 @@ struct Row {
   bool indented = false; // detail line belonging to the preceding group
   bool adjustable = false; // "[Left / Right]" cycles or adjusts the value
   Icon icon = Icon::None;
+  std::vector<std::pair<std::string, std::string>> tiles; // "Time 8.0 s / Distance 111 m" -> stat tiles
   double current = 0, low = 0, high = 0; // Slider only
   int source = 0;                         // index into the original lines
 };
@@ -139,9 +140,9 @@ inline bool parseNumericTail(std::string_view text, Row& out) {
     size_t end = 0;
     while (end < tail.size() && (std::isdigit(static_cast<unsigned char>(tail[end])) || tail[end] == '.' || (end == 0 && (tail[end] == '-' || tail[end] == '+')))) ++end;
     const auto unit = trim(tail.substr(end));
-    if (unit.size() > 4 || !std::all_of(unit.begin(), unit.end(), [](unsigned char ch) { return std::isalpha(ch) != 0; })) return false;
+    if (unit.size() > 4 || !std::all_of(unit.begin(), unit.end(), [](unsigned char ch) { return std::isalpha(ch) != 0 || ch == '/' || ch == '%'; })) return false;
     out.label = trim(text.substr(0, i));
-    out.value = std::string(tail.substr(0, end)) + (unit.empty() ? "" : " " + unit);
+    out.value = std::string(tail.substr(0, end)) + (unit.empty() ? "" : (unit == "x" || unit == "%" ? unit : " " + unit));
     return true;
   }
   return false;
@@ -185,6 +186,24 @@ inline Icon iconFor(std::string_view label) {
   for (const auto& rule : rules)
     if (l.find(rule.word) != std::string::npos) return rule.icon;
   return Icon::None;
+}
+
+// "Accel 1.00x / Brake 1.00x" or "Time 8.000 s / Distance 111.2 m": 2-4 `Label number[unit]`
+// segments become stat tiles. Anything else (prose, prices) is left alone.
+inline std::vector<std::pair<std::string, std::string>> parseTiles(std::string_view text) {
+  std::vector<std::pair<std::string, std::string>> out;
+  size_t start = 0;
+  while (start <= text.size()) {
+    const auto bar = text.find(" / ", start);
+    const auto part = trim(text.substr(start, bar == std::string_view::npos ? text.npos : bar - start));
+    Row probe;
+    if (!parseNumericTail(part, probe)) return {};
+    out.emplace_back(probe.label, probe.value);
+    if (bar == std::string_view::npos) break;
+    start = bar + 3;
+  }
+  if (out.size() < 2 || out.size() > 4) return {};
+  return out;
 }
 
 // optionCount: how many prefixed rows are real menu entries (PlayFlow::menuCount);
@@ -244,6 +263,8 @@ inline Panel parsePanel(const std::vector<std::string>& lines, size_t optionCoun
     } else {
       row.kind = RowKind::Info;
       row.label = trim(body);
+      const bool groupHeader = i + 1 < lines.size() && lines[i + 1].starts_with("  ") && lines[i + 1].size() > 2 && lines[i + 1][2] != ' ';
+      if (!groupHeader && body.find('[') == std::string_view::npos) row.tiles = parseTiles(body);
       Row probe;
       if (parseField(body, probe)) {
         row.label = probe.label;
