@@ -11,6 +11,11 @@
   - Driving mode, stationary, floor-level camera: luma profile through the tyre contact rows identical to the all-layers-hidden garage control (zero burial).
 - Cause: garage stage geometry was authored in a plane above the tyre contact plane (y=0).
 - Fix: `showroomFloorDrop = .08f` lowers all stage layers (floor, gloss, blob, plate, veil, redrawn blob) below y=0 in `src/main.cpp`. After: 1.1/0.8 cm (noise floor); frames show round, grounded tyres and the reflection intact. `ctest`: 102/102.
-- Not verified: driving at speed (the scripted run was declined and not retried); vehicles 17-23; other garage screens beyond the default showroom camera.
+- Follow-up checks (all done, same method, debug camera since removed):
+  - Vehicle library has exactly 17 entries (`vehicle_library_load entries":17`); indices 17-23 do not exist (launch rejects them). The earlier "no data" for 17-23 was that, not a gap.
+  - All 17 vehicles in the fixed garage, floor-level camera: tyres complete and round, ending on the ground line. (A numeric row metric was discarded: it hit the plate edge, not the tyre.)
+  - Driving at 62 mph (scripted `drive-input 1 0 0`): luma edge at rows 358-359 vs 360-361 at rest, about 5 mm; frames from horizon, side, rear and front views show round tyres on the road with contact shadow.
+  - Other garage screens (garage, parts, livery, events, tests) and pause: tyres complete.
+- Known tradeoff: lowering the stage 8 cm leaves the plate about 2.7-3 cm below the tyre bottoms (blob ~0.5 cm). Invisible from the showroom camera; visible as a thin gap only from a floor-level camera.
 - Retention: frames and scripts were in the session scratchpad only; none retained. The debug camera patch was removed.
-- Next: re-run the measurement for vehicles 17-23 and an at-speed drive capture if desired.
+- Next: none required. Optional: flatten the stage layers closer together to remove the gap.
