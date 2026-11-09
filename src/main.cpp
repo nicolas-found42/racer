@@ -37,6 +37,7 @@ struct RendererLifetime {
   }
 };
 #include "drive_hud.h"
+#include "presentation.h"
 #include "livery_raster.h"
 #include "mesh_asset.h"
 #include "post_process.h"
@@ -1125,10 +1126,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       layout);
   Mesh eventMarker;
   // Low roadside beacons preserve event discoverability without obscuring cars.
-  box(eventMarker, -5.5, .5, 0, .16, 1, .16, 0xff90e050);
-  box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff90e050);
+  box(eventMarker, -5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
+  box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
   for (float side : {-1.f, 1.f})
-    box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff90e050);
+    box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff4db8ff);
   auto eventBuffer = bgfx::createVertexBuffer(
       bgfx::copy(eventMarker.data(),
                  uint32_t(eventMarker.size() * sizeof(Vertex))),
@@ -2677,47 +2678,91 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     auto panel = flow.lines();
     const bool active =
         flow.screen == racer::Screen::Drive && flow.session.active();
-    if (!hideHud && flow.screen == racer::Screen::Drive && !active) {
-      const auto &marker = flow.career.selectedMarker();
-      const double dx = marker.x - sim.car.x, dz = marker.z - sim.car.z;
-      const double bearing = std::remainder(
-          std::atan2(dx, dz) - sim.car.heading, 2 * 3.14159265358979323846);
-      driveHud.draw(uint16_t(width), uint16_t(height),
-                    std::abs(sim.car.speed) * 2.236936, sim.car.direction != 1,
-                    vehicles.empty() ? "Prototype"
-                                     : vehicles[activeVehicle].name,
-                    marker.id, std::hypot(dx, dz),
-                    std::abs(bearing) < .2 ? "AHEAD"
-                    : bearing > 0          ? "RIGHT"
-                                           : "LEFT");
-    }
-    const int columns = width / 8;
-    const int rows = height / 16;
-    if (!hideHud && (flow.screen != racer::Screen::Drive || active))
-      driveHud.drawPanel(uint16_t(width), uint16_t(height), panel, active);
-    if (active && flow.session.result().kind == racer::TestKind::Handling) {
-      const auto &gates = racer::handlingCourse().gates;
-      {
-        const size_t i = flow.session.nextGate();
-        const auto &g = gates[i];
-        float p[4] = {float(g.x), 5.5f, float(g.z), 1}, eye[4]{}, clip[4]{};
-        for (int r = 0; r < 4; ++r)
-          for (int c = 0; c < 4; ++c)
-            eye[r] += view[c * 4 + r] * p[c];
-        for (int r = 0; r < 4; ++r)
-          for (int c = 0; c < 4; ++c)
-            clip[r] += projection[c * 4 + r] * eye[c];
-        if (clip[3] > 0) {
-          int x = int((clip[0] / clip[3] + 1) * width / 16);
-          // Keep the active tag below the compact HUD when perspective
-          // places a distant gate on the horizon, including at 720p.
-          int y = std::max(9, int((1 - clip[1] / clip[3]) * height / 32));
-          if (x >= 2 && x < columns - 16 && y >= 9 && y < rows - 5)
-            bgfx::dbgTextPrintf(uint16_t(x), uint16_t(y), 0x2f,
-                                "[NEXT GATE] %zu", i + 1);
-        }
+    // Project a world point to window pixels for HUD waypoint markers.
+    auto projectToWindow = [&](float wx, float wy, float wz, float &px,
+                               float &py, bool &behind) {
+      float p[4] = {wx, wy, wz, 1}, eye[4]{}, clip[4]{};
+      for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+          eye[r] += view[c * 4 + r] * p[c];
+      for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+          clip[r] += projection[c * 4 + r] * eye[c];
+      behind = clip[3] <= 1e-4f;
+      const float w = behind ? 1e-4f : clip[3];
+      px = (clip[0] / w + 1) * float(width) / 2;
+      py = (1 - clip[1] / w) * float(height) / 2;
+    };
+    if (!hideHud && flow.screen == racer::Screen::Drive) {
+      racer::DriveState hud;
+      hud.mph = std::abs(sim.car.speed) * 2.236936;
+      hud.reverse = sim.car.direction != 1;
+      hud.throttle = selectedInput.throttle;
+      hud.brake = selectedInput.brake;
+      hud.steer = selectedInput.steer;
+      hud.vehicle = vehicles.empty() ? "Prototype" : vehicles[activeVehicle].name;
+      if (!active) {
+        const auto &marker = flow.career.selectedMarker();
+        const double dx = marker.x - sim.car.x, dz = marker.z - sim.car.z;
+        const double bearing = std::remainder(
+            std::atan2(dx, dz) - sim.car.heading, 2 * 3.14159265358979323846);
+        hud.hasDestination = true;
+        hud.destination = marker.id;
+        hud.distance = std::hypot(dx, dz);
+        hud.bearingRadians = bearing;
+        hud.bearing = std::abs(bearing) < .2 ? "AHEAD"
+                      : bearing > 0          ? "RIGHT"
+                                             : "LEFT";
+        hud.markerActive = true;
+        hud.markerLabel = marker.id;
+        hud.markerDistance = hud.distance;
+        projectToWindow(float(marker.x), 4.f, float(marker.z), hud.markerX,
+                        hud.markerY, hud.markerBehind);
+      } else {
+        racer::DriveTest test;
+        const auto &r = flow.session.result();
+        test.kind = r.kind == racer::TestKind::Acceleration ? 0
+                    : r.kind == racer::TestKind::Braking    ? 1
+                                                            : 2;
+        test.name = std::string(racer::testName(r.kind));
+        test.countdown =
+            flow.session.phase() == racer::TestPhase::Countdown;
+        test.countdownSeconds = flow.session.countdownRemaining();
+        test.automatic = r.kind != racer::TestKind::Handling;
+        test.measuring = r.kind != racer::TestKind::Braking ||
+                         flow.session.measuringBraking();
+        test.elapsed = flow.session.elapsed();
+        test.distance = flow.session.distance();
+        test.speedKmh = std::abs(sim.car.speed) * 3.6;
+        if (r.kind == racer::TestKind::Handling) {
+          const auto &gates = racer::handlingCourse().gates;
+          const size_t i = flow.session.nextGate();
+          const auto cue = racer::courseGuidance(gates[i], sim.car);
+          test.gate = int(i + 1);
+          test.gates = int(gates.size());
+          test.gateDistance = cue.distance;
+          test.bearing = cue.bearing;
+          test.turn = cue.turn;
+          test.note = cue.returnToApproach
+                          ? "Return to approach side"
+                          : std::string("Cross toward ") + cue.crossing;
+          hud.markerActive = true;
+          hud.markerLabel = "Gate " + std::to_string(i + 1);
+          hud.markerDistance = cue.distance;
+          projectToWindow(float(gates[i].x), 5.5f, float(gates[i].z),
+                          hud.markerX, hud.markerY, hud.markerBehind);
+        } else
+          test.note = r.kind == racer::TestKind::Braking
+                          ? (test.measuring ? "Automatic braking measurement"
+                                            : "Lead-in: not measured")
+                          : "Automatic launch measurement";
+        hud.test = test;
       }
+      driveHud.draw(uint16_t(width), uint16_t(height), hud);
     }
+    if (!hideHud && flow.screen != racer::Screen::Drive)
+      driveHud.drawPanel(uint16_t(width), uint16_t(height), panel, active,
+                         flow.menuCount());
     if (!review.capture.empty()) {
       requestCapture(review.capture);
       review.capture.clear();

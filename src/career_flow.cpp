@@ -189,8 +189,8 @@ std::vector<std::string> CareerFlow::lines(int menu) const {
       "Buy Touring ownership / 3000 credits",
       "Retry career save",
       "Return"};
-  if (menu >= 0 && menu < 6)
-    text[3 + menu] = "> " + text[3 + menu];
+  for (int row = 0; row < 6; ++row)
+    text[3 + row] = (row == menu ? "> " : "  ") + text[3 + row];
   text.push_back(
       "Marker distance: " + distance.str() + " m / " +
       (career_.discovered(marker.id) ? "discovered" : "undiscovered"));
