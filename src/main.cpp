@@ -58,6 +58,9 @@ struct CarGraphics {
   bgfx::VertexBufferHandle overlay = BGFX_INVALID_HANDLE;
   std::vector<racer::TextureRef> textures;
   std::vector<racer::AssetSection> sections;
+  // Outer-rim vertices of each rolling wheel mesh (wheel-local, pivot-centred),
+  // used to find the true lowest tyre point for the showroom floor contact.
+  std::array<std::vector<std::array<float, 3>>, 4> tyreRim;
   ~CarGraphics() {
     if (bgfx::isValid(vertices))
       bgfx::destroy(vertices);
@@ -66,6 +69,24 @@ struct CarGraphics {
   }
 };
 using Vertex = racer::AssetVertex;
+void fillTyreRim(CarGraphics &graphics, const racer::MeshAsset &asset) {
+  for (auto &rim : graphics.tyreRim)
+    rim.clear();
+  for (const auto &section : asset.sections) {
+    if (section.wheel < 0 || section.wheel >= 4 || !section.rolling)
+      continue;
+    float radial = 0;
+    for (uint32_t i = 0; i < section.count; ++i) {
+      const auto &v = asset.triangles[section.first + i];
+      radial = std::max(radial, std::hypot(v.y, v.z));
+    }
+    for (uint32_t i = 0; i < section.count; ++i) {
+      const auto &v = asset.triangles[section.first + i];
+      if (std::hypot(v.y, v.z) >= .9f * radial)
+        graphics.tyreRim[size_t(section.wheel)].push_back({v.x, v.y, v.z});
+    }
+  }
+}
 using Mesh = std::vector<Vertex>;
 void box(Mesh &m, float x, float y, float z, float sx, float sy, float sz,
          uint32_t c, float surface = 0) {
@@ -846,6 +867,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       groundBuilder->add(asset, worldMount);
     auto candidate = std::make_unique<CarGraphics>();
     candidate->sections = asset.sections;
+    fillTyreRim(*candidate, asset);
     try {
       candidate->textures = staticTextures.acquire(asset.images);
     } catch (const racer::StaticTexturePool::BudgetError &error) {
@@ -1010,6 +1032,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       context.stage = racer::AssetLoadStage::Upload;
       auto candidate = std::make_unique<CarGraphics>();
       candidate->sections = asset.sections;
+      fillTyreRim(*candidate, asset);
       for (const auto &image : asset.images) {
         candidate->textures.push_back(
             racer::ownedAssetTexture(image, racer::uploadAssetTexture));
@@ -1203,6 +1226,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         auto asset = racer::loadVehicleAsset(vehicles[index], &parkedContext);
         auto candidate = std::make_unique<CarGraphics>();
         candidate->sections = asset.sections;
+        fillTyreRim(*candidate, asset);
         for (const auto &image : asset.images)
           candidate->textures.push_back(
               racer::ownedAssetTexture(image, racer::uploadAssetTexture));
@@ -1264,17 +1288,17 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   auto reflectionVeilBuffer = bgfx::createVertexBuffer(
       bgfx::copy(reflectionVeil.data(), uint32_t(reflectionVeil.size() * sizeof(Vertex))), layout);
   Mesh shadowBlob;
-  ellipse(shadowBlob, 1.15f, 2.35f, -.0005f, packRgb(.01f, .012f, .016f));
+  ellipse(shadowBlob, 1.15f, 2.35f, -.0001f, packRgb(.01f, .012f, .016f));
   auto shadowBlobBuffer = bgfx::createVertexBuffer(
       bgfx::copy(shadowBlob.data(), uint32_t(shadowBlob.size() * sizeof(Vertex))), layout);
   Mesh turntable;
   // Lit slate plate: lighter at the centre so dark paint separates from it.
   for (int i = 0; i < 28; ++i)
-    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, -.0020f,
+    annulus(turntable, 3.9f * float(i) / 28, 3.9f * float(i + 1) / 28, -.0010f,
             lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
                     std::pow(float(i) / 27.f, 1.3f)));
-  annulus(turntable, 3.55f, 3.72f, -.0010f, 0xffebdb57);    // cyan rim (ABGR)
-  annulus(turntable, 3.86f, 3.92f, -.0010f, 0xff4db8ff);    // amber outer hairline
+  annulus(turntable, 3.55f, 3.72f, -.0005f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, -.0005f, 0xff4db8ff);    // amber outer hairline
   auto turntableBuffer = bgfx::createVertexBuffer(
       bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
@@ -1827,16 +1851,31 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     const bool showroom = flow.screen != racer::Screen::Drive &&
                           flow.screen != racer::Screen::Pause &&
                           inspectionDistance <= 0 && scene != "scale";
-    // Showroom stage plane: the lowest tyre bottom of the shown car. Tyres are
-    // authored with their bottoms at y=0 (a few cars sit up to 0.5 cm higher), and
-    // every stage layer is modelled just below this plane (-0.5..-3 mm) so the
-    // floor, plate and contact blob never depth-hide the tyres and leave no gap.
+    // Showroom stage plane: the lowest point of any tyre mesh of the shown car,
+    // taken from the real wheel matrices. Each wheel is then shifted down onto
+    // that plane (a few cars author some tyres up to 5 mm higher), and every
+    // stage layer is modelled 0.1-3 mm below it, so no floor layer depth-hides a
+    // tyre and no tyre hovers.
     float showroomStageY = 0;
-    if (!vehicles.empty()) {
-      showroomStageY = 1e9f;
-      for (const auto &w : vehicles[activeVehicle].geometry.wheels)
-        showroomStageY = std::min(showroomStageY, float(w.center.y - w.radius));
-      showroomStageY = std::max(0.f, showroomStageY);
+    float showroomWheelDrop[4] = {0, 0, 0, 0};
+    if (showroom && !vehicles.empty() && graphics) {
+      float bottoms[4];
+      float lowest = 1e9f;
+      for (size_t i = 0; i < 4; ++i) {
+        float m[16];
+        wheelMatrix(m, i, true);
+        float b = 1e9f;
+        for (const auto &v : graphics->tyreRim[i])
+          b = std::min(b, m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13]);
+        if (b > 1e8f)
+          b = float(vehicles[activeVehicle].geometry.wheels[i].center.y -
+                    vehicles[activeVehicle].geometry.wheels[i].radius);
+        bottoms[i] = b;
+        lowest = std::min(lowest, b);
+      }
+      showroomStageY = lowest;
+      for (size_t i = 0; i < 4; ++i)
+        showroomWheelDrop[i] = bottoms[i] - lowest;
     }
     if (showroom) {
       constexpr double pi = 3.14159265358979323846;
@@ -2671,6 +2710,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         const float *base = model;
         if (section.wheel >= 0 && !vehicles.empty()) {
           wheelMatrix(wheelModel, size_t(section.wheel), section.rolling);
+          if (showroom && section.wheel < 4)
+            wheelModel[13] -= showroomWheelDrop[size_t(section.wheel)];
           base = wheelModel;
         }
         float flipped[16];
