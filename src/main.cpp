@@ -175,6 +175,21 @@ Mesh buildFloorGloss() {
   annulus(m, 6.9f, 7.0f, .042f, withAlpha(packRgb(.55f, .90f, 1.f), .14f));
   return m;
 }
+// Translucent plate-coloured disc drawn over the mirrored car so the floor
+// reflection reads as a faint, polished-floor image rather than a second car.
+Mesh buildReflectionVeil() {
+  Mesh m;
+  auto withAlpha = [](uint32_t rgb, float a) {
+    return (uint32_t(std::clamp(a, 0.f, 1.f) * 255.f + .5f) << 24) | (rgb & 0x00ffffffu);
+  };
+  constexpr int steps = 28;
+  for (int i = 0; i < steps; ++i)
+    annulus(m, 3.4f * float(i) / steps, 3.4f * float(i + 1) / steps, .052f,
+            withAlpha(lerpRgb(packRgb(.62f, .68f, .78f), packRgb(.20f, .22f, .27f),
+                              std::pow(float(i) / 27.f * (3.4f / 3.9f), 1.3f)),
+                      .80f + .15f * float(i) / (steps - 1)));
+  return m;
+}
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -1245,6 +1260,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   Mesh floorGloss = buildFloorGloss();
   auto floorGlossBuffer = bgfx::createVertexBuffer(
       bgfx::copy(floorGloss.data(), uint32_t(floorGloss.size() * sizeof(Vertex))), layout);
+  Mesh reflectionVeil = buildReflectionVeil();
+  auto reflectionVeilBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(reflectionVeil.data(), uint32_t(reflectionVeil.size() * sizeof(Vertex))), layout);
   Mesh shadowBlob;
   ellipse(shadowBlob, 1.15f, 2.35f, .075f, packRgb(.01f, .012f, .016f));
   auto shadowBlobBuffer = bgfx::createVertexBuffer(
@@ -2624,16 +2642,32 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bgfx::submit(1, visualProgram);
       }
     }
-    for (bool transparent : {false, true})
+    // Showroom floor reflection: pass 0 draws the opaque car mirrored in the
+    // floor plane (always-pass, no depth write), a veil dims it, then pass 1
+    // draws the real car over it.
+    const bool mirrorPass = showroom && !vehicles.empty();
+    for (int pass = mirrorPass ? 0 : 1; pass < 2; ++pass)
+     for (bool transparent : {false, true}) {
+      if (pass == 0 && transparent)
+        continue;
       for (const auto &section : graphics->sections) {
         if (section.blend != transparent)
           continue;
         float wheelModel[16];
+        const float *base = model;
         if (section.wheel >= 0 && !vehicles.empty()) {
           wheelMatrix(wheelModel, size_t(section.wheel), section.rolling);
-          bgfx::setTransform(wheelModel);
-        } else
-          bgfx::setTransform(model);
+          base = wheelModel;
+        }
+        float flipped[16];
+        if (pass == 0) {
+          float flip[16];
+          bx::mtxIdentity(flip);
+          flip[5] = -.55f; // squashed mirror: a gloss hint that stays on the plate
+          bx::mtxMul(flipped, base, flip);
+          base = flipped;
+        }
+        bgfx::setTransform(base);
         bgfx::setVertexBuffer(0, graphics->vertices, section.first,
                               section.count);
         const bool textured = section.image >= 0;
@@ -2653,10 +2687,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                   : whiteTexture,
               flags);
         }
-        bgfx::setState(
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-            BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA |
-            (transparent ? BGFX_STATE_BLEND_ALPHA : BGFX_STATE_WRITE_Z));
+        if (pass == 0)
+          bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
+                         BGFX_STATE_MSAA);
+        else
+          bgfx::setState(
+              BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+              BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA |
+              (transparent ? BGFX_STATE_BLEND_ALPHA : BGFX_STATE_WRITE_Z));
         float carEye[4] = {eyeUniform[0], eyeUniform[1], eyeUniform[2],
                            section.mask ? section.alphaCutoff : 0};
         const float carMaterial[4] = {section.roughness, section.metallic,
@@ -2675,6 +2713,26 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bgfx::setUniform(coatUniform, carCoat);
         bgfx::submit(1, visualProgram);
       }
+      if (pass == 0) {
+        float veilModel[16];
+        racer::worldTransform(veilModel, 0, float(shown.x), float(shown.z));
+        bgfx::setTransform(veilModel);
+        bgfx::setVertexBuffer(0, reflectionVeilBuffer);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_ALWAYS |
+                       BGFX_STATE_BLEND_ALPHA);
+        bindUnlit(3, whiteTexture);
+        bgfx::submit(1, visualProgram);
+        // The reflection pass painted over the contact shadow; redraw it.
+        float blobModel[16];
+        racer::worldTransform(blobModel, float(shown.heading), float(shown.x), float(shown.z));
+        bgfx::setTransform(blobModel);
+        bgfx::setVertexBuffer(0, shadowBlobBuffer);
+        bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                       BGFX_STATE_DEPTH_TEST_LESS);
+        bindUnlit(3, whiteTexture);
+        bgfx::submit(1, visualProgram);
+      }
+     }
     // Rotational blur: translucent ghosts of each rolling wheel across the
     // angle it sweeps during a ~1/40 s exposure, so spokes smear at speed as in
     // the reference frames. Authored.
@@ -3098,6 +3156,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   bgfx::destroy(turntableBuffer);
   bgfx::destroy(studioBuffer);
   bgfx::destroy(floorGlossBuffer);
+  bgfx::destroy(reflectionVeilBuffer);
   bgfx::destroy(shadowBlobBuffer);
   bgfx::destroy(worldBuffer);
   bgfx::destroy(skyBuffer);
