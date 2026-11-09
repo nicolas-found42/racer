@@ -16,6 +16,11 @@ struct DriveTest {
   double gateDistance = 0, bearing = 0; // bearing radians, + is to the right
   std::string turn;
 };
+// Radar target relative to the car (bearing radians, + right; metres).
+struct RadarBlip {
+  double bearing = 0, distance = 0;
+  int kind = 0; // 0 destination, 1 next gate, 2 later gate
+};
 // Everything the driving HUD shows for one frame.
 struct DriveState {
   double mph = 0, throttle = 0, brake = 0, steer = 0, time = 0;
@@ -23,6 +28,8 @@ struct DriveState {
   std::string vehicle, destination, bearing; // bearing: AHEAD / LEFT / RIGHT
   double distance = 0, bearingRadians = 0;
   bool hasDestination = false;
+  double heading = 0; // car heading, radians (rotates the radar compass)
+  std::vector<RadarBlip> blips;
   // World-anchored marker in window pixels; `behind` when it projects behind the eye.
   bool markerActive = false, markerBehind = false;
   float markerX = 0, markerY = 0;

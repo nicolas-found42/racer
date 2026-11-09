@@ -1667,6 +1667,19 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     }
     cameraY = bodyElevation + (cameraView == "elevated" ? cameraDistance() * 1.3
                                                         : cameraHeight());
+    // Showroom: menus orbit a slow turntable camera around the car, framed to
+    // the right of the left-hand menu column. Driving cameras are untouched.
+    const bool showroom = flow.screen != racer::Screen::Drive &&
+                          flow.screen != racer::Screen::Pause &&
+                          inspectionDistance <= 0 && scene != "scale";
+    if (showroom) {
+      constexpr double pi = 3.14159265358979323846;
+      const double angle = shown.heading + pi * .78 + elapsed * .22;
+      const double radius = std::max(6.4, cameraDistance() * .9);
+      targetX = shown.x + std::sin(angle) * radius;
+      targetZ = shown.z + std::cos(angle) * radius;
+      cameraY = bodyElevation + 1.7;
+    }
     double blend = 1 - std::exp(-8 * dt);
     cameraX += (targetX - cameraX) * blend;
     cameraZ += (targetZ - cameraZ) * blend;
@@ -1874,10 +1887,18 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                             : cameraView == "rear" || inspectionDistance > 0
                                 ? 2.f
                                 : 0.f;
+    float lookX = float(shown.x + std::sin(shown.heading) * lookAhead),
+          lookZ = float(shown.z + std::cos(shown.heading) * lookAhead);
+    if (showroom) {
+      // Shift the aim point left of the car so the car sits right of centre.
+      const float fx = lookX - float(cameraX), fz = lookZ - float(cameraZ);
+      const float len = std::max(1e-3f, std::hypot(fx, fz));
+      const float rx = fz / len, rz = -fx / len; // camera right in the ground plane
+      lookX -= rx * 1.5f;
+      lookZ -= rz * 1.5f;
+    }
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
-                  {float(shown.x + std::sin(shown.heading) * lookAhead),
-                   float(bodyElevation + lookHeight()),
-                   float(shown.z + std::cos(shown.heading) * lookAhead)});
+                  {lookX, float(bodyElevation + lookHeight()), lookZ});
     // Chase-camera field of view widens with speed (up to +12 degrees by ~48
     // m/s), smoothed so it never jumps; inspection and scale cameras keep their
     // fixed lens.
@@ -2034,7 +2055,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           bgfx::submit(1, visualProgram);
         }
     bx::mtxIdentity(model);
-    if (!hideGuides && !flow.session.active() && scene != "scale") {
+    if (!hideGuides && !flow.session.active() && scene != "scale" &&
+        (flow.screen == racer::Screen::Drive ||
+         flow.screen == racer::Screen::Pause)) {
       for (const auto &marker : flow.career.markers()) {
         racer::worldTransform(model, 0, marker.x, marker.z);
         bgfx::setTransform(model);
@@ -2697,6 +2720,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       racer::DriveState hud;
       hud.mph = std::abs(sim.car.speed) * 2.236936;
       hud.reverse = sim.car.direction != 1;
+      hud.heading = sim.car.heading;
       hud.throttle = selectedInput.throttle;
       hud.brake = selectedInput.brake;
       hud.steer = selectedInput.steer;
@@ -2716,6 +2740,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         hud.markerActive = true;
         hud.markerLabel = marker.id;
         hud.markerDistance = hud.distance;
+        hud.blips.push_back({bearing, hud.distance, 0});
         projectToWindow(float(marker.x), 4.f, float(marker.z), hud.markerX,
                         hud.markerY, hud.markerBehind);
       } else {
@@ -2749,6 +2774,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           hud.markerActive = true;
           hud.markerLabel = "Gate " + std::to_string(i + 1);
           hud.markerDistance = cue.distance;
+          for (size_t g = i; g < std::min(gates.size(), i + 2); ++g) {
+            const auto gc = racer::courseGuidance(gates[g], sim.car);
+            hud.blips.push_back({gc.bearing, gc.distance, g == i ? 1 : 2});
+          }
           projectToWindow(float(gates[i].x), 5.5f, float(gates[i].z),
                           hud.markerX, hud.markerY, hud.markerBehind);
         } else

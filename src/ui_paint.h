@@ -4,6 +4,7 @@
 // premultiplied RGBA; all coordinates are logical 1280x720 canvas units.
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
+#include "ui_model.h"
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -149,6 +150,8 @@ inline void arcBlend(CGContextRef c, CGPoint center, CGFloat radius, CGFloat fro
 }
 
 // ---- text ---------------------------------------------------------------
+// Global type multiplier: >1 on small windows so physical glyph size stays readable.
+inline CGFloat gTypeScale = 1;
 inline CTFontRef font(const char* face, CGFloat size) {
   static std::map<std::pair<std::string, int>, CTFontRef> cache;
   const auto key = std::make_pair(std::string(face), int(size * 4));
@@ -177,7 +180,7 @@ inline CTLineRef makeLine(const char* face, CGFloat size, const std::string& val
   CGColorSpaceRelease(space);
   CFNumberRef kern = CFNumberCreate(kCFAllocatorDefault, kCFNumberCGFloatType, &tracking);
   const void* keys[]{kCTFontAttributeName, kCTForegroundColorAttributeName, kCTKernAttributeName};
-  const void* values[]{font(face, size), color, kern};
+  const void* values[]{font(face, size * gTypeScale), color, kern};
   CFDictionaryRef attributes = CFDictionaryCreate(kCFAllocatorDefault, keys, values, 3, &kCFTypeDictionaryKeyCallBacks,
                                                   &kCFTypeDictionaryValueCallBacks);
   CFAttributedStringRef attributed = CFAttributedStringCreate(kCFAllocatorDefault, string, attributes);
@@ -260,4 +263,64 @@ inline CGFloat keycap(CGContextRef c, const std::string& key, CGFloat x, CGFloat
   return w;
 }
 
+
+// Small vector pictograms for menu rows (drawn in a size x size box centred at c).
+// Stroke-based so they inherit the row's ink; shapes are deliberately simple.
+inline void icon(CGContextRef c, ui::Icon kind, CGPoint at, CGFloat size, Ink k) {
+  if (kind == ui::Icon::None) return;
+  CGContextSaveGState(c);
+  CGContextTranslateCTM(c, at.x, at.y);
+  const CGFloat u = size / 20; // design grid: -10..10
+  CGContextScaleCTM(c, u, u);
+  setStroke(c, k);
+  setFill(c, k);
+  CGContextSetLineWidth(c, 2.2);
+  CGContextSetLineCap(c, kCGLineCapRound);
+  CGContextSetLineJoin(c, kCGLineJoinRound);
+  auto line = [&](CGFloat x0, CGFloat y0, CGFloat x1, CGFloat y1) {
+    CGContextBeginPath(c); CGContextMoveToPoint(c, x0, y0); CGContextAddLineToPoint(c, x1, y1); CGContextStrokePath(c);
+  };
+  auto circle = [&](CGFloat cx, CGFloat cy, CGFloat r, bool filled) {
+    CGRect rect = CGRectMake(cx - r, cy - r, 2 * r, 2 * r);
+    if (filled) CGContextFillEllipseInRect(c, rect); else CGContextStrokeEllipseInRect(c, rect);
+  };
+  using ui::Icon;
+  switch (kind) {
+  case Icon::Check: CGContextBeginPath(c); CGContextMoveToPoint(c, -7, 0); CGContextAddLineToPoint(c, -2, 5); CGContextAddLineToPoint(c, 7, -6); CGContextStrokePath(c); break;
+  case Icon::Cross: line(-6, -6, 6, 6); line(6, -6, -6, 6); break;
+  case Icon::Plus: line(-7, 0, 7, 0); line(0, -7, 0, 7); break;
+  case Icon::Minus: line(-7, 0, 7, 0); break;
+  case Icon::Retry:
+    CGContextBeginPath(c);
+    for (int i = 0; i <= 12; ++i) { const double a = (-40 + i * 25.) * M_PI / 180; const CGFloat x = 7 * std::cos(a), y = 7 * std::sin(a); if (i == 0) CGContextMoveToPoint(c, x, y); else CGContextAddLineToPoint(c, x, y); }
+    CGContextStrokePath(c);
+    CGContextBeginPath(c); CGContextMoveToPoint(c, 4, -9); CGContextAddLineToPoint(c, 6, -4); CGContextAddLineToPoint(c, 1, -3); CGContextClosePath(c); CGContextFillPath(c);
+    break;
+  case Icon::Play: CGContextBeginPath(c); CGContextMoveToPoint(c, -5, -7); CGContextAddLineToPoint(c, 7, 0); CGContextAddLineToPoint(c, -5, 7); CGContextClosePath(c); CGContextFillPath(c); break;
+  case Icon::Stopwatch: circle(0, 2, 7, false); line(0, 2, 0, -2); line(0, 2, 3, 4); line(-2, -8, 2, -8); break;
+  case Icon::Cog:
+    circle(0, 0, 4, false);
+    for (int i = 0; i < 8; ++i) { const double a = i * M_PI / 4; line(5.8 * std::cos(a), 5.8 * std::sin(a), 8.6 * std::cos(a), 8.6 * std::sin(a)); }
+    break;
+  case Icon::Brush:
+    line(-6, 6, 2, -2); CGContextSetLineWidth(c, 4.5); line(3, -3, 7, -7); CGContextSetLineWidth(c, 2.2); circle(-6.5, 6.5, 1.8, true);
+    break;
+  case Icon::Flag: line(-6, -8, -6, 8); CGContextBeginPath(c); CGContextMoveToPoint(c, -6, -8); CGContextAddLineToPoint(c, 7, -5); CGContextAddLineToPoint(c, -6, 0); CGContextClosePath(c); CGContextFillPath(c); break;
+  case Icon::Home: CGContextBeginPath(c); CGContextMoveToPoint(c, -8, 0); CGContextAddLineToPoint(c, 0, -8); CGContextAddLineToPoint(c, 8, 0); CGContextStrokePath(c); CGContextStrokeRect(c, CGRectMake(-5, 0, 10, 8)); break;
+  case Icon::Power: line(0, -8, 0, -1); CGContextBeginPath(c); for (int i = 0; i <= 14; ++i) { const double a = (-60 + i * 25.7) * M_PI / 180 - M_PI / 2 + M_PI / 6; const CGFloat x = 7 * std::cos(a + M_PI / 2 + 0), y = 7 * std::sin(a + M_PI / 2) + 1; if (i == 0) CGContextMoveToPoint(c, x, y); else CGContextAddLineToPoint(c, x, y); } CGContextStrokePath(c); break;
+  case Icon::Back: CGContextBeginPath(c); CGContextMoveToPoint(c, 3, -7); CGContextAddLineToPoint(c, -5, 0); CGContextAddLineToPoint(c, 3, 7); CGContextStrokePath(c); break;
+  case Icon::Car:
+    CGContextBeginPath(c); CGContextMoveToPoint(c, -9, 3); CGContextAddLineToPoint(c, -7, -2); CGContextAddLineToPoint(c, -3, -5); CGContextAddLineToPoint(c, 3, -5); CGContextAddLineToPoint(c, 7, -2); CGContextAddLineToPoint(c, 9, 3); CGContextClosePath(c); CGContextStrokePath(c);
+    circle(-5, 4, 2.2, true); circle(5, 4, 2.2, true);
+    break;
+  case Icon::Sliders: line(-8, -4, 8, -4); line(-8, 4, 8, 4); circle(-2, -4, 2.6, true); circle(3, 4, 2.6, true); break;
+  case Icon::Layers: for (CGFloat y : {-5., 0., 5.}) line(-7, y, 7, y); break;
+  case Icon::Pin: circle(0, -2, 5, false); CGContextBeginPath(c); CGContextMoveToPoint(c, -3.5, 1.5); CGContextAddLineToPoint(c, 0, 9); CGContextAddLineToPoint(c, 3.5, 1.5); CGContextStrokePath(c); circle(0, -2, 1.6, true); break;
+  case Icon::Bolt: CGContextBeginPath(c); CGContextMoveToPoint(c, 2, -9); CGContextAddLineToPoint(c, -5, 2); CGContextAddLineToPoint(c, 0, 2); CGContextAddLineToPoint(c, -2, 9); CGContextAddLineToPoint(c, 6, -3); CGContextAddLineToPoint(c, 1, -3); CGContextClosePath(c); CGContextFillPath(c); break;
+  case Icon::Brake: circle(0, 0, 7, false); circle(0, 0, 3, true); break;
+  case Icon::Wheel: circle(0, 0, 8, false); line(-8, 0, 8, 0); line(0, 0, 0, 8); break;
+  case Icon::None: break;
+  }
+  CGContextRestoreGState(c);
+}
 } // namespace racer::paint

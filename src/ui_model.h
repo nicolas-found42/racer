@@ -25,12 +25,15 @@ enum class RowKind {
   Spacer
 };
 
+enum class Icon { None, Check, Cross, Retry, Play, Stopwatch, Cog, Brush, Flag, Home, Power, Back, Car, Sliders, Plus, Minus, Layers, Pin, Bolt, Brake, Wheel };
+
 struct Row {
   RowKind kind = RowKind::Info;
   std::string label, value, hint;
   bool selected = false;
   bool indented = false; // detail line belonging to the preceding group
   bool adjustable = false; // "[Left / Right]" cycles or adjusts the value
+  Icon icon = Icon::None;
   double current = 0, low = 0, high = 0; // Slider only
   int source = 0;                         // index into the original lines
 };
@@ -165,6 +168,25 @@ inline std::vector<KeyHint> parseHints(std::string_view line) {
   return out;
 }
 
+// Glyph for a menu entry, chosen from its wording (first match wins).
+inline Icon iconFor(std::string_view label) {
+  const std::string l = upper(std::string(label));
+  struct Rule { const char* word; Icon icon; };
+  static const Rule rules[] = {
+      {"APPLY", Icon::Check}, {"SAVE", Icon::Check}, {"CANCEL", Icon::Cross}, {"DISCARD", Icon::Cross},
+      {"REMOVE", Icon::Minus}, {"RESTORE", Icon::Retry}, {"RETRY", Icon::Retry}, {"QUIT", Icon::Power},
+      {"RETURN", Icon::Back}, {"BACK", Icon::Back}, {"KEEP EDITING", Icon::Back}, {"FREE DRIVE", Icon::Wheel},
+      {"DRIVE", Icon::Play}, {"RESUME", Icon::Play}, {"CONTINUE", Icon::Play}, {"START", Icon::Flag},
+      {"TEST", Icon::Stopwatch}, {"AUTOMATIC", Icon::Stopwatch}, {"PLAYER RUN", Icon::Wheel}, {"PARTS", Icon::Cog},
+      {"CATALOG", Icon::Cog}, {"OWNED", Icon::Cog}, {"INSTALL", Icon::Plus}, {"ACQUIRE", Icon::Plus}, {"ADD", Icon::Plus},
+      {"BUY", Icon::Plus}, {"LIVERY", Icon::Brush}, {"DECAL", Icon::Brush}, {"LAYER", Icon::Layers}, {"EVENT", Icon::Flag},
+      {"DESTINATION", Icon::Pin}, {"GARAGE", Icon::Home}, {"CAR", Icon::Car}, {"SETUP", Icon::Sliders},
+      {"ACCELERATION", Icon::Bolt}, {"BRAKE", Icon::Brake}, {"STEERING", Icon::Wheel}};
+  for (const auto& rule : rules)
+    if (l.find(rule.word) != std::string::npos) return rule.icon;
+  return Icon::None;
+}
+
 // optionCount: how many prefixed rows are real menu entries (PlayFlow::menuCount);
 // further prefixed rows are detail lines that merely share the indent.
 inline Panel parsePanel(const std::vector<std::string>& lines, size_t optionCount = size_t(-1)) {
@@ -228,6 +250,7 @@ inline Panel parsePanel(const std::vector<std::string>& lines, size_t optionCoun
         row.value = probe.value;
       }
     }
+    if (row.kind == RowKind::Option || row.kind == RowKind::Slider || row.kind == RowKind::Field) row.icon = iconFor(row.label);
     out.rows.push_back(std::move(row));
   }
   while (!out.rows.empty() && out.rows.back().kind == RowKind::Spacer) out.rows.pop_back();

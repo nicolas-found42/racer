@@ -7,8 +7,10 @@ int main()try{
   const auto normal=racer::hudLayout(1280,720);
   require(!normal.compact&&normal.x==0&&normal.y==0&&normal.width==1280&&normal.height==720&&normal.uMax==1&&normal.vMax==1,"normal layout exact identity");
   const auto medium=racer::hudLayout(960,540,true);
-  require(medium.compact&&medium.width==720&&medium.height==540&&medium.x==120,"medium window pages compact controls without shrinking normal text");
-  require(24.*medium.height/medium.logicalHeight==27,"medium compact controls remain legible");
+  require(!medium.compact&&medium.width==960&&medium.height==540,"medium window keeps the structured menu layout");
+  const auto tiny=racer::hudLayout(800,450,true);
+  require(tiny.compact&&tiny.width==600&&tiny.height==450&&tiny.x==100,"below 0.75 scale menus use the compact canvas");
+  require(24.*tiny.height/tiny.logicalHeight==22.5,"tiny compact controls remain legible");
   const auto mediumDrive=racer::hudLayout(960,540);
   require(!mediumDrive.compact&&mediumDrive.width==960&&mediumDrive.height==540,"medium driving retains corner card positions");
   require(16.*mediumDrive.height/mediumDrive.logicalHeight==12,"enlarged medium secondary type reaches twelve physical pixels");

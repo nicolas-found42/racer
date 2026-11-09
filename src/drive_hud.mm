@@ -133,6 +133,55 @@ void speedometer(CGContextRef c,const DriveState& s,CGPoint centre) {
     text(c,kNumeric,12,names[i],rail.origin.x+4.5,rail.origin.y+rail.size.height+16,muted,12,Align::Center,.4);
   }
 }
+
+// Radar: heading-up disc with a rotating compass rim and blips for the
+// destination and upcoming gates (real positions; no road data is drawn).
+void radar(CGContextRef c,const DriveState& s,CGPoint centre) {
+  constexpr CGFloat R=76;
+  const double range=120+std::clamp(s.mph,0.,100.)*1.8;
+  CGContextSaveGState(c);
+  CGContextSetShadowWithColor(c,{0,4},14,shade(0,0,0,.5));
+  setFill(c,{.02,.035,.048,.62});CGContextFillEllipseInRect(c,CGRectMake(centre.x-R-8,centre.y-R-8,2*R+16,2*R+16));
+  CGContextRestoreGState(c);
+  CGContextSaveGState(c);
+  CGContextAddEllipseInRect(c,CGRectMake(centre.x-R-8,centre.y-R-8,2*R+16,2*R+16));CGContextClip(c);
+  radialGlow(c,{centre.x,centre.y-30},R*1.9,{.14,.24,.29,.5},{.02,.035,.048,.8});
+  // View wedge (forward 70 degrees).
+  setFill(c,{cyan.r,cyan.g,cyan.b,.10});
+  CGContextMoveToPoint(c,centre.x,centre.y);
+  for(int i=0;i<=14;++i){const auto p=onCircle(centre,R,-125+i*70./14);CGContextAddLineToPoint(c,p.x,p.y);}
+  CGContextClosePath(c);CGContextFillPath(c);
+  CGContextRestoreGState(c);
+  setStroke(c,{1,1,1,.12});CGContextSetLineWidth(c,1.5);
+  CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-R-7.5,centre.y-R-7.5,2*R+15,2*R+15));
+  for(CGFloat f:{.33,.66}) {setStroke(c,{1,1,1,.07});CGContextSetLineWidth(c,1);CGContextStrokeEllipseInRect(c,CGRectMake(centre.x-R*f,centre.y-R*f,2*R*f,2*R*f));}
+  // Compass rim: north is -heading from the car's forward axis.
+  const char* names[]{"N","E","S","W"};
+  for(int i=0;i<4;++i) {
+    const double a=-s.heading+i*M_PI/2;const CGFloat deg=a*180/M_PI-90;
+    const auto p=onCircle(centre,R-1,deg),q=onCircle(centre,R-9,deg),t=onCircle(centre,R-20,deg);
+    setStroke(c,i==0?Ink{red}:Ink{1,1,1,.45});CGContextSetLineWidth(c,i==0?3:2);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,p.x,p.y);CGContextAddLineToPoint(c,q.x,q.y);CGContextStrokePath(c);
+    text(c,kNumeric,i==0?15:12,names[i],t.x,t.y+(i==0?5:4),i==0?red:Ink{1,1,1,.55},20,Align::Center);
+  }
+  for(int i=0;i<24;++i) if(i%6) {
+    const CGFloat deg=(-s.heading*180/M_PI)+i*15-90;
+    const auto p=onCircle(centre,R-1,deg),q=onCircle(centre,R-5,deg);
+    setStroke(c,{1,1,1,.22});CGContextSetLineWidth(c,1);
+    CGContextBeginPath(c);CGContextMoveToPoint(c,p.x,p.y);CGContextAddLineToPoint(c,q.x,q.y);CGContextStrokePath(c);
+  }
+  // Blips.
+  for(const auto& b:s.blips) {
+    const bool clamped=b.distance>range;const CGFloat r=(clamped?1.:b.distance/range)*(R-26);
+    const CGFloat deg=b.bearing*180/M_PI-90;const auto p=onCircle(centre,r,deg);
+    const Ink tone=b.kind==2?amber.withAlpha(.55):amber;
+    CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,.7,.25,b.kind==2?.4:.9));
+    if(clamped) triangleArrow(c,p,6,b.bearing,tone);else diamond(c,p,b.kind==2?4.5:6.5,tone);
+    CGContextRestoreGState(c);
+  }
+  triangleArrow(c,centre,7,0,white);
+  text(c,kLabel,10.5,"RANGE "+std::to_string(int(std::round(range/10)*10))+" M",centre.x,centre.y+R+23,muted,120,Align::Center,1.8);
+}
 void identity(CGContextRef c,const DriveState& s) {
   gradientRect(c,CGRectMake(34,36,3.5,62),{cyan.r,cyan.g,cyan.b,1},{amber.r,amber.g,amber.b,1},false,1.5);
   text(c,kHeavy,28,"RACER",50,62,white,200,Align::Left,7,true);
@@ -145,10 +194,10 @@ void controls(CGContextRef c,const DriveState& s) {
   const std::vector<std::vector<Group>> rows{
     {{{"W","S"},"THROTTLE / BRAKE"},{{"A","D"},"STEER"}},
     {{{"R"},"RESET"},{{"M"},"EVENTS"},{{"F8"},"REPORT"},{{"ESC"},"MENU"}}};
-  CGFloat y=640;
+  CGFloat y=646;
   CGContextSaveGState(c);CGContextSetAlpha(c,alpha);
   for(const auto& row:rows) {
-    CGFloat x=34;
+    CGFloat x=222;
     for(const auto& group:row) {
       for(auto key:group.keys) x+=keycap(c,key,x,y,22,white)+3;
       x+=4;
@@ -207,12 +256,12 @@ void testHud(CGContextRef c,const DriveState& s) {
   const auto& t=*s.test;
   const std::string name=upper(t.name);
   if(t.countdown) {
-    text(c,kLabel,14,name,640,100,white.withAlpha(.85),420,Align::Center,4,true);
-    const CGFloat cx=640,cy=176;
+    text(c,kLabel,14,name,640,92,white.withAlpha(.85),420,Align::Center,4,true);
+    text(c,kLabel,13,t.automatic?"AUTOMATIC INPUT":"GET READY",640,114,amber,300,Align::Center,5,true);
+    const CGFloat cx=640,cy=196;
     arc(c,{cx,cy},62,-90,-90+360*std::clamp(t.countdownSeconds-std::floor(t.countdownSeconds),0.,1.),5,amber,kCGLineCapRound);
     arc(c,{cx,cy},62,0,360,2,{1,1,1,.18});
     text(c,kNumeric,92,std::to_string(std::max(1,int(std::ceil(t.countdownSeconds)))),cx,cy+32,white,200,Align::Center,0,true);
-    text(c,kLabel,13,t.automatic?"AUTOMATIC INPUT":"GET READY",cx,cy+96,amber,300,Align::Center,5,true);
     return;
   }
   const CGRect r=CGRectMake(430,24,420,t.kind==2?108:96);
@@ -250,6 +299,7 @@ struct DriveHud::Impl {
   std::vector<std::string> previousPanel;int previousOptions=-2;
   bool previousActiveTest=false;
   bool compact=false;
+  double scale=1;
   std::string driveKey;
   HudLayout lastFit;
   ~Impl() {
@@ -270,7 +320,7 @@ struct DriveHud::Impl {
                          bgfx::copy(pixels.data(),uint32_t(pixels.size())));
   }
   void paintCompact(const DriveState& s) {
-    CGContextRef c;begin(c);
+    CGContextRef c;begin(c);gTypeScale=1;
     const int metres=int(std::clamp(std::round(s.distance/10)*10,0.,1e8));
     plate(c,CGRectMake(16,16,608,s.test?60:128),8);
     if(s.test) {
@@ -292,7 +342,8 @@ struct DriveHud::Impl {
     end(c);mode=Mode::Drive;
   }
   void paintDrive(const DriveState& s,const HudLayout& fit,uint16_t width,uint16_t height) {
-    if(compact){paintCompact(s);return;}
+    gTypeScale=scale<.9?1.2:1;
+    if(compact){gTypeScale=1;paintCompact(s);return;}
     CGContextRef c;begin(c);
     if(s.test) {
       testHud(c,s);
@@ -306,6 +357,7 @@ struct DriveHud::Impl {
     }
     worldMarker(c,s,fit,width,height);
     controls(c,s);
+    radar(c,s,{122,590});
     speedometer(c,s,{1096,578});
     end(c);mode=Mode::Drive;
   }
@@ -413,7 +465,8 @@ struct DriveHud::Impl {
       CGContextSaveGState(c);CGContextClipToRect(c,CGRectMake(0,0,canvasWidth,canvasHeight));
       radialGlow(c,{640,360},700,{0,.01,.02,.0},{0,0,.01,.62});CGContextRestoreGState(c);
     } else {
-      gradientRect(c,CGRectMake(0,0,canvasWidth,canvasHeight),{.005,.015,.025,.92},{.005,.015,.025,.40},true);
+      gradientRect(c,CGRectMake(0,0,720,canvasHeight),{.005,.015,.025,.92},{.005,.015,.025,.50},true);
+      gradientRect(c,CGRectMake(720,0,560,canvasHeight),{.005,.015,.025,.50},{.005,.015,.025,.10},true);
     }
     gradientRect(c,CGRectMake(0,0,canvasWidth,150),{0,0,0,.55},{0,0,0,0},false);
     gradientRect(c,CGRectMake(0,624,canvasWidth,96),{0,0,0,0},{0,0,0,.70},false);
@@ -444,6 +497,7 @@ struct DriveHud::Impl {
     }
   }
   void paintPanelNormal(const std::vector<std::string>& lines,int optionCount) {
+    gTypeScale=scale<.9?1.22:1;
     const auto panel=ui::parsePanel(lines,optionCount<0?size_t(-1):size_t(optionCount));
     CGContextRef c;begin(c);
     std::vector<size_t> menu=ui::selectable(panel);
@@ -469,11 +523,15 @@ struct DriveHud::Impl {
       } else {
         gradientSkew(c,r,skew,{.05,.08,.10,.62},{.05,.08,.10,.30});
       }
-      const CGFloat fs=std::max<CGFloat>(14,std::min<CGFloat>(20,rowH*.54)),base=y+rowH/2+fs*.34,tx=colX+skew+16;
+      const CGFloat fs=std::max<CGFloat>(14,std::min<CGFloat>(20,rowH*.54)),base=y+rowH/2+fs*.34,tx0=colX+skew+16;
+      CGFloat tx=tx0;
       const Ink body=row.selected?white:white.withAlpha(.80);
+      const CGFloat iconW=row.icon!=ui::Icon::None?28:0;
+      if(row.icon!=ui::Icon::None) icon(c,row.icon,{tx0+9,y+rowH/2},std::min<CGFloat>(rowH*.58,19),row.selected?amber:Ink{cyan.r,cyan.g,cyan.b,.75});
+      tx=tx0+iconW;
       if(row.kind==ui::RowKind::Slider) {
-        text(c,kBody,fs*.92,row.label,tx,base,body,150);
-        const CGFloat bx=tx+150,bw=colW-150-skew-16-96,by=y+rowH/2-3;
+        text(c,kBody,fs*.92,row.label,tx,base,body,150-iconW);
+        const CGFloat bx=tx0+150,bw=colW-150-skew-16-96,by=y+rowH/2-3;
         fill(c,CGRectMake(bx,by,bw,6),{0,0,0,.45},3);
         const double fr=ui::sliderFraction(row);
         gradientRect(c,CGRectMake(bx,by,std::max<CGFloat>(6,bw*fr),6),cyan,fr>.8?amber:mix(cyan,green,.5),true,3);
@@ -482,7 +540,7 @@ struct DriveHud::Impl {
         setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(bx+bw*fr-6,by-3,12,12));CGContextRestoreGState(c);
         text(c,kNumeric,fs*1.15,row.value,colX+colW-skew-14,base,row.selected?amber:white,80,Align::Right,.4);
       } else if(row.kind==ui::RowKind::Field) {
-        text(c,kLabel,fs*.78,upper(row.label),tx,base,row.selected?white.withAlpha(.9):muted,160,Align::Left,1.6);
+        text(c,kLabel,fs*.78,upper(row.label),tx,base,row.selected?white.withAlpha(.9):muted,160-iconW,Align::Left,1.6);
         const CGFloat vx=colX+colW-skew-(row.adjustable?44:16);
         text(c,kBody,fs*.95,row.value,vx,base,body,colW-190,Align::Right);
         if(row.adjustable) {
@@ -526,7 +584,7 @@ struct DriveHud::Impl {
     end(c);mode=Mode::Panel;
   }
   void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest) {
-    CGContextRef c;begin(c);
+    CGContextRef c;begin(c);gTypeScale=1;
     fill(c,CGRectMake(12,12,616,456),{.02,.035,.048,.94},8);
     text(c,kHeavy,30,upper(lines.front()),28,46,white,584,Align::Left,1);
     gradientSkew(c,CGRectMake(28,58,300,3),8,cyan,{cyan.r,cyan.g,cyan.b,0});
@@ -601,7 +659,8 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   s.bearing=boundedText(s.bearing,64);s.markerLabel=boundedText(s.markerLabel,128);
   auto q=[](double v,double step){return std::isfinite(v)?std::round(v/step)*step:0.;};
   s.throttle=q(std::clamp(s.throttle,0.,1.),.05);s.brake=q(std::clamp(s.brake,0.,1.),.05);
-  s.bearingRadians=q(s.bearingRadians,.02);s.markerDistance=q(s.markerDistance,10);
+  s.bearingRadians=q(s.bearingRadians,.02);s.heading=q(std::remainder(s.heading,2*M_PI),.02);
+  for(auto& b:s.blips){b.bearing=q(b.bearing,.02);b.distance=q(b.distance,2);}s.markerDistance=q(s.markerDistance,10);
   s.markerX=float(std::round(s.markerX));s.markerY=float(std::round(s.markerY));
   s.time=0;
   if(s.test){
@@ -610,10 +669,14 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
     t.bearing=q(t.bearing,.02);t.name=boundedText(t.name,128);t.note=boundedText(t.note,128);t.turn=boundedText(t.turn,64);
   }
   auto& p=*impl;const auto fit=hudLayout(width,height);const bool compact=fit.compact;
+  const double scale=double(fit.width)/fit.logicalWidth;
+  if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
   std::ostringstream out;
   out<<int(s.mph)<<'|'<<s.reverse<<'|'<<s.throttle<<'|'<<s.brake<<'|'<<s.hasDestination<<'|'<<s.vehicle<<'|'<<s.destination<<'|'
      <<s.distance<<'|'<<s.bearing<<'|'<<s.bearingRadians<<'|'<<s.markerActive<<s.markerBehind<<'|'<<s.markerX<<','<<s.markerY<<'|'
-     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<compact<<'|'<<width<<'x'<<height;
+     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<s.heading;
+  for(const auto& b:s.blips) out<<'|'<<b.kind<<','<<b.bearing<<','<<b.distance;
+  out<<'|'<<compact<<'|'<<width<<'x'<<height;
   if(s.test){const auto& t=*s.test;
     out<<"|T"<<t.kind<<'|'<<t.name<<'|'<<t.note<<'|'<<t.countdown<<t.measuring<<t.automatic<<'|'<<t.countdownSeconds<<'|'<<t.elapsed<<'|'
        <<t.distance<<'|'<<t.speedKmh<<'|'<<t.gate<<'/'<<t.gates<<'|'<<t.gateDistance<<'|'<<t.bearing<<'|'<<t.turn;}
@@ -625,7 +688,9 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
 void DriveHud::drawPanel(uint16_t width,uint16_t height,
                          const std::vector<std::string>& lines,bool activeTest,int optionCount) {
   if(!width||!height||lines.empty()) return;
-  auto& p=*impl;const bool compact=hudLayout(width,height,true).compact;
+  auto& p=*impl;const auto fit=hudLayout(width,height,true);const bool compact=fit.compact;
+  const double scale=double(fit.width)/fit.logicalWidth;
+  if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
   if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
   if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest||optionCount!=p.previousOptions)
     p.paintPanel(lines,activeTest,optionCount);
