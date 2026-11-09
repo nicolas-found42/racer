@@ -75,7 +75,7 @@ Result: 100% of captures produced; smoke now stays a small wisp behind the tyres
 
 ## Retention
 
-Keep `vehicle-physics-patches/` (canonical input, untracked). `build/` is ignored and regenerable. No other outputs.
+Keep `vehicle-physics-patches/` (canonical input; tracked in git since commit `218ecdb`, previously kept untracked on disk). `build/` is ignored and regenerable. No other outputs.
 
 ## Next action
 

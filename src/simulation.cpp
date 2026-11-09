@@ -90,6 +90,13 @@ double torqueAt(const VehicleDynamics &p, double rpm) {
     }
   return p.torqueNm.back();
 }
+// Closed-throttle pumping torque, quoted at the redline and scaling with
+// engine speed; a flat value pinned part throttle to the idle-creep
+// equilibrium (2026-11-09 stall fix).
+double engineBrakeTorqueAt(const VehicleDynamics &p, double omega) {
+  return p.engineBrakeTorque *
+         std::clamp(omega / (p.engineRedlineRpm * rpmToRadians), 0.0, 1.0);
+}
 bool finitePose(const Car &c) {
   for (double v : {c.x, c.y, c.z, c.heading, c.pitch, c.roll, c.speed,
                    c.steering, c.velocityX, c.velocityY, c.velocityZ, c.yawRate,
@@ -640,18 +647,14 @@ void Simulation::integrate(Input input, double h) {
   // to rev against the load. A flat closed-throttle torque pinned every car
   // to the idle-creep equilibrium: at 10 % throttle the 14 Nm requested was
   // below the old 31.5 Nm of braking (2026-11-09 stall diagnosis).
-  const double idleBrake =
-      p.engineBrakeTorque * (idle / (p.engineRedlineRpm * rpmToRadians));
+  const double idleBrake = engineBrakeTorqueAt(p, idle);
   const double governor =
       std::clamp((idle - engineOmega_) * 8.0 + idleBrake * (1 - throttle_) +
                      p.engineViscousDrag * idle,
                  0.0, torqueAt(p, p.engineIdleRpm));
   const double netEngine =
       torqueAt(p, engineOmega_ / rpmToRadians) * throttleTorque + governor -
-      p.engineBrakeTorque *
-          std::clamp(engineOmega_ / (p.engineRedlineRpm * rpmToRadians), 0.0,
-                     1.0) *
-          (1 - throttle_) -
+      engineBrakeTorqueAt(p, engineOmega_) * (1 - throttle_) -
       p.engineViscousDrag * engineOmega_;
   const double engineFree =
       std::max(0.0, engineOmega_ + h * netEngine / p.engineInertia);

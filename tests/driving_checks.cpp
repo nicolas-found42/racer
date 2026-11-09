@@ -166,21 +166,38 @@ int main(int argc, char **argv) {
           std::abs(right->car.x + left->car.x) > 1e-3)
         fail("mirrored steering heading " + std::to_string(right->car.heading) +
              "/" + std::to_string(left->car.heading));
-      // Part-throttle launch (2026-11-09 stall diagnosis): an analog trigger
-      // held at 5-24 % pinned every car to the idle-creep equilibrium (1.7-2.7
-      // m/s at 0.000 m/s^2, engine held at idle+10..34 rpm by the governor).
-      // The engine must be free to rev against the load and the car must keep
-      // accelerating; a quarter trigger must give a usable launch.
+      // Part-throttle launch (2026-11-09 stall diagnosis, experiment README):
+      // an analog trigger held at 5-24 % pinned every car to the idle-creep
+      // equilibrium (1.7-2.7 m/s at 0.000 m/s^2, engine held at idle+10..34
+      // rpm by the governor). The engine must be free to rev against the load
+      // and the car must keep accelerating at any pedal position in that band;
+      // 10 % must clear the old 2.7 m/s plateau within 4 s (the spec's
+      // criterion), and a quarter trigger must give a usable launch.
+      constexpr double idleCreepMax = 2.7; // Pre-fix plateau upper bound.
+      constexpr double governorFloor =
+          1200; // Engine must rev off the governor.
       auto creep = configured();
-      for (int i = 0; i < 120 * 6; ++i)
+      for (int i = 0; i < 120 * 4; ++i)
         creep->tick({.1, 0, 0});
-      const double v6 = creep->car.speed;
-      for (int i = 0; i < 120 * 6; ++i)
+      const double v4 = creep->car.speed;
+      for (int i = 0; i < 120 * 8; ++i)
         creep->tick({.1, 0, 0});
-      if (creep->car.speed < v6 + .3 || creep->car.engineRpm < 1200.)
-        fail("10 % throttle bogs: v6=" + std::to_string(v6) +
+      if (v4 < idleCreepMax || creep->car.speed < v4 + .3 ||
+          creep->car.engineRpm < governorFloor)
+        fail("10 % throttle bogs: v4=" + std::to_string(v4) +
              " v12=" + std::to_string(creep->car.speed) +
              " rpm=" + std::to_string(creep->car.engineRpm));
+      auto feather = configured();
+      for (int i = 0; i < 120 * 6; ++i)
+        feather->tick({.05, 0, 0});
+      const double f6 = feather->car.speed;
+      for (int i = 0; i < 120 * 6; ++i)
+        feather->tick({.05, 0, 0});
+      if (feather->car.speed < f6 + 1. ||
+          feather->car.engineRpm < governorFloor)
+        fail("5 % throttle bogs: v6=" + std::to_string(f6) +
+             " v12=" + std::to_string(feather->car.speed) +
+             " rpm=" + std::to_string(feather->car.engineRpm));
       auto quarter = configured();
       for (int i = 0; i < 120 * 8; ++i)
         quarter->tick({.25, 0, 0});
