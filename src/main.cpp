@@ -62,7 +62,6 @@ struct CarGraphics {
   // Outer-rim vertices of each rolling wheel mesh (wheel-local, pivot-centred),
   // used to find the true lowest tyre point for the showroom floor contact.
   std::array<std::vector<std::array<float, 3>>, 4> tyreRim;
-  std::array<float, 4> tyreReach{};
   ~CarGraphics() {
     if (bgfx::isValid(vertices))
       bgfx::destroy(vertices);
@@ -74,7 +73,6 @@ using Vertex = racer::AssetVertex;
 void fillTyreRim(CarGraphics &graphics, const racer::MeshAsset &asset) {
   for (int wheel = 0; wheel < 4; ++wheel) {
     const float reach = racer::tyreRadialReach(asset, wheel);
-    graphics.tyreReach[size_t(wheel)] = reach;
     graphics.tyreRim[size_t(wheel)] = racer::tyreRimVertices(asset, wheel, reach);
   }
 }
@@ -1817,17 +1815,44 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const auto spin =
           racer::wheelSpinAfterTravel(0, shown.travel, g.wheels[index].radius) +
           extraSpin;
-      if (groundFrame)
+      // Exact contact: the lowest rim vertex of this wheel at this spin (local
+      // frame; flat-world Y equals local Y) is moved onto the ground plane.
+      float lift = 0;
+      if (graphics && index < 4 && !graphics->tyreRim[index].empty()) {
+        float local[16];
+        racer::wheelRenderTransform(local, g, index, 0, 0, 0, shown.steering,
+                                    spin, true);
+        lift = racer::tyreLowestY(graphics->tyreRim[index], local);
+      }
+      if (groundFrame) {
         racer::surfaceFollow::wheelMatrix(output, *groundFrame, g, index,
                                           shown.steering, spin, rolling);
-      else {
+        // Exact contact on the fitted surface: slide the wheel along the surface
+        // normal until its lowest rim vertex lies on the tangent plane at this
+        // wheel's ground contact.
+        if (graphics && index < 4 && !graphics->tyreRim[index].empty()) {
+          float placed[16];
+          racer::surfaceFollow::wheelMatrix(placed, *groundFrame, g, index,
+                                            shown.steering, spin, true);
+          const auto &contact = groundFrame->contacts[index];
+          const auto &n = contact.hit.normal;
+          double lowest = 1e9;
+          for (const auto &v : graphics->tyreRim[index]) {
+            const double px = placed[0] * v[0] + placed[4] * v[1] + placed[8] * v[2] + placed[12];
+            const double py = placed[1] * v[0] + placed[5] * v[1] + placed[9] * v[2] + placed[13];
+            const double pz = placed[2] * v[0] + placed[6] * v[1] + placed[10] * v[2] + placed[14];
+            lowest = std::min(lowest, n.x * (px - contact.ground.x) +
+                                          n.y * (py - contact.ground.y) +
+                                          n.z * (pz - contact.ground.z));
+          }
+          output[12] -= float(lowest * n.x);
+          output[13] -= float(lowest * n.y);
+          output[14] -= float(lowest * n.z);
+        }
+      } else {
         racer::wheelRenderTransform(output, g, index, shown.heading, shown.x,
                                     shown.z, shown.steering, spin, rolling);
-        // Put the real lowest tyre point on the road (flat y=0) instead of
-        // trusting the authored centre height.
-        if (graphics && index < 4)
-          output[13] -= float(
-              racer::tyreContactLift(g, index, graphics->tyreReach[index]));
+        output[13] -= lift;
       }
     };
     double targetX = shown.x - std::sin(shown.heading) * cameraDistance(),
@@ -2055,10 +2080,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         if (section.blend)
           continue;
         if (section.wheel >= 0)
+        {
           racer::wheelRenderTransform(
               model, vehicles[parked.vehicle].geometry, size_t(section.wheel),
               parked.heading, parked.x, parked.z, 0, 0, section.rolling);
-        else
+          if (section.wheel < 4 && !parked.graphics->tyreRim[size_t(section.wheel)].empty())
+            model[13] -= racer::tyreLowestY(
+                parked.graphics->tyreRim[size_t(section.wheel)], model);
+        } else
           racer::worldTransform(model, parked.heading, parked.x, parked.z);
         bgfx::setTransform(model);
         bgfx::setVertexBuffer(0, parked.graphics->vertices, section.first,
@@ -2581,11 +2610,14 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           if (section.blend != transparent)
             continue;
           float placed[16];
-          if (section.wheel >= 0)
+          if (section.wheel >= 0) {
             racer::wheelRenderTransform(placed, geometry, size_t(section.wheel),
                                         parked.heading, parked.x, parked.z, 0,
                                         0, section.rolling);
-          else
+            if (section.wheel < 4 && !parked.graphics->tyreRim[size_t(section.wheel)].empty())
+              placed[13] -= racer::tyreLowestY(
+                  parked.graphics->tyreRim[size_t(section.wheel)], placed);
+          } else
             racer::worldTransform(placed, parked.heading, parked.x, parked.z);
           bgfx::setTransform(placed);
           bgfx::setVertexBuffer(0, parked.graphics->vertices, section.first,

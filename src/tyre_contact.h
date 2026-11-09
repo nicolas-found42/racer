@@ -39,12 +39,14 @@ inline std::vector<std::array<float, 3>> tyreRimVertices(const MeshAsset &asset,
   }
   return rim;
 }
-// Authored wheel centres do not always sit one tyre radius above the road: the
-// real mesh reaches radialReach below its centre. Moving the wheel down by this
-// amount puts the lowest tyre point exactly on the ground plane (negative lifts
-// raise a tyre that would otherwise sink). Zero when the mesh gives no reach.
-inline double tyreContactLift(const VehicleGeometry &geometry, std::size_t wheel,
-                              float radialReach) {
-  return radialReach > 0 ? geometry.wheels[wheel].center.y - double(radialReach) : 0;
+// Lowest world/local Y of a wheel's rim vertices under a column-major wheel matrix
+// (as produced by wheelRenderTransform, optionally with the body frame applied
+// first). Tyre meshes are faceted, so this depends on the current spin; using it
+// each time a wheel is placed makes the lowest tyre point touch the ground exactly.
+inline float tyreLowestY(const std::vector<std::array<float, 3>> &rim, const float *m) {
+  float lowest = 1e9f;
+  for (const auto &v : rim)
+    lowest = std::min(lowest, m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13]);
+  return lowest;
 }
 } // namespace racer
