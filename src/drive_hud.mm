@@ -253,6 +253,8 @@ bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float w
   const bool inside=!s.markerBehind&&lx>inset&&lx<w-inset&&ly>inset+10&&ly<h-inset-60;
   const std::string label=upper(s.markerLabel)+"  ·  "+rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
   if(inside) {
+    // Soft beacon column above the marker (objective visibility at distance).
+    gradientRect(c,CGRectMake(lx-5,std::max<CGFloat>(0,ly-170),10,std::min<CGFloat>(ly,170)),{amber.r,amber.g,amber.b,0},{amber.r,amber.g,amber.b,.35},false,5);
     CGContextSaveGState(c);
     CGContextSetShadowWithColor(c,{0,0},14,shade(1,.7,.25,.9));
     diamond(c,{lx,ly},11,amber);
@@ -348,7 +350,7 @@ struct DriveHud::Impl {
   bgfx::VertexLayout layout;
   enum class Mode { None,Drive,Panel };
   Mode mode=Mode::None;
-  std::vector<std::string> previousPanel;int previousOptions=-2;
+  std::vector<std::string> previousPanel;int previousOptions=-2;std::string previousMapKey;
   bool previousActiveTest=false;
   bool compact=false;
   double scale=1;
@@ -421,11 +423,12 @@ struct DriveHud::Impl {
   }
   // ---- menus ------------------------------------------------------------
   struct Block {
-    enum Kind {Tiles,Hero,Detail,KeyValue,Paragraph,Warning,Notice,Sub,Header,Gap} kind=Gap;
+    enum Kind {Map,Tiles,Hero,Detail,KeyValue,Paragraph,Warning,Notice,Sub,Header,Gap} kind=Gap;
     std::string label,value;std::vector<std::string> wrapped;CGFloat height=0;bool good=true;std::vector<std::pair<std::string,std::string>> tiles;
   };
-  static std::vector<Block> buildBlocks(const ui::Panel& panel,const ui::Row* selected,CGFloat width,CGFloat scale) {
+  static std::vector<Block> buildBlocks(const ui::Panel& panel,const ui::Row* selected,CGFloat width,CGFloat scale,bool map=false) {
     std::vector<Block> blocks;
+    if(map) {Block m;m.kind=Block::Map;m.height=236*scale;blocks.push_back(m);}
     if(selected&&!selected->hint.empty()) {
       Block b;b.kind=Block::Detail;b.label=selected->label;b.wrapped=wrap(kBodyMedium,15*scale,selected->hint,width-36);
       b.height=34+CGFloat(b.wrapped.size())*21*scale;blocks.push_back(b);
@@ -466,11 +469,41 @@ struct DriveHud::Impl {
     }
     return blocks;
   }
-  void drawBlocks(CGContextRef c,const std::vector<Block>& blocks,CGRect card,CGFloat scale) {
+  void drawMap(CGContextRef c,const PanelMap& map,CGRect r) {
+    CGContextSaveGState(c);rounded(c,r,5);CGContextClip(c);
+    fill(c,r,{.06,.10,.12,1});
+    // Fit markers and the car with margin.
+    double x0=map.carX,x1=map.carX,z0=map.carZ,z1=map.carZ;
+    for(const auto& m:map.markers){x0=std::min(x0,m.x);x1=std::max(x1,m.x);z0=std::min(z0,m.z);z1=std::max(z1,m.z);}
+    const double pad=70;x0-=pad;x1+=pad;z0-=pad;z1+=pad;
+    const double k=std::min(r.size.width/(x1-x0),r.size.height/(z1-z0));
+    const CGFloat ox=r.origin.x+(r.size.width-(x1-x0)*k)/2,oy=r.origin.y+(r.size.height+(z1-z0)*k)/2;
+    auto at=[&](double wx,double wz){return CGPoint{CGFloat(ox+(wx-x0)*k),CGFloat(oy-(wz-z0)*k)};};
+    const double e=worldScale::halfExtent;
+    setStroke(c,{.27,.35,.38,1});CGContextSetLineWidth(c,std::max(2.0,worldScale::roadWidth*k));
+    for(int i=-int(e/worldScale::blockSpacing);i<=int(e/worldScale::blockSpacing);++i){
+      const double axis=i*worldScale::blockSpacing;
+      const auto a=at(axis,-e),b=at(axis,e),c1=at(-e,axis),d1=at(e,axis);
+      CGContextBeginPath(c);CGContextMoveToPoint(c,a.x,a.y);CGContextAddLineToPoint(c,b.x,b.y);
+      CGContextMoveToPoint(c,c1.x,c1.y);CGContextAddLineToPoint(c,d1.x,d1.y);CGContextStrokePath(c);
+    }
+    for(const auto& m:map.markers){
+      const auto p=at(m.x,m.z);
+      CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},m.selected?12:5,shade(1,.7,.25,m.selected?.95:.4));
+      diamond(c,p,m.selected?9:6,m.selected?amber:amber.withAlpha(.6));CGContextRestoreGState(c);
+      plate(c,CGRectMake(p.x-measure(kLabel,12,upper(m.name),1.4)/2-8,p.y+13,measure(kLabel,12,upper(m.name),1.4)+16,20),4,m.selected?1:.7);
+      text(c,kLabel,12,upper(m.name),p.x,p.y+27,m.selected?white:muted,200,Align::Center,1.4);
+    }
+    triangleArrow(c,at(map.carX,map.carZ),8,map.heading,cyan);
+    CGContextRestoreGState(c);
+    stroke(c,r,{1,1,1,.12},1,5);
+  }
+  void drawBlocks(CGContextRef c,const std::vector<Block>& blocks,CGRect card,CGFloat scale,const PanelMap* map=nullptr) {
     CGFloat y=card.origin.y+18*scale;const CGFloat x=card.origin.x+20,w=card.size.width-40;
     for(const auto& b:blocks) {
       switch(b.kind) {
       case Block::Gap:break;
+      case Block::Map: if(map) drawMap(c,*map,CGRectMake(card.origin.x+12,y,card.size.width-24,b.height-10*scale)); break;
       case Block::Tiles: {
         const CGFloat gap=8,tw=(w-gap*(b.tiles.size()-1))/b.tiles.size();
         for(size_t i=0;i<b.tiles.size();++i) {
@@ -565,7 +598,7 @@ struct DriveHud::Impl {
       } else chip(key,hint.action);
     }
   }
-  void paintPanelNormal(const std::vector<std::string>& lines,int optionCount) {
+  void paintPanelNormal(const std::vector<std::string>& lines,int optionCount,const PanelMap& map) {
     gTypeScale=scale<.9?1.22:1;
     const auto panel=ui::parsePanel(lines,optionCount<0?size_t(-1):size_t(optionCount));
     CGContextRef c;begin(c);
@@ -608,11 +641,6 @@ struct DriveHud::Impl {
         fill(c,CGRectMake(bx+bw*(row.high>row.low?(1-row.low)/(row.high-row.low):.5)-1,by-5,2,16),{1,1,1,.35}); // 1.00x reference
         CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,1,1,.5));
         setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(bx+bw*fr-6,by-3,12,12));CGContextRestoreGState(c);
-        if(row.selected) {
-          const CGFloat kx=bx+bw*fr,bubble=measure(kNumeric,12,row.value,.3)+14;
-          plate(c,CGRectMake(kx-bubble/2,by-26,bubble,18),4,1);
-          text(c,kNumeric,12,row.value,kx,by-13,amber,bubble,Align::Center,.3);
-        }
         text(c,kNumeric,fs*1.15,row.value,colX+colW-skew-14,base,row.selected?amber:white,80,Align::Right,.4);
       } else if(row.kind==ui::RowKind::Field) {
         text(c,kLabel,fs*.78,upper(row.label),tx,base,row.selected?white.withAlpha(.9):muted,160-iconW,Align::Left,1.6);
@@ -638,14 +666,14 @@ struct DriveHud::Impl {
       const CGFloat cardX=colX+colW+48,cardW=1280-64-cardX,cardH=bottom-top;
       CGFloat scale=1;std::vector<Block> blocks;
       for(CGFloat candidate:{1.,.92,.85,.78,.7}) {
-        scale=candidate;blocks=buildBlocks(panel,selected,cardW,scale);
+        scale=candidate;blocks=buildBlocks(panel,selected,cardW,scale,map.active);
         if(blocksHeight(blocks,scale)<=cardH) break;
       }
       const CGFloat h=std::min(cardH,blocksHeight(blocks,scale));
       const CGRect card=CGRectMake(cardX,top,cardW,h);
       plate(c,card,6,.95);
       gradientRect(c,CGRectMake(card.origin.x,card.origin.y,card.size.width,2),cyan,{cyan.r,cyan.g,cyan.b,0},true);
-      drawBlocks(c,blocks,card,scale);
+      drawBlocks(c,blocks,card,scale,&map);
     } else if(informational) {
       auto blocks=buildBlocks(panel,nullptr,520,.9);
       CGFloat yy=top+CGFloat(menu.size())*pitch+14;
@@ -678,10 +706,10 @@ struct DriveHud::Impl {
     text(c,kLabel,22,activeTest?"WASD/RT DRIVE  ESC PAUSE":"↑↓/D-PAD  ENTER/SOUTH OK  ESC/EAST BACK",28,454,muted,584,Align::Left,1);
     end(c);mode=Mode::Panel;
   }
-  void paintPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount) {
+  void paintPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map,const std::string& mapKey) {
     if(compact) paintCompactPanel(lines,activeTest);
-    else paintPanelNormal(lines,optionCount);
-    previousPanel=lines;previousActiveTest=activeTest;previousOptions=optionCount;
+    else paintPanelNormal(lines,optionCount,map);
+    previousPanel=lines;previousActiveTest=activeTest;previousOptions=optionCount;previousMapKey=mapKey;
   }
   void submit(uint16_t width,uint16_t height) {
     constexpr uint16_t view=14; // After the scene optical finish (views10..13).
@@ -772,14 +800,16 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   p.submit(width,height);
 }
 void DriveHud::drawPanel(uint16_t width,uint16_t height,
-                         const std::vector<std::string>& lines,bool activeTest,int optionCount) {
+                         const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map) {
   if(!width||!height||lines.empty()) return;
+  std::ostringstream mapKey;
+  if(map.active){mapKey<<std::round(map.carX)<<','<<std::round(map.carZ)<<','<<std::round(map.heading*50);for(const auto& m:map.markers)mapKey<<'|'<<m.name<<m.selected<<m.x<<m.z;}
   auto& p=*impl;const auto fit=hudLayout(width,height,true);const bool compact=fit.compact;
   const double scale=double(fit.width)/fit.logicalWidth;
   if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
   if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
-  if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest||optionCount!=p.previousOptions)
-    p.paintPanel(lines,activeTest,optionCount);
+  if(p.mode!=Impl::Mode::Panel||lines!=p.previousPanel||activeTest!=p.previousActiveTest||optionCount!=p.previousOptions||mapKey.str()!=p.previousMapKey)
+    p.paintPanel(lines,activeTest,optionCount,map,mapKey.str());
   p.submit(width,height);
 }
 }

@@ -2815,9 +2815,21 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       }
       driveHud.draw(uint16_t(width), uint16_t(height), hud);
     }
-    if (!hideHud && flow.screen != racer::Screen::Drive)
+    if (!hideHud && flow.screen != racer::Screen::Drive) {
+      racer::PanelMap eventMap;
+      if (flow.screen == racer::Screen::Events) {
+        eventMap.active = true;
+        eventMap.carX = sim.car.x;
+        eventMap.carZ = sim.car.z;
+        eventMap.heading = sim.car.heading;
+        for (const auto &marker : flow.career.markers())
+          eventMap.markers.push_back(
+              {marker.x, marker.z, marker.id,
+               marker.id == flow.career.selectedMarker().id});
+      }
       driveHud.drawPanel(uint16_t(width), uint16_t(height), panel, active,
-                         flow.menuCount());
+                         flow.menuCount(), eventMap);
+    }
     if (!review.capture.empty()) {
       requestCapture(review.capture);
       review.capture.clear();

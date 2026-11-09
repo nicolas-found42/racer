@@ -38,6 +38,13 @@ struct DriveState {
   double markerDistance = 0;
   std::optional<DriveTest> test;
 };
+// Street map shown on the event board (world metres; markers and the car).
+struct PanelMap {
+  struct Marker { double x = 0, z = 0; std::string name; bool selected = false; };
+  bool active = false;
+  double carX = 0, carZ = 0, heading = 0;
+  std::vector<Marker> markers;
+};
 // Construct after bgfx initialization and destroy before bgfx shutdown.
 // Aspect-correct safe areas retain the normal canvas and a cropped compact layout.
 class DriveHud {
@@ -49,7 +56,8 @@ public:
   void draw(uint16_t width,uint16_t height,const DriveState& state);
   // optionCount: selectable entries (PlayFlow::menuCount); -1 when unknown.
   void drawPanel(uint16_t width,uint16_t height,
-                 const std::vector<std::string>& lines,bool activeTest,int optionCount=-1);
+                 const std::vector<std::string>& lines,bool activeTest,int optionCount=-1,
+                 const PanelMap& map=PanelMap{});
 private:
   struct Impl;
   std::unique_ptr<Impl> impl;
