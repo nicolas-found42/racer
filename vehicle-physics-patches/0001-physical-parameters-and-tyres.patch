@@ -1,0 +1,305 @@
+Subject: [PATCH 1/3] Add separately configurable vehicle dynamics and transient combined-slip tyres
+
+Applies to the exact supplied source files. Paths are relative to the directory
+containing the ten uploaded files. Apply the complete series before building.
+
+diff --git a/setup.h b/setup.h
+--- a/setup.h
++++ b/setup.h
+@@ -6,6 +6,68 @@
+   double acceleration = 1, brake = 1, steering = 1;
+   bool valid() const;
+   bool operator==(const VehicleSetup &) const = default;
++};
++
++// Handling data is deliberately separate from the three persisted garage
++// multipliers above. Model dimensions cannot identify a real car's mass,
++// tyre compound or torque curve. These are editable, uncalibrated road-car
++// defaults; lengths are metres, angles radians, forces newtons and torques Nm.
++struct TyreParameters {
++  double referenceLoad = 3500;
++  double friction = 1.05, slidingFrictionRatio = .82, loadSensitivity = .12;
++  // Small-slip slopes at referenceLoad: N per slip ratio / N per tan(alpha).
++  double longitudinalStiffness = 85000, corneringStiffness = 65000;
++  double camberStiffness = 7500; // N/rad; positive camber thrust points +wheel X.
++  double longitudinalRelaxation = .3, lateralRelaxation = .45;
++  double pneumaticTrail = .055;
++  bool valid() const;
++  bool operator==(const TyreParameters &) const = default;
++};
++struct AxleSuspension {
++  // Wheel rates, already including suspension motion ratio; each spring and
++  // damper belongs to ONE wheel. Anti-roll rate acts on left-right deflection.
++  double springRate = 34000, bumpDamping = 2600, reboundDamping = 3800;
++  double compressionTravel = .12, droopTravel = .12;
++  double antiRollRate = 14000, bumpStopRate = 180000;
++  bool valid() const;
++  bool operator==(const AxleSuspension &) const = default;
++};
++struct VehicleDynamics {
++  double mass = 1450, frontWeightFraction = .54, cgHeight = .53;
++  // Principal inertias about the CG: yaw (+Y), pitch (+X), roll (+Z), kg m^2.
++  double yawInertia = 2500, pitchInertia = 2600, rollInertia = 650;
++  AxleSuspension frontSuspension;
++  AxleSuspension rearSuspension{32000, 2400, 3500, .12, .12, 10000, 180000};
++  TyreParameters frontTyre, rearTyre;
++  double wheelInertia = 1.4; // Per wheel, including tyre and brake disc.
++
++  double engineInertia = .25, engineIdleRpm = 850, engineRedlineRpm = 6800;
++  double engineBrakeTorque = 35, engineViscousDrag = .02;
++  double clutchTorque = 450, clutchStiffness = 15;
++  std::array<double, 8> torqueRpm{{850, 1500, 2200, 3000, 3800, 4600, 5800, 6800}};
++  std::array<double, 8> torqueNm{{140, 190, 225, 260, 282, 290, 265, 210}};
++  std::array<double, 6> gearRatios{{3.5, 2.19, 1.52, 1.18, .97, .81}};
++  double finalDrive = 3.9, reverseRatio = 3.2, drivetrainEfficiency = .92;
++  double shiftTime = .22, shiftUpRpm = 6200, shiftDownRpm = 2300;
++  // 0 = rear drive; 1 = front drive; intermediate values = fixed AWD split.
++  double frontDriveFraction = 0;
++  // Passive axle LSD coupling: preload Nm + lock Nm/(rad/s), bounded by max.
++  double differentialPreload = 25, differentialLock = 12;
++  double differentialMaxTorque = 300;
++
++  double maxBrakeTorque = 6500, frontBrakeBias = .64; // Total over FOUR wheels.
++  double handbrakeTorque = 2500;                   // Total over TWO rear wheels.
++  bool absEnabled = true, tractionControlEnabled = false;
++  double absTargetSlip = .15, tractionTargetSlip = .12;
++  double absReleaseRate = 15, absApplyRate = 5;
++  double brakeActuationRate = 12, throttleResponse = 10; // Reciprocal seconds.
++  double maxSteeringAngle = .6, steeringRate = 1.8;
++  double ackermann = 1, steeringSpeedSensitivity = 0;
++  double dragArea = .66, downforceArea = 0, aeroFrontFraction = .5;
++  double airDensity = 1.225, rollingResistance = .013;
++  double chassisFriction = .45, chassisRestitution = .05;
++  bool valid() const;
++  bool operator==(const VehicleDynamics &) const = default;
+ };
+ class GarageState {
+ public:
+diff --git a/setup.cpp b/setup.cpp
+--- a/setup.cpp
++++ b/setup.cpp
+@@ -1,6 +1,71 @@
+ #include "setup.h"
+ #include <cmath>
+ namespace racer {
++namespace {
++bool inRange(double value, double low, double high) {
++  return std::isfinite(value) && value >= low && value <= high;
++}
++}
++
++bool TyreParameters::valid() const {
++  return inRange(referenceLoad, 100, 100000) && inRange(friction, .05, 3) &&
++         inRange(slidingFrictionRatio, .25, 1) && inRange(loadSensitivity, 0, .4) &&
++         inRange(longitudinalStiffness, 1000, 1000000) &&
++         inRange(corneringStiffness, 1000, 1000000) &&
++         inRange(camberStiffness, 0, 50000) &&
++         inRange(longitudinalRelaxation, .01, 5) &&
++         inRange(lateralRelaxation, .01, 5) && inRange(pneumaticTrail, 0, .3);
++}
++bool AxleSuspension::valid() const {
++  return inRange(springRate, 5000, 300000) &&
++         inRange(bumpDamping, 100, 30000) && inRange(reboundDamping, 100, 40000) &&
++         inRange(compressionTravel, .02, .5) && inRange(droopTravel, .02, .5) &&
++         inRange(antiRollRate, 0, 200000) && inRange(bumpStopRate, 10000, 2000000);
++}
++bool VehicleDynamics::valid() const {
++  if (!inRange(mass, 250, 8000) || !inRange(frontWeightFraction, .2, .8) ||
++      !inRange(cgHeight, .15, 2) || !inRange(yawInertia, 100, 100000) ||
++      !inRange(pitchInertia, 100, 100000) || !inRange(rollInertia, 50, 50000) ||
++      !frontSuspension.valid() || !rearSuspension.valid() ||
++      !frontTyre.valid() || !rearTyre.valid() || !inRange(wheelInertia, .2, 20) ||
++      !inRange(engineInertia, .05, 5) || !inRange(engineIdleRpm, 400, 2000) ||
++      !inRange(engineRedlineRpm, 2500, 15000) ||
++      !inRange(engineBrakeTorque, 0, 500) || !inRange(engineViscousDrag, 0, 2) ||
++      !inRange(clutchTorque, 50, 3000) || !inRange(clutchStiffness, .1, 200) ||
++      !inRange(finalDrive, 1, 10) || !inRange(reverseRatio, .5, 8) ||
++      !inRange(drivetrainEfficiency, .5, 1) || !inRange(shiftTime, .02, 2) ||
++      !inRange(shiftDownRpm, engineIdleRpm + 100, engineRedlineRpm - 400) ||
++      !inRange(shiftUpRpm, shiftDownRpm + 200, engineRedlineRpm) ||
++      !inRange(frontDriveFraction, 0, 1) ||
++      !inRange(differentialPreload, 0, 1000) ||
++      !inRange(differentialLock, 0, 200) ||
++      !inRange(differentialMaxTorque, differentialPreload, 3000) ||
++      !inRange(maxBrakeTorque, 500, 50000) || !inRange(frontBrakeBias, .3, .85) ||
++      !inRange(handbrakeTorque, 0, 30000) ||
++      !inRange(absTargetSlip, .03, .4) || !inRange(tractionTargetSlip, .03, .4) ||
++      !inRange(absReleaseRate, .1, 100) || !inRange(absApplyRate, .1, 100) ||
++      !inRange(brakeActuationRate, .1, 100) || !inRange(throttleResponse, .1, 100) ||
++      !inRange(maxSteeringAngle, .1, 1) || !inRange(steeringRate, .1, 10) ||
++      !inRange(ackermann, 0, 1) || !inRange(steeringSpeedSensitivity, 0, .1) ||
++      !inRange(dragArea, .05, 5) || !inRange(downforceArea, 0, 10) ||
++      !inRange(aeroFrontFraction, 0, 1) || !inRange(airDensity, .5, 2) ||
++      !inRange(rollingResistance, 0, .1))
++    return false;
++  if (!inRange(chassisFriction, 0, 2) || !inRange(chassisRestitution, 0, .5))
++    return false;
++  for (std::size_t i = 0; i < torqueRpm.size(); ++i) {
++    if (!inRange(torqueRpm[i], 0, 20000) || !inRange(torqueNm[i], 0, 3000) ||
++        (i && torqueRpm[i] <= torqueRpm[i - 1]))
++      return false;
++  }
++  if (torqueRpm.front() > engineIdleRpm || torqueRpm.back() < engineRedlineRpm)
++    return false;
++  for (std::size_t i = 0; i < gearRatios.size(); ++i)
++    if (!inRange(gearRatios[i], .2, 8) || (i && gearRatios[i] >= gearRatios[i - 1]))
++      return false;
++  return true;
++}
++
+ bool VehicleSetup::valid() const {
+   for (double value : {acceleration, brake, steering})
+     if (!std::isfinite(value) || value < .8 || value > 1.2)
+diff --git a/tyre_contact.h b/tyre_contact.h
+--- a/tyre_contact.h
++++ b/tyre_contact.h
+@@ -3,11 +3,104 @@
+ #include <cmath>
+ #include <array>
+ #include <cstddef>
++#include <cstdint>
++#include <limits>
++#include <stdexcept>
+ #include <vector>
+ #include "mesh_asset.h"
++#include "setup.h"
+ #include "vehicle_geometry.h"
+ 
+ namespace racer {
++namespace tyrePhysics {
++struct Forces {
++  double longitudinal = 0, lateral = 0, aligningMoment = 0, capacity = 0;
++};
++
++// A transient, combined-slip brush approximation, NOT a fitted Pacejka tyre.
++// Slip ratio = (omega * radius - longitudinal speed) / regularized speed.
++// lateralSlip = lateral speed / regularized speed, i.e. tan(slip angle).
++// Both denominators use |longitudinal speed|, so reverse motion keeps the
++// correct dissipative force signs. See the force-element tyre discussion at
++// https://api.projectchrono.org/development/wheeled_tire.html and low-speed
++// slip regularization in the PhysX Vehicle SDK. Parameters require tyre data
++// before a specific real-world car can be considered calibrated.
++inline double frictionCapacity(const TyreParameters &p, double normalLoad,
++                               double surfaceGrip) {
++  if (!std::isfinite(normalLoad) || !std::isfinite(surfaceGrip) ||
++      normalLoad <= 0 || surfaceGrip <= 0 || !p.valid())
++    return 0;
++  // Grip coefficient falls as normal load rises. Bound the extrapolation
++  // outside the measured-load region rather than promising infinite mu at
++  // zero load. Clamping load here is only an arithmetic overflow guard.
++  const double load = std::min(normalLoad, 1e9);
++  const double ratio = std::clamp(load / p.referenceLoad, .05, 20.0);
++  return load * p.friction * std::min(surfaceGrip, 4.0) *
++         std::pow(ratio, -p.loadSensitivity);
++}
++
++inline Forces evaluate(const TyreParameters &p, double normalLoad,
++                       double surfaceGrip, double slipRatio, double lateralSlip,
++                       double camber = 0) {
++  Forces result;
++  result.capacity = frictionCapacity(p, normalLoad, surfaceGrip);
++  if (!(result.capacity > 0) || !std::isfinite(slipRatio) ||
++      !std::isfinite(lateralSlip) || !std::isfinite(camber))
++    return result;
++  const double loadScale = std::pow(
++      std::clamp(normalLoad / p.referenceLoad, .000001, 100.0), .8);
++  const double sx = p.longitudinalStiffness * loadScale *
++                    std::clamp(slipRatio, -1000.0, 1000.0);
++  const double sy = loadScale *
++      (-p.corneringStiffness * std::clamp(lateralSlip, -1000.0, 1000.0) +
++       p.camberStiffness * std::clamp(camber, -.5, .5));
++  const double demand = std::hypot(sx, sy);
++  if (demand < 1e-12)
++    return result;
++  const double q = demand / (3 * result.capacity);
++  double magnitude;
++  if (q < 1) {
++    // The brush saturates smoothly at mu * load; initial slope is the chosen
++    // stiffness. Sharing this one budget prevents full braking PLUS full
++    // cornering from generating more friction than the contact can provide.
++    magnitude = demand * (1 - q + q * q / 3);
++  } else {
++    // Progressive breakaway toward kinetic friction, with a zero derivative
++    // at the adhesion peak. This is a deliberately generic road-tyre shape.
++    const double sliding = std::min(q - 1, 100.0);
++    magnitude = result.capacity *
++                (p.slidingFrictionRatio +
++                 (1 - p.slidingFrictionRatio) / (1 + sliding * sliding));
++  }
++  result.longitudinal = sx * (magnitude / demand);
++  result.lateral = sy * (magnitude / demand);
++  // The effective pneumatic trail collapses as the contact patch slides.
++  // Positive lateral force at the trailing patch makes a negative yaw moment.
++  const double trail = p.pneumaticTrail * std::pow(std::max(0.0, 1 - q), 2);
++  result.aligningMoment = -result.lateral * trail;
++  return result;
++}
++
++// Exact exponential update of the first-order relaxation equation. The
++// half-metre-per-second transport floor prevents a frozen tyre deformation
++// at rest. The wheel solver supplies its own static friction constraint.
++inline double relaxSlip(double previous, double target, double transportSpeed,
++                        double relaxationLength, double dt) {
++  if (!std::isfinite(previous) || !std::isfinite(target) ||
++      !std::isfinite(transportSpeed) || !std::isfinite(relaxationLength) ||
++      !std::isfinite(dt) || relaxationLength <= 0 || dt <= 0)
++    return std::isfinite(previous) ? previous : 0;
++  const double rate = std::max(.5, std::abs(transportSpeed)) / relaxationLength;
++  return previous + (target - previous) * -std::expm1(-rate * dt);
++}
++} // namespace tyrePhysics
++
++namespace tyreMeshDetail {
++inline void requireRange(std::size_t first, std::size_t count, std::size_t size) {
++  if (first > size || count > size - first)
++    throw std::invalid_argument("tyre mesh section outside vertex array");
++}
++}
+ // Furthest reach from the axle (wheel-local Y/Z; meshes are pivot-centred with the
+ // axle along X) of the rolling sections of one wheel. Zero when the wheel has none.
+ inline float tyreRadialReach(const MeshAsset &asset, int wheel) {
+@@ -15,9 +108,11 @@
+   for (const auto &section : asset.sections) {
+     if (section.wheel != wheel || !section.rolling)
+       continue;
++    tyreMeshDetail::requireRange(section.first, section.count, asset.triangles.size());
+     for (std::uint32_t i = 0; i < section.count; ++i) {
+       const auto &v = asset.triangles[section.first + i];
+-      reach = std::max(reach, std::hypot(v.y, v.z));
++      if (std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z))
++        reach = std::max(reach, std::hypot(v.y, v.z));
+     }
+   }
+   return reach;
+@@ -28,12 +123,16 @@
+ inline std::vector<std::array<float, 3>> tyreRimVertices(const MeshAsset &asset, int wheel,
+                                                           float reach) {
+   std::vector<std::array<float, 3>> rim;
++  if (!std::isfinite(reach) || reach <= 0)
++    return rim;
+   for (const auto &section : asset.sections) {
+     if (section.wheel != wheel || !section.rolling)
+       continue;
++    tyreMeshDetail::requireRange(section.first, section.count, asset.triangles.size());
+     for (std::uint32_t i = 0; i < section.count; ++i) {
+       const auto &v = asset.triangles[section.first + i];
+-      if (std::hypot(v.y, v.z) >= .9f * reach)
++      if (std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z) &&
++          std::hypot(v.y, v.z) >= .9f * reach)
+         rim.push_back({v.x, v.y, v.z});
+     }
+   }
+@@ -43,8 +142,12 @@
+ // (as produced by wheelRenderTransform, optionally with the body frame applied
+ // first). Tyre meshes are faceted, so this depends on the current spin; using it
+ // each time a wheel is placed makes the lowest tyre point touch the ground exactly.
++// This is a render-only correction: never feed the faceted mesh radius into
++// suspension/tyre forces. Empty data returns infinity, i.e. no support point.
+ inline float tyreLowestY(const std::vector<std::array<float, 3>> &rim, const float *m) {
+-  float lowest = 1e9f;
++  float lowest = std::numeric_limits<float>::infinity();
++  if (!m)
++    return lowest;
+   for (const auto &v : rim)
+     lowest = std::min(lowest, m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13]);
+   return lowest;
