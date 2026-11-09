@@ -89,6 +89,16 @@ void box(Mesh &m, float x, float y, float z, float sx, float sy, float sz,
                    normals[f][1], normals[f][2]});
   }
 }
+// Flat annulus on the ground (turntable plate/rim for the garage showroom).
+void annulus(Mesh &m, float r0, float r1, float y, uint32_t c, int segments = 72) {
+  for (int i = 0; i < segments; ++i) {
+    const float a0 = 6.2831853f * float(i) / segments, a1 = 6.2831853f * float(i + 1) / segments;
+    const float x0 = std::sin(a0), z0 = std::cos(a0), x1 = std::sin(a1), z1 = std::cos(a1);
+    const float q[4][2] = {{x0 * r0, z0 * r0}, {x0 * r1, z0 * r1}, {x1 * r1, z1 * r1}, {x1 * r0, z1 * r0}};
+    for (int k : {0, 2, 1, 0, 3, 2})
+      m.push_back({q[k][0], y, q[k][1], c, .95f, 0.f, 0.f, 1.f, 0.f});
+  }
+}
 int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double smoke = 0;
   bool courseDriver = false, background = false;
@@ -1130,6 +1140,12 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   box(eventMarker, 5.5, .5, 0, .16, 1, .16, 0xff4db8ff);
   for (float side : {-1.f, 1.f})
     box(eventMarker, side * 4.4f, .024f, 0, 1.8f, .015f, .14f, 0xff4db8ff);
+  Mesh turntable;
+  annulus(turntable, 0, 3.9f, .012f, 0xff241f1c);        // dark plate
+  annulus(turntable, 3.55f, 3.72f, .02f, 0xffebdb57);    // cyan rim (ABGR)
+  annulus(turntable, 3.86f, 3.92f, .02f, 0xff4db8ff);    // amber outer hairline
+  auto turntableBuffer = bgfx::createVertexBuffer(
+      bgfx::copy(turntable.data(), uint32_t(turntable.size() * sizeof(Vertex))), layout);
   auto eventBuffer = bgfx::createVertexBuffer(
       bgfx::copy(eventMarker.data(),
                  uint32_t(eventMarker.size() * sizeof(Vertex))),
@@ -1675,10 +1691,10 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     if (showroom) {
       constexpr double pi = 3.14159265358979323846;
       const double angle = shown.heading + pi * .78 + elapsed * .22;
-      const double radius = std::max(6.4, cameraDistance() * .9);
+      const double radius = std::max(9.0, cameraDistance() * 1.2);
       targetX = shown.x + std::sin(angle) * radius;
       targetZ = shown.z + std::cos(angle) * radius;
-      cameraY = bodyElevation + 1.7;
+      cameraY = bodyElevation + 2.3;
     }
     double blend = 1 - std::exp(-8 * dt);
     cameraX += (targetX - cameraX) * blend;
@@ -1894,8 +1910,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       const float fx = lookX - float(cameraX), fz = lookZ - float(cameraZ);
       const float len = std::max(1e-3f, std::hypot(fx, fz));
       const float rx = fz / len, rz = -fx / len; // camera right in the ground plane
-      lookX -= rx * 1.5f;
-      lookZ -= rz * 1.5f;
+      lookX -= rx * 1.7f;
+      lookZ -= rz * 1.7f;
     }
     bx::mtxLookAt(view, {float(cameraX), float(cameraY), float(cameraZ)},
                   {lookX, float(bodyElevation + lookHeight()), lookZ});
@@ -2056,8 +2072,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         }
     bx::mtxIdentity(model);
     if (!hideGuides && !flow.session.active() && scene != "scale" &&
-        (flow.screen == racer::Screen::Drive ||
-         flow.screen == racer::Screen::Pause)) {
+        flow.screen == racer::Screen::Drive) {
       for (const auto &marker : flow.career.markers()) {
         racer::worldTransform(model, 0, marker.x, marker.z);
         bgfx::setTransform(model);
@@ -2067,6 +2082,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         bindUnlit(3, whiteTexture);
         bgfx::submit(1, visualProgram);
       }
+    }
+    if (showroom) {
+      racer::worldTransform(model, 0, float(shown.x), float(shown.z));
+      bgfx::setTransform(model);
+      bgfx::setVertexBuffer(0, turntableBuffer);
+      bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                     BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS);
+      bindUnlit(3, whiteTexture);
+      bgfx::submit(1, visualProgram);
     }
     if (flow.session.active() &&
         flow.session.result().kind == racer::TestKind::Handling) {
@@ -2721,6 +2745,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       hud.mph = std::abs(sim.car.speed) * 2.236936;
       hud.reverse = sim.car.direction != 1;
       hud.heading = sim.car.heading;
+      hud.carX = sim.car.x;
+      hud.carZ = sim.car.z;
       hud.throttle = selectedInput.throttle;
       hud.brake = selectedInput.brake;
       hud.steer = selectedInput.steer;
@@ -2915,6 +2941,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     SDL_CloseGamepad(pad);
   bgfx::destroy(gateBuffer);
   bgfx::destroy(eventBuffer);
+  bgfx::destroy(turntableBuffer);
   bgfx::destroy(worldBuffer);
   bgfx::destroy(skyBuffer);
   bgfx::destroy(contactBuffer);

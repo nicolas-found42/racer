@@ -2,6 +2,7 @@
 #include "hud_layout.h"
 #include "ui_model.h"
 #include "ui_paint.h"
+#include "world_scale.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 #include <bgfx/bgfx.h>
@@ -9,6 +10,7 @@
 #include "vs_debugdraw_fill_texture.bin.h"
 #include "fs_debugdraw_fill_texture.bin.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -146,6 +148,28 @@ void radar(CGContextRef c,const DriveState& s,CGPoint centre) {
   CGContextSaveGState(c);
   CGContextAddEllipseInRect(c,CGRectMake(centre.x-R-8,centre.y-R-8,2*R+16,2*R+16));CGContextClip(c);
   radialGlow(c,{centre.x,centre.y-30},R*1.9,{.14,.24,.29,.5},{.02,.035,.048,.8});
+  // Authored street grid: roads every 100 m (road width 12 m) inside +-500 m.
+  {
+    const double k=(R+4)/range,sh=std::sin(s.heading),ch=std::cos(s.heading);
+    auto toScreen=[&](double wx,double wz){
+      const double dx=wx-s.carX,dz=wz-s.carZ,fwd=dx*sh+dz*ch,right=dx*ch-dz*sh;
+      return CGPoint{CGFloat(centre.x+right*k),CGFloat(centre.y-fwd*k)};
+    };
+    const double e=worldScale::halfExtent;
+    const CGPoint corners[]{toScreen(-e,-e),toScreen(e,-e),toScreen(e,e),toScreen(-e,e)};
+    setFill(c,{.09,.15,.18,1});
+    CGContextMoveToPoint(c,corners[0].x,corners[0].y);
+    for(int i=1;i<4;++i) CGContextAddLineToPoint(c,corners[i].x,corners[i].y);
+    CGContextClosePath(c);CGContextFillPath(c);
+    setStroke(c,{.27,.35,.38,1});CGContextSetLineWidth(c,std::max(2.4,worldScale::roadWidth*k));
+    CGContextSetLineCap(c,kCGLineCapButt);
+    for(int i=-int(e/worldScale::blockSpacing);i<=int(e/worldScale::blockSpacing);++i) {
+      const double axis=i*worldScale::blockSpacing;
+      const auto a=toScreen(axis,-e),b=toScreen(axis,e),c1=toScreen(-e,axis),d1=toScreen(e,axis);
+      CGContextBeginPath(c);CGContextMoveToPoint(c,a.x,a.y);CGContextAddLineToPoint(c,b.x,b.y);
+      CGContextMoveToPoint(c,c1.x,c1.y);CGContextAddLineToPoint(c,d1.x,d1.y);CGContextStrokePath(c);
+    }
+  }
   // View wedge (forward 70 degrees).
   setFill(c,{cyan.r,cyan.g,cyan.b,.10});
   CGContextMoveToPoint(c,centre.x,centre.y);
@@ -219,8 +243,8 @@ void destinationStrip(CGContextRef c,const DriveState& s) {
   text(c,kLabel,11,s.bearing,r.origin.x+r.size.width-12,r.origin.y+43,muted,80,Align::Right,2);
 }
 // Floating waypoint: diamond over the target when visible; edge arrow when not.
-void worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float windowWidth,float windowHeight) {
-  if(!s.markerActive) return;
+bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float windowWidth,float windowHeight) {
+  if(!s.markerActive) return false;
   float lx=(s.markerX-fit.x)/std::max(1.f,float(fit.width))*fit.logicalWidth,
         ly=(s.markerY-fit.y)/std::max(1.f,float(fit.height))*fit.logicalHeight;
   (void)windowWidth;(void)windowHeight;
@@ -239,6 +263,7 @@ void worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float w
     const CGFloat tw=measure(kLabel,13,label,1.6)+24;
     plate(c,CGRectMake(lx-tw/2,ly+42,tw,24),4,1);
     text(c,kLabel,13,label,lx,ly+59,white,320,Align::Center,1.6);
+    return true;
   } else {
     const float cx=w/2,cy=h/2;float dx=lx-cx,dy=ly-cy;
     if(s.markerBehind){dx=-dx;dy=-dy;if(std::abs(dx)<1&&std::abs(dy)<1)dy=1;}
@@ -251,6 +276,27 @@ void worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float w
     const auto dist=rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
     text(c,kNumeric,17,dist,ex,ey+(dy>0?-24:34),white,90,Align::Center,.4,true);
   }
+  return false;
+}
+
+// Announcement banner: slides in with a two-step echo, holds, then fades (cf. console
+// "GO" / "FINAL LAP" banners). `phase` runs 0..1 over the banner lifetime.
+void banner(CGContextRef c,const std::string& title,const std::string& sub,double phase,Ink tone) {
+  const double in=std::clamp(phase/.12,0.,1.),out=std::clamp((1-phase)/.25,0.,1.);
+  const double ease=1-(1-in)*(1-in),alpha=ease*out;
+  const CGFloat w=std::max<CGFloat>(300,measure(kHeavy,46,title,3)+90),h=64,cx=640,y=236;
+  for(int i=2;i>=0;--i) {
+    const CGFloat offset=-(1-ease)*220-i*16;
+    CGContextSaveGState(c);CGContextSetAlpha(c,alpha*(i==0?1:i==1?.30:.14));
+    const CGRect r=CGRectMake(cx-w/2+offset,y,w,h);
+    gradientSkew(c,r,16,mix(teal,cyan,.35),{teal.r,teal.g,teal.b,.85});
+    if(i==0) {
+      skewFill(c,CGRectMake(r.origin.x,r.origin.y,w,3),16,{1,1,1,.55});
+      text(c,kHeavy,46,title,cx+offset+8,y+48,white,w-30,Align::Center,3,true);
+      if(!sub.empty()) text(c,kLabel,13,sub,cx+offset+8,y+h+22,tone,w,Align::Center,4,true);
+    }
+    CGContextRestoreGState(c);
+  }
 }
 void testHud(CGContextRef c,const DriveState& s) {
   const auto& t=*s.test;
@@ -261,7 +307,13 @@ void testHud(CGContextRef c,const DriveState& s) {
     const CGFloat cx=640,cy=196;
     arc(c,{cx,cy},62,-90,-90+360*std::clamp(t.countdownSeconds-std::floor(t.countdownSeconds),0.,1.),5,amber,kCGLineCapRound);
     arc(c,{cx,cy},62,0,360,2,{1,1,1,.18});
-    text(c,kNumeric,92,std::to_string(std::max(1,int(std::ceil(t.countdownSeconds)))),cx,cy+32,white,200,Align::Center,0,true);
+    // Each second the digit pops in (scale 1.45 -> 1, fade 0 -> 1) like the console launch countdowns.
+    const double phase=1-(t.countdownSeconds-std::floor(t.countdownSeconds));
+    const double pop=std::clamp(phase/.35,0.,1.),ease=1-(1-pop)*(1-pop);
+    CGContextSaveGState(c);
+    CGContextTranslateCTM(c,cx,cy+8);CGContextScaleCTM(c,1.45-.45*ease,1.45-.45*ease);
+    text(c,kNumeric,92,std::to_string(std::max(1,int(std::ceil(t.countdownSeconds)))),0,24,white.withAlpha(.25+.75*ease),200,Align::Center,0,true);
+    CGContextRestoreGState(c);
     return;
   }
   const CGRect r=CGRectMake(430,24,420,t.kind==2?108:96);
@@ -302,6 +354,10 @@ struct DriveHud::Impl {
   double scale=1;
   std::string driveKey;
   HudLayout lastFit;
+  // Announcement banner state (set from draw() on test events).
+  std::string bannerTitle,bannerSub;double bannerStart=-100;
+  bool wasCountdown=false;int lastGate=0;
+  static double now(){using namespace std::chrono;return duration<double>(steady_clock::now().time_since_epoch()).count();}
   ~Impl() {
     if(bgfx::isValid(texture)) bgfx::destroy(texture);
     if(bgfx::isValid(program)) bgfx::destroy(program);
@@ -333,10 +389,9 @@ struct DriveHud::Impl {
       text(c,kBody,22,s.destination.empty()?"EXPLORE THE CITY":s.destination,32,88,cyan,576);
       text(c,kBody,22,rangeText(metres)+" / "+s.bearing,32,124,muted,576);
     }
-    plate(c,CGRectMake(388,300,236,112),8);
-    text(c,kNumeric,76,std::to_string(int(std::round(std::clamp(s.mph,0.,999.)))),520,376,white,132,Align::Right);
-    text(c,kLabel,22,"MPH",536,372,amber,70);
-    text(c,kNumeric,24,s.reverse?"REV":"D",410,402,white,160);
+    CGContextSaveGState(c);CGContextTranslateCTM(c,500,330);CGContextScaleCTM(c,.8,.8);
+    speedometer(c,s,{0,0});
+    CGContextRestoreGState(c);
     plate(c,CGRectMake(16,426,608,40),6);
     text(c,kLabel,22,"WASD/RT DRIVE  R RESET  ESC MENU",30,454,white,580,Align::Left,1);
     end(c);mode=Mode::Drive;
@@ -353,9 +408,12 @@ struct DriveHud::Impl {
       }
     } else {
       identity(c,s);
-      destinationStrip(c,s);
     }
-    worldMarker(c,s,fit,width,height);
+    const bool markerVisible=worldMarker(c,s,fit,width,height);
+    // The destination strip only appears when the world marker is off screen.
+    if(!s.test&&!markerVisible) destinationStrip(c,s);
+    const double bannerPhase=(now()-bannerStart)/1.9;
+    if(bannerPhase>=0&&bannerPhase<1) banner(c,bannerTitle,bannerSub,bannerPhase,amber);
     controls(c,s);
     radar(c,s,{122,590});
     speedometer(c,s,{1096,578});
@@ -521,7 +579,8 @@ struct DriveHud::Impl {
         gradientSkew(c,r,skew,{.18,.62,.68,.96},{.06,.26,.31,.78});
         skewFill(c,CGRectMake(r.origin.x-2,r.origin.y,5,r.size.height),skew,amber);
       } else {
-        gradientSkew(c,r,skew,{.05,.08,.10,.62},{.05,.08,.10,.30});
+        const bool odd=(&index-&menu[0])%2;
+        gradientSkew(c,r,skew,{.05,.08,.10,odd?.74:.58},{.05,.08,.10,odd?.40:.24});
       }
       const CGFloat fs=std::max<CGFloat>(14,std::min<CGFloat>(20,rowH*.54)),base=y+rowH/2+fs*.34,tx0=colX+skew+16;
       CGFloat tx=tx0;
@@ -538,6 +597,11 @@ struct DriveHud::Impl {
         fill(c,CGRectMake(bx+bw*(row.high>row.low?(1-row.low)/(row.high-row.low):.5)-1,by-5,2,16),{1,1,1,.35}); // 1.00x reference
         CGContextSaveGState(c);CGContextSetShadowWithColor(c,{0,0},8,shade(1,1,1,.5));
         setFill(c,white);CGContextFillEllipseInRect(c,CGRectMake(bx+bw*fr-6,by-3,12,12));CGContextRestoreGState(c);
+        if(row.selected) {
+          const CGFloat kx=bx+bw*fr,bubble=measure(kNumeric,12,row.value,.3)+14;
+          plate(c,CGRectMake(kx-bubble/2,by-26,bubble,18),4,1);
+          text(c,kNumeric,12,row.value,kx,by-13,amber,bubble,Align::Center,.3);
+        }
         text(c,kNumeric,fs*1.15,row.value,colX+colW-skew-14,base,row.selected?amber:white,80,Align::Right,.4);
       } else if(row.kind==ui::RowKind::Field) {
         text(c,kLabel,fs*.78,upper(row.label),tx,base,row.selected?white.withAlpha(.9):muted,160-iconW,Align::Left,1.6);
@@ -581,6 +645,10 @@ struct DriveHud::Impl {
       }
     }
     footer(c,panel);
+    if(menu.size()>3) {
+      size_t at=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) at=i+1;
+      if(at) text(c,kLabel,13,std::to_string(at)+" OF "+std::to_string(menu.size()),1216,687,muted,200,Align::Right,2.4,true);
+    }
     end(c);mode=Mode::Panel;
   }
   void paintCompactPanel(const std::vector<std::string>& lines,bool activeTest) {
@@ -659,22 +727,29 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   s.bearing=boundedText(s.bearing,64);s.markerLabel=boundedText(s.markerLabel,128);
   auto q=[](double v,double step){return std::isfinite(v)?std::round(v/step)*step:0.;};
   s.throttle=q(std::clamp(s.throttle,0.,1.),.05);s.brake=q(std::clamp(s.brake,0.,1.),.05);
-  s.bearingRadians=q(s.bearingRadians,.02);s.heading=q(std::remainder(s.heading,2*M_PI),.02);
+  s.bearingRadians=q(s.bearingRadians,.02);s.heading=q(std::remainder(s.heading,2*M_PI),.02);s.carX=q(s.carX,1);s.carZ=q(s.carZ,1);
   for(auto& b:s.blips){b.bearing=q(b.bearing,.02);b.distance=q(b.distance,2);}s.markerDistance=q(s.markerDistance,10);
   s.markerX=float(std::round(s.markerX));s.markerY=float(std::round(s.markerY));
   s.time=0;
   if(s.test){
-    auto& t=*s.test;t.elapsed=q(t.elapsed,.01);t.countdownSeconds=q(t.countdownSeconds,.1);
+    auto& t=*s.test;t.elapsed=q(t.elapsed,.01);t.countdownSeconds=q(t.countdownSeconds,.02);
     t.distance=std::round(t.distance);t.speedKmh=std::round(t.speedKmh);t.gateDistance=std::round(t.gateDistance);
     t.bearing=q(t.bearing,.02);t.name=boundedText(t.name,128);t.note=boundedText(t.note,128);t.turn=boundedText(t.turn,64);
   }
   auto& p=*impl;const auto fit=hudLayout(width,height);const bool compact=fit.compact;
   const double scale=double(fit.width)/fit.logicalWidth;
   if(std::abs(scale-p.scale)>1e-6){p.scale=scale;p.mode=Impl::Mode::None;}
+  if(s.test) {
+    if(p.wasCountdown&&!s.test->countdown){p.bannerTitle="GO!";p.bannerSub=upper(s.test->name);p.bannerStart=Impl::now();}
+    if(s.test->kind==2&&p.lastGate>0&&s.test->gate>p.lastGate){p.bannerTitle="GATE "+std::to_string(p.lastGate)+" CLEARED";p.bannerSub=std::to_string(s.test->gates-p.lastGate)+" TO GO";p.bannerStart=Impl::now();}
+    p.wasCountdown=s.test->countdown;p.lastGate=s.test->gate;
+  } else {p.wasCountdown=false;p.lastGate=0;}
+  const double bannerPhase=(Impl::now()-p.bannerStart)/1.9;
+  const int bannerStep=bannerPhase>=0&&bannerPhase<1?int(bannerPhase*90)+1:0;
   std::ostringstream out;
-  out<<int(s.mph)<<'|'<<s.reverse<<'|'<<s.throttle<<'|'<<s.brake<<'|'<<s.hasDestination<<'|'<<s.vehicle<<'|'<<s.destination<<'|'
+  out<<bannerStep<<'#'<<int(s.mph)<<'|'<<s.reverse<<'|'<<s.throttle<<'|'<<s.brake<<'|'<<s.hasDestination<<'|'<<s.vehicle<<'|'<<s.destination<<'|'
      <<s.distance<<'|'<<s.bearing<<'|'<<s.bearingRadians<<'|'<<s.markerActive<<s.markerBehind<<'|'<<s.markerX<<','<<s.markerY<<'|'
-     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<s.heading;
+     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<s.heading<<'|'<<s.carX<<','<<s.carZ;
   for(const auto& b:s.blips) out<<'|'<<b.kind<<','<<b.bearing<<','<<b.distance;
   out<<'|'<<compact<<'|'<<width<<'x'<<height;
   if(s.test){const auto& t=*s.test;

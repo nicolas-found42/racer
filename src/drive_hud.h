@@ -29,6 +29,7 @@ struct DriveState {
   double distance = 0, bearingRadians = 0;
   bool hasDestination = false;
   double heading = 0; // car heading, radians (rotates the radar compass)
+  double carX = 0, carZ = 0; // world position (metres) for the radar street grid
   std::vector<RadarBlip> blips;
   // World-anchored marker in window pixels; `behind` when it projects behind the eye.
   bool markerActive = false, markerBehind = false;
