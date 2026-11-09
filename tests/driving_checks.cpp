@@ -4,8 +4,8 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
-#include <string>
 #include <stdexcept>
+#include <string>
 using namespace racer;
 void check(bool v, const char *m) {
   if (!v)
@@ -25,7 +25,8 @@ int main(int argc, char **argv) {
     // Default road-sports-car profile reaches 100 km/h in about 7.9 s.
     check(s.car.speed * 3.6 > 95 && s.car.speed * 3.6 < 106, "acceleration");
     check(s.car.gear >= 2, "automatic gearbox upshifted");
-    check(std::abs(s.groundSpeed() - s.car.speed) < .05, "straight ground speed");
+    check(std::abs(s.groundSpeed() - s.car.speed) < .05,
+          "straight ground speed");
     double start = s.car.z;
     const double entry = s.car.speed;
     for (int i = 0; i < 600; i++)
@@ -67,8 +68,10 @@ int main(int argc, char **argv) {
         right.tick({.3, 0, .4});
         left.tick({.3, 0, -.4});
       }
-      check(right.car.heading > .3 && right.car.x > 1, "positive steer turns +X");
-      check(left.car.heading < -.3 && left.car.x < -1, "negative steer turns -X");
+      check(right.car.heading > .3 && right.car.x > 1,
+            "positive steer turns +X");
+      check(left.car.heading < -.3 && left.car.x < -1,
+            "negative steer turns -X");
       check(std::abs(right.car.heading + left.car.heading) < 1e-6,
             "mirrored steering is symmetric");
       check(right.car.yawRate > 0 && right.car.accelerationLateral > 0,
@@ -125,21 +128,28 @@ int main(int argc, char **argv) {
     constexpr double pi = 3.14159265358979323846;
     const auto cars = allCars(argc, argv);
     for (const auto &car : cars) {
-      auto fail = [&](const std::string &why) { throw std::runtime_error(car.name + ": " + why); };
+      auto fail = [&](const std::string &why) {
+        throw std::runtime_error(car.name + ": " + why);
+      };
       auto configured = [&] {
         auto sim = std::make_unique<Simulation>();
-        if (!sim->setGeometry(car.geometry) || !sim->setDynamics(dynamicsFor(car.geometry))) fail("configure");
+        if (!sim->setGeometry(car.geometry) ||
+            !sim->setDynamics(dynamicsFor(car.geometry)))
+          fail("configure");
         return sim;
       };
       auto drive = configured();
-      for (int i = 0; i < 960; ++i) drive->tick({1, 0, 0});
+      for (int i = 0; i < 960; ++i)
+        drive->tick({1, 0, 0});
       const double kmh = drive->car.speed * 3.6;
-      if (kmh < 95 || kmh > 125 || drive->car.gear < 2) fail("eight second speed " + std::to_string(kmh));
+      if (kmh < 95 || kmh > 125 || drive->car.gear < 2)
+        fail("eight second speed " + std::to_string(kmh));
       const double entry = drive->car.speed, from = drive->car.z;
-      for (int i = 0; i < 600; ++i) drive->tick({0, 1, 0});
+      for (int i = 0; i < 600; ++i)
+        drive->tick({0, 1, 0});
       const double stop = drive->car.z - from;
-      if (stop < entry * entry / (2 * 1.1 * 9.80665) - .5 || stop > 55 || std::abs(drive->car.speed) > .01 ||
-          drive->chassisContact)
+      if (stop < entry * entry / (2 * 1.1 * 9.80665) - .5 || stop > 55 ||
+          std::abs(drive->car.speed) > .01 || drive->chassisContact)
         fail("braking distance " + std::to_string(stop));
       auto right = configured(), left = configured();
       for (int i = 0; i < 360; ++i) {
@@ -150,13 +160,39 @@ int main(int argc, char **argv) {
         right->tick({.3, 0, .4});
         left->tick({.3, 0, -.4});
       }
-      if (!(right->car.heading > .25 && right->car.x > .8 && right->car.yawRate > 0 && right->car.accelerationLateral > 0) ||
-          std::abs(right->car.heading + left->car.heading) > 1e-3 || std::abs(right->car.x + left->car.x) > 1e-3)
-        fail("mirrored steering heading " + std::to_string(right->car.heading) + "/" + std::to_string(left->car.heading));
+      if (!(right->car.heading > .25 && right->car.x > .8 &&
+            right->car.yawRate > 0 && right->car.accelerationLateral > 0) ||
+          std::abs(right->car.heading + left->car.heading) > 1e-3 ||
+          std::abs(right->car.x + left->car.x) > 1e-3)
+        fail("mirrored steering heading " + std::to_string(right->car.heading) +
+             "/" + std::to_string(left->car.heading));
+      // Part-throttle launch (2026-11-09 stall diagnosis): an analog trigger
+      // held at 5-24 % pinned every car to the idle-creep equilibrium (1.7-2.7
+      // m/s at 0.000 m/s^2, engine held at idle+10..34 rpm by the governor).
+      // The engine must be free to rev against the load and the car must keep
+      // accelerating; a quarter trigger must give a usable launch.
+      auto creep = configured();
+      for (int i = 0; i < 120 * 6; ++i)
+        creep->tick({.1, 0, 0});
+      const double v6 = creep->car.speed;
+      for (int i = 0; i < 120 * 6; ++i)
+        creep->tick({.1, 0, 0});
+      if (creep->car.speed < v6 + .3 || creep->car.engineRpm < 1200.)
+        fail("10 % throttle bogs: v6=" + std::to_string(v6) +
+             " v12=" + std::to_string(creep->car.speed) +
+             " rpm=" + std::to_string(creep->car.engineRpm));
+      auto quarter = configured();
+      for (int i = 0; i < 120 * 8; ++i)
+        quarter->tick({.25, 0, 0});
+      if (quarter->car.speed < 3.5)
+        fail("25 % throttle launch too weak: v8=" +
+             std::to_string(quarter->car.speed));
       // Walls from several headings (axis-aligned, oblique, reverse): the
-      // oriented envelope stops the car inside the world and it does not tunnel.
+      // oriented envelope stops the car inside the world and it does not
+      // tunnel.
       for (const double degrees : {0., 90., 180., 270., 30., 60., 135., 225.}) {
-        const double heading = degrees * pi / 180, dx = std::sin(heading), dz = std::cos(heading);
+        const double heading = degrees * pi / 180, dx = std::sin(heading),
+                     dz = std::cos(heading);
         const double reach = 500 / std::max(std::abs(dx), std::abs(dz));
         auto wall = configured();
         wall->car.x = dx * (reach - 25);
@@ -169,14 +205,19 @@ int main(int argc, char **argv) {
           wall->tick({1, 0, 0});
           touched = touched || wall->boundaryContact;
           // Penetration of the oriented envelope past the wall, every tick.
-          const auto clearance = orientedBoundaryClearance(car.geometry, wall->car.heading);
+          const auto clearance =
+              orientedBoundaryClearance(car.geometry, wall->car.heading);
           const auto &c = wall->car;
-          deepest = std::max({deepest, c.x - clearance.maxX, clearance.minX - c.x, c.z - clearance.maxZ,
-                              clearance.minZ - c.z});
+          deepest =
+              std::max({deepest, c.x - clearance.maxX, clearance.minX - c.x,
+                        c.z - clearance.maxZ, clearance.minZ - c.z});
         }
         const std::string at = " at " + std::to_string(int(degrees)) + " deg";
-        if (!touched) fail("never reached the wall" + at);
-        if (deepest > .25) fail("tunnelled " + std::to_string(deepest) + " m through the wall" + at);
+        if (!touched)
+          fail("never reached the wall" + at);
+        if (deepest > .25)
+          fail("tunnelled " + std::to_string(deepest) + " m through the wall" +
+               at);
       }
     }
     std::cout << cars.size() << " cars x 8 wall headings checked\n";
