@@ -169,6 +169,8 @@ bool Simulation::setDynamics(const VehicleDynamics &dynamics) {
 }
 void Simulation::setRoadSampler(RoadSampler sampler) {
   road_ = std::move(sampler);
+  shiftCandidate_ = 0;
+  shiftCandidateSeconds_ = 0;
   ++configurationRevision_;
 }
 double Simulation::groundSpeed() const {
@@ -221,6 +223,10 @@ void Simulation::synchronizeState() {
   relaxedLongitudinal_.fill(0);
   relaxedLateral_.fill(0);
   throttle_ = brake_ = shiftRemaining_ = 0;
+  shiftReengagement_ = 1;
+  gearHoldRemaining_ = shiftCandidateSeconds_ = roadDrivenOmega_ = 0;
+  shiftCandidate_ = 0;
+  car.clutchEngagement = car.clutchTorque = 0;
   const Vec v{car.velocityX, car.velocityY, car.velocityZ};
   for (std::size_t i = 0; i < 4; ++i) {
     auto &w = car.wheels[i];
@@ -230,12 +236,16 @@ void Simulation::synchronizeState() {
     const Vec f = rotate(orientation_, {std::sin(w.steeringAngle), 0,
                                         std::cos(w.steeringAngle)});
     w.angularVelocity = dot(v, f) / g.wheels[i].radius;
+    roadDrivenOmega_ +=
+        .5 * (i < 2 ? dynamics_.frontDriveFraction
+                    : 1 - dynamics_.frontDriveFraction) *
+        w.angularVelocity;
   }
   // Pick a compatible starting gear for a loaded moving pose, not first gear
   // at motorway speed. Thereafter the transmission changes gears dynamically.
   if (car.direction > 0)
     while (car.gear < 6 &&
-           std::abs(car.wheels[2].angularVelocity) *
+           std::abs(roadDrivenOmega_) *
                    dynamics_.gearRatios[std::size_t(car.gear - 1)] *
                    dynamics_.finalDrive / rpmToRadians >
                dynamics_.shiftUpRpm)
@@ -258,6 +268,11 @@ void Simulation::reset() {
   boundaryContact = chassisContact = false;
   car = {};
   engineOmega_ = dynamics_.engineIdleRpm * rpmToRadians;
+  car.engineRpm = dynamics_.engineIdleRpm;
+  throttle_ = brake_ = shiftRemaining_ = 0;
+  shiftReengagement_ = 1;
+  gearHoldRemaining_ = shiftCandidateSeconds_ = roadDrivenOmega_ = 0;
+  shiftCandidate_ = 0;
   initialized_ = false;
   rearm();
 }
@@ -282,6 +297,22 @@ void Simulation::publish() {
   car.rollRate = -dot(angularVelocity_, f);
   car.speed = dot({car.velocityX, car.velocityY, car.velocityZ}, f);
   car.engineRpm = engineOmega_ / rpmToRadians;
+  const double ratio =
+      (car.direction < 0 ? -dynamics_.reverseRatio
+                         : dynamics_.gearRatios[std::size_t(car.gear - 1)]) *
+      dynamics_.finalDrive;
+  double drivenOmega = 0;
+  for (std::size_t i = 0; i < car.wheels.size(); ++i)
+    drivenOmega +=
+        .5 * (i < 2 ? dynamics_.frontDriveFraction
+                    : 1 - dynamics_.frontDriveFraction) *
+        car.wheels[i].angularVelocity;
+  car.gearboxInputRpm = drivenOmega * ratio / rpmToRadians;
+  car.roadCoupledRpm = roadDrivenOmega_ * ratio / rpmToRadians;
+  car.clutchSlipRpm = car.engineRpm - car.gearboxInputRpm;
+  car.shiftRemaining = shiftRemaining_;
+  car.shiftCooldown = gearHoldRemaining_;
+  car.shifting = shiftRemaining_ > 0 || shiftReengagement_ < 1;
   published_ = car;
 }
 std::array<float, 16> Simulation::bodyTransform() const {
@@ -339,6 +370,7 @@ void Simulation::tick(Input in, double dt) {
   // when the longitudinal velocity crosses zero during a sideways slide.
   if (groundSpeed() < .03 && std::abs(car.velocityY) < .1 &&
       std::abs(car.yawRate) < .05) {
+    const int previousDirection = car.direction;
     if (car.direction == 1 && bp && !t) {
       car.direction = -1;
       car.gear = -1;
@@ -346,9 +378,18 @@ void Simulation::tick(Input in, double dt) {
       car.direction = 1;
       car.gear = 1;
     }
+    if (car.direction != previousDirection) {
+      // Direction changes start a fresh launch; no old shift or filtered
+      // forward pedal may carry across into reverse (or vice versa).
+      throttle_ = brake_ = shiftRemaining_ = 0;
+      shiftReengagement_ = 1;
+      gearHoldRemaining_ = shiftCandidateSeconds_ = 0;
+      shiftCandidate_ = 0;
+      car.clutchEngagement = car.clutchTorque = 0;
+    }
   }
   if (dt == 0) {
-    published_ = car;
+    publish();
     return;
   }
   // Equal substeps consume the complete supplied interval; no dropped time or
@@ -591,32 +632,118 @@ void Simulation::integrate(Input input, double h) {
 
   // Automatic gearbox and a two-way, slipping, inertia-coupled clutch.
   double drivenOmega = 0, driveInertia = 0;
+  double supportedDriveWeight = 0, supportedDriveLoad = 0;
+  roadDrivenOmega_ = 0;
   std::array<double, 4> driveWeight{}, driveTorque{};
   for (std::size_t i = 0; i < 4; ++i) {
     driveWeight[i] =
         .5 * (i < 2 ? p.frontDriveFraction : 1 - p.frontDriveFraction);
     drivenOmega += driveWeight[i] * car.wheels[i].angularVelocity;
     driveInertia += driveWeight[i] * driveWeight[i] / p.wheelInertia;
+    const auto &c = contacts[i];
+    const Vec wheelForward =
+        c.hit ? c.longitudinal
+              : rotate(orientation_,
+                       {std::sin(car.wheels[i].steeringAngle), 0,
+                        std::cos(car.wheels[i].steeringAngle)});
+    const Vec arm = c.hit ? c.arm
+                         : sub(add(origin, rotate(orientation_,
+                                                   g.wheels[i].center)),
+                               position_);
+    // Use chassis motion at the contact, never wheel RPM, to estimate the
+    // gear's road speed. A spinning/unloaded wheel must not request an upshift.
+    roadDrivenOmega_ +=
+        driveWeight[i] * dot(add(velocity, cross(angularVelocity_, arm)),
+                             wheelForward) /
+        g.wheels[i].radius;
+    if (driveWeight[i] > 0 && car.wheels[i].grounded) {
+      supportedDriveWeight += driveWeight[i];
+      supportedDriveLoad += c.load;
+    }
   }
   shiftRemaining_ = std::max(0.0, shiftRemaining_ - h);
-  if (car.direction > 0 && shiftRemaining_ == 0) {
+  gearHoldRemaining_ = std::max(0.0, gearHoldRemaining_ - h);
+  if (shiftRemaining_ > 0)
+    shiftReengagement_ = 0;
+  else
+    shiftReengagement_ =
+        std::min(1.0, shiftReengagement_ + h / p.shiftReengagementTime);
+  int requestedGear = car.gear;
+  if (car.direction > 0 && shiftRemaining_ == 0 &&
+      shiftReengagement_ == 1 && gearHoldRemaining_ == 0 &&
+      input.clutch < .05 && supportedDriveWeight >= .75 &&
+      supportedDriveLoad > .05 * p.mass * gravity) {
+    // Anticipate an increasing pedal request. After a moving-pose reset the
+    // filtered throttle starts at zero; using it alone would briefly apply
+    // the economy schedule to a full-throttle request and upshift too early.
+    const double pedalLoad =
+        smooth(.15, .85, std::max(drivePedal, throttle_));
+    const double upRpm = p.partThrottleShiftUpRpm +
+                         pedalLoad * (p.shiftUpRpm - p.partThrottleShiftUpRpm);
+    auto downRpm = [&](int gear) {
+      if (gear <= 1)
+        return 0.0;
+      // A light-throttle upshift must land ABOVE that gear's downshift gate,
+      // including wide 1->2 ratios. Fixed 2300 RPM downshifts would hunt again
+      // as soon as a 2800 RPM part-throttle upshift landed near 1750 RPM.
+      const double ratioStep = p.gearRatios[std::size_t(gear - 1)] /
+                               p.gearRatios[std::size_t(gear - 2)];
+      return std::min(p.shiftDownRpm,
+                      std::max(p.engineIdleRpm + 100, .7 * upRpm * ratioStep));
+    };
     const double rpm = engineOmega_ / rpmToRadians;
-    const double coupledRpm = drivenOmega *
-                              p.gearRatios[std::size_t(car.gear - 1)] *
-                              p.finalDrive / rpmToRadians;
-    int next = car.gear;
-    // Free engine revs during a shift must not trigger another upshift.
-    if (rpm > p.shiftUpRpm && coupledRpm > p.shiftUpRpm * .95 &&
-        throttle_ > .15 && next < 6)
-      ++next;
-    else if (coupledRpm < p.shiftDownRpm && next > 1 &&
-             drivenOmega * p.gearRatios[std::size_t(next - 2)] * p.finalDrive /
-                     rpmToRadians <
-                 p.shiftUpRpm * .9)
-      --next;
-    if (next != car.gear) {
-      car.gear = next;
+    const double currentRatio = p.gearRatios[std::size_t(car.gear - 1)] *
+                                p.finalDrive / rpmToRadians;
+    const double coupledRpm = drivenOmega * currentRatio;
+    const double roadRpm = std::abs(roadDrivenOmega_) * currentRatio;
+    if (car.gear < int(p.gearRatios.size()) && throttle_ > .02 &&
+        drivePedal > .02 && roadDrivenOmega_ > 0 &&
+        brake_ < .05 && input.handbrake < .05 && rpm > upRpm &&
+        coupledRpm > .95 * upRpm && roadRpm > .9 * upRpm &&
+        coupledRpm < 1.35 * roadRpm + 150) {
+      const double nextRoadRpm =
+          roadDrivenOmega_ * p.gearRatios[std::size_t(car.gear)] *
+          p.finalDrive / rpmToRadians;
+      if (nextRoadRpm >
+          std::max(p.engineIdleRpm + 400,
+                   downRpm(car.gear + 1) + std::max(150.0, .08 * upRpm)))
+        requestedGear = car.gear + 1;
+    } else if (car.gear > 1 && roadRpm < downRpm(car.gear)) {
+      const double safeOmega =
+          std::max(std::abs(roadDrivenOmega_), std::abs(drivenOmega));
+      // A stopped car can select first directly instead of waiting through
+      // several timed shifts before its next launch. Shaft speed still gates
+      // the request, so a stationary burnout cannot force an unsafe ratio.
+      const double firstRatio = p.gearRatios.front() *
+                                p.finalDrive / rpmToRadians;
+      const int lowerGear = speed < .5 && safeOmega * firstRatio < .9 * upRpm
+                                ? 1
+                                : car.gear - 1;
+      const double lowerRatio = p.gearRatios[std::size_t(lowerGear - 1)] *
+                                p.finalDrive / rpmToRadians;
+      // Check both speeds: locked wheels cannot authorize a road-speed
+      // over-rev, and wheelspin cannot authorize a downshift into an over-rev.
+      if (safeOmega * lowerRatio < .9 * upRpm)
+        requestedGear = lowerGear;
+    }
+  }
+  if (requestedGear == car.gear) {
+    shiftCandidate_ = 0;
+    shiftCandidateSeconds_ = 0;
+  } else {
+    if (shiftCandidate_ != requestedGear) {
+      shiftCandidate_ = requestedGear;
+      shiftCandidateSeconds_ = 0;
+    }
+    shiftCandidateSeconds_ += h;
+    if (shiftCandidateSeconds_ >= p.shiftConfirmTime) {
+      car.gear = requestedGear;
       shiftRemaining_ = p.shiftTime;
+      shiftReengagement_ = 0;
+      gearHoldRemaining_ =
+          p.shiftTime + p.shiftReengagementTime + p.minimumGearHoldTime;
+      shiftCandidate_ = 0;
+      shiftCandidateSeconds_ = 0;
     }
   }
   const double ratio =
@@ -639,8 +766,10 @@ void Simulation::integrate(Input input, double h) {
   }
   if (engineOmega_ > p.engineRedlineRpm * rpmToRadians)
     throttleTorque = 0;
-  if (shiftRemaining_ > 0)
-    throttleTorque *= .15;
+  const double shiftClutch = shiftRemaining_ > 0
+                                 ? 0
+                                 : smooth(0, 1, shiftReengagement_);
+  throttleTorque *= .15 + .85 * shiftClutch;
   const double idle = p.engineIdleRpm * rpmToRadians;
   // Pumping torque scales with engine speed (it is quoted at the redline), so
   // part throttle above idle makes positive net torque and the engine is free
@@ -658,7 +787,7 @@ void Simulation::integrate(Input input, double h) {
       p.engineViscousDrag * engineOmega_;
   const double engineFree =
       std::max(0.0, engineOmega_ + h * netEngine / p.engineInertia);
-  double engagement = (1 - input.clutch) * (shiftRemaining_ > 0 ? 0 : 1);
+  double engagement = (1 - input.clutch) * shiftClutch;
   engagement *= std::max(
       smooth(1, 4, speed),
       std::clamp((engineOmega_ / rpmToRadians - p.engineIdleRpm + 150) / 1200.0,
@@ -701,6 +830,7 @@ void Simulation::integrate(Input input, double h) {
                  -p.clutchTorque * engagement, p.clutchTorque * engagement);
   engineOmega_ = std::max(0.0, engineFree - h * clutch / p.engineInertia);
   car.clutchEngagement = engagement;
+  car.clutchTorque = clutch;
   for (std::size_t i = 0; i < 4; ++i)
     driveTorque[i] = clutch * ratio * efficiency * driveWeight[i];
   for (std::size_t left : {0u, 2u})

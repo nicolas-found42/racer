@@ -62,10 +62,12 @@ private:
   uint64_t observationFailures = 0;
   bool previousBoundaryContact = false;
   void observeBoundary(Input input) noexcept;
-  // 10 Hz human-drive telemetry: allowlisted channels only, for the
-  // analog-trigger acceptance review (launch, coasting, upshift, route).
+  // 10 Hz human-drive telemetry plus unthrottled gear-change edges. Wheel
+  // slip, road-coupled RPM and clutch state distinguish wheelspin from a
+  // blocked car or a transmission that is repeatedly opening its clutch.
   void observeDrive(Input input) noexcept;
   double lastDriveSampleSeconds = -1;
+  int lastDriveGear = 1;
   void actionImpl(Action);
   int pendingSlot = -1;
   Screen eventReturn = Screen::Drive;

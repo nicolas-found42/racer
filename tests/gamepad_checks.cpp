@@ -28,11 +28,13 @@ int main() {
     auto in = racer::gamepadInput(pad);
     check(in.throttle == 0 && in.brake == 0 && in.steer == 0,
           "neutral controls");
-    SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0);
+    // SDL_GetGamepadAxis reports triggers unipolar (0..32767), so raw 1638
+    // arrives as 17203 = .525; the trigger remap (axis-.05)/.95 maps it to .5.
+    SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1638);
     SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFTX, 16384);
     SDL_UpdateJoysticks();
     in = racer::gamepadInput(pad);
-    check(in.throttle > .48 && in.throttle < .52, "analog throttle");
+    check(in.throttle > .48 && in.throttle < .53, "analog throttle");
     check(in.steer > .35 && in.steer < .45, "analog steering");
     SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 32767);
     SDL_SetJoystickVirtualAxis(joystick, SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 32767);

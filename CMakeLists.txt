@@ -167,7 +167,7 @@ add_executable(review_script_checks tests/review_script_checks.cpp)
 target_link_libraries(review_script_checks PRIVATE racer_input)
 add_test(NAME review_script_checks COMMAND review_script_checks)
 
-foreach(check setup session flow presentation diagnostic livery livery_raster parts document_store career career_flow career_integration garage_feature vehicle_config performance_class workflow_observation)
+foreach(check setup session flow presentation diagnostic livery livery_raster parts document_store career career_flow career_integration garage_feature vehicle_config performance_class workflow_observation transmission)
   add_executable(${check}_checks tests/${check}_checks.cpp)
   target_link_libraries(${check}_checks PRIVATE racer_sim)
   add_test(NAME ${check}_checks COMMAND ${check}_checks)

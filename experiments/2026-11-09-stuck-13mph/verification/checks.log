@@ -1,0 +1,72 @@
+Command: bash verification/run_checks.sh
+sha256 simulation.cpp ad4fe3e954488b568a2abe021edc6b503c500a779383f46bb4fc64fbb6c7dd6b
+sha256 simulation.h 083dc2a07cd87317495d7cd65fbd373d60b91e17f284a0f61215115579b24a24
+sha256 setup.cpp 3a157f0072f59722fbe06dff10f3503953b8e987fecd233ff19f28d70a3832c4
+sha256 setup.h 9ab4627c8053f207cb4d304fcd175be061bf32978c9945554f492a717d45a9ea
+Headless validation: current simulation/setup, recovered physics dependencies, validation-only mesh/world stand-ins.
+PASS: wheelspin cannot upshift at low road speed (RWD/AWD/FWD)
+PASS: airborne wheelspin holds the current gear
+WOT multiplier=0.8 speed=118.265 km/h gear=3 clutch_open=0.441667 s
+WOT multiplier=1 speed=137.257 km/h gear=3 clutch_open=0.441667 s
+WOT multiplier=1.2 speed=154.291 km/h gear=4 clutch_open=0.45 s
+surface grip=0.2 grade=0 speed=51.1941 km/h gear=1
+surface grip=0.2 grade=0.06 speed=10.6361 km/h gear=1
+surface grip=0.45 grade=0 speed=119.368 km/h gear=3
+surface grip=0.45 grade=0.06 speed=82.6901 km/h gear=2
+surface grip=1 grade=0 speed=160.08 km/h gear=4
+surface grip=1 grade=0.06 speed=147.552 km/h gear=3
+corner turn_seconds=2 steer=-1 recovery_speed=3.03799 m/s gear=2 shifts=0 clutch_open=0 s longest_open=0 s
+corner turn_seconds=2 steer=1 recovery_speed=3.03799 m/s gear=2 shifts=0 clutch_open=0 s longest_open=0 s
+corner turn_seconds=3 steer=-1 recovery_speed=5.95528 m/s gear=2 shifts=0 clutch_open=0 s longest_open=0 s
+corner turn_seconds=3 steer=1 recovery_speed=5.95528 m/s gear=2 shifts=0 clutch_open=0 s longest_open=0 s
+corner controlled_lift steer=-1 recovery_speed=22.7638 m/s gear=3 yaw_rate=9.28084e-09
+corner controlled_lift steer=1 recovery_speed=22.7638 m/s gear=3 yaw_rate=6.52672e-10
+PASS: full/partial throttle, surfaces/grades, clutch, reverse, corner recovery, stop/relaunch, tuning validation, reset and timestep consistency
+PASS parameter_validation_is_transactional
+PASS extreme_vertical_geometry_rejected_transactionally
+PASS extreme_suspension_micro_roll_is_passive
+PASS stationary_support_and_no_steering_teleport
+PASS straight_acceleration_and_load_transfer
+PASS gearbox_full_throttle_does_not_hunt
+PASS coasting_dissipates_energy
+PASS benchmark_acceleration
+PASS benchmark_braking
+PASS benchmarks_frame_partition
+PASS mirrored_turns
+PASS integration_frame_partition
+PASS complete_state_copy_replays
+PASS invalid_dt_and_controls
+PASS public_state_bounds_and_recovery
+PASS head_on_wall_keeps_lateral_symmetry
+PASS reverse_and_pedal_latch
+PASS low_grip_limits_acceleration
+PASS combined_force_budget
+PASS airborne_gravity_and_zero_grip
+PASS independent_wheel_support
+PASS grade_gravity
+PASS boundary_is_bounded
+PASS ackermann_shared_geometry
+PASS tyre_shape_symmetry_and_saturation
+PASS surface_multilevel_and_missing
+PASS mesh_validation_and_empty_rim
+PASS benchmark_configuration_invalidation
+PASS benchmark_observed_braking_event
+PASS deterministic_input_soak
+METRIC coast_speed_loss_2s_mps 0.514166955107
+METRIC dry_speed_3s_mps 10.2005878375
+METRIC extreme_micro_roll_peak_kinetic_j 2.56502296403e-08
+METRIC front_load_under_power_n 6681.96158783
+METRIC full_throttle_upshifts_12s 2
+METRIC grade_downhill_speed_mps 0.997051444857
+METRIC hundred_to_stop_distance_m 42.0883258072
+METRIC hundred_to_stop_seconds 2.91365204531
+METRIC low_grip_speed_3s_mps 2.19288086191
+METRIC speed_after_6s_mps 22.0550483335
+METRIC static_load_n 14219.6425
+METRIC turn_slip_angle_rad -0.069107215238
+METRIC turn_yaw_rad 0.806960195092
+METRIC zero_to_100_distance_m 111.220204983
+METRIC zero_to_100_seconds 7.91036875231
+RESULT 30/30 passed
+
+Exit status: 0

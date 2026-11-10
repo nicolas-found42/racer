@@ -66,6 +66,8 @@ void PlayFlow::save() {
 void PlayFlow::resetPose() {
   sim.reset();
   previousBoundaryContact = false;
+  lastDriveSampleSeconds = -1;
+  lastDriveGear = sim.car.gear;
   ++poseRevision;
   rearming = true;
 }
@@ -109,6 +111,8 @@ void PlayFlow::startTest(TestKind kind) {
                 effectiveSetup(profile.garage.selected), sim, vehicleId,
                 vehicleId == "prototype" ? 1 : 2);
   ++poseRevision;
+  lastDriveSampleSeconds = -1;
+  lastDriveGear = sim.car.gear;
   prior.reset();
   show(Screen::Drive);
 }
@@ -468,31 +472,94 @@ void PlayFlow::observeBoundary(Input input) noexcept {
 void PlayFlow::observeDrive(Input input) noexcept {
   if (!diagnostics || !diagnostics->enabled())
     return;
-  // Match the recorder's advertised 10 Hz sampler; first sample always emits.
-  const double now = std::chrono::duration<double>(
-                         std::chrono::steady_clock::now().time_since_epoch())
-                         .count();
-  if (lastDriveSampleSeconds >= 0 && now - lastDriveSampleSeconds < 0.1)
-    return;
-  lastDriveSampleSeconds = now;
   try {
     const auto &c = sim.car;
+    // Record edges before rate limiting: a render frame may advance several
+    // simulation ticks, and wall-clock sampling alone can miss a gear change.
+    if (c.gear != lastDriveGear) {
+      diagnostics->event("drive_gear_change",
+                         {{"vehicle_id", vehicleId},
+                          {"pose_revision", poseRevision},
+                          {"from_gear", lastDriveGear},
+                          {"gear", c.gear},
+                          {"speed", c.speed},
+                          {"engine_rpm", c.engineRpm},
+                          {"gearbox_input_rpm", c.gearboxInputRpm},
+                          {"road_coupled_rpm", c.roadCoupledRpm},
+                          {"clutch_engagement", c.clutchEngagement},
+                          {"shifting", c.shifting},
+                          {"shift_remaining", c.shiftRemaining},
+                          {"requested_throttle", input.throttle},
+                          {"requested_brake", input.brake},
+                          {"requested_clutch", input.clutch},
+                          {"test_active", session.active()}},
+                         attempt);
+      lastDriveGear = c.gear;
+    }
+    // Match the recorder's advertised 10 Hz sampler. A reset or vehicle
+    // change also permits an immediate sample of the new pose.
+    const double now = std::chrono::duration<double>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count();
+    if (lastDriveSampleSeconds >= 0 && now - lastDriveSampleSeconds < 0.1)
+      return;
     diagnostics->event("drive_sample",
-                       {{"requested_throttle", input.throttle},
+                       {{"vehicle_id", vehicleId},
+                        {"pose_revision", poseRevision},
+                        {"configuration_revision", sim.configurationRevision()},
+                        {"requested_throttle", input.throttle},
                         {"requested_brake", input.brake},
                         {"requested_steer", input.steer},
+                        {"requested_handbrake", input.handbrake},
+                        {"requested_clutch", input.clutch},
                         {"speed", c.speed},
+                        {"ground_speed", sim.groundSpeed()},
                         {"engine_rpm", c.engineRpm},
                         {"gear", c.gear},
+                        {"direction", c.direction},
+                        {"gearbox_input_rpm", c.gearboxInputRpm},
+                        {"road_coupled_rpm", c.roadCoupledRpm},
                         {"clutch_engagement", c.clutchEngagement},
+                        {"clutch_slip_rpm", c.clutchSlipRpm},
+                        {"clutch_torque", c.clutchTorque},
+                        {"shifting", c.shifting},
+                        {"shift_remaining", c.shiftRemaining},
+                        {"shift_cooldown", c.shiftCooldown},
                         {"accel_long", c.accelerationLongitudinal},
+                        {"accel_lateral", c.accelerationLateral},
                         {"x", c.x},
+                        {"y", c.y},
                         {"z", c.z},
                         {"heading", c.heading},
+                        {"pitch", c.pitch},
+                        {"roll", c.roll},
+                        {"velocity_y", c.velocityY},
+                        {"wheel_fl_omega", c.wheels[0].angularVelocity},
+                        {"wheel_fr_omega", c.wheels[1].angularVelocity},
+                        {"wheel_rl_omega", c.wheels[2].angularVelocity},
+                        {"wheel_rr_omega", c.wheels[3].angularVelocity},
+                        {"wheel_fl_slip_ratio", c.wheels[0].slipRatio},
+                        {"wheel_fr_slip_ratio", c.wheels[1].slipRatio},
+                        {"wheel_rl_slip_ratio", c.wheels[2].slipRatio},
+                        {"wheel_rr_slip_ratio", c.wheels[3].slipRatio},
+                        {"wheel_fl_slip_angle", c.wheels[0].slipAngle},
+                        {"wheel_fr_slip_angle", c.wheels[1].slipAngle},
+                        {"wheel_rl_slip_angle", c.wheels[2].slipAngle},
+                        {"wheel_rr_slip_angle", c.wheels[3].slipAngle},
+                        {"wheel_fl_normal_load", c.wheels[0].normalLoad},
+                        {"wheel_fr_normal_load", c.wheels[1].normalLoad},
+                        {"wheel_rl_normal_load", c.wheels[2].normalLoad},
+                        {"wheel_rr_normal_load", c.wheels[3].normalLoad},
+                        {"wheel_fl_grounded", c.wheels[0].grounded},
+                        {"wheel_fr_grounded", c.wheels[1].grounded},
+                        {"wheel_rl_grounded", c.wheels[2].grounded},
+                        {"wheel_rr_grounded", c.wheels[3].grounded},
                         {"boundary_contact", sim.boundaryContact},
+                        {"chassis_contact", sim.chassisContact},
                         {"test_active", session.active()},
                         {"paused", paused}},
                        attempt);
+    lastDriveSampleSeconds = now;
   } catch (...) {
   } // Optional telemetry cannot change simulation behavior.
 }

@@ -342,7 +342,7 @@ int main() try {
   for (int i = 0; i < 1800 && flow.session.active(); ++i)
     flow.tick({});
   require(flow.session.result().valid &&
-              std::abs(flow.session.result().seconds - 7.297325) < .02,
+              std::abs(flow.session.result().seconds - 7.381999) < .02,
           "stock acceleration preserved");
   require(flow.session.result().carId == identity &&
               flow.session.result().handlingRevision == 2,

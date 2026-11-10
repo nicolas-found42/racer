@@ -11,6 +11,7 @@
 #include <SDL3/SDL_metal.h>
 #include <bgfx/bgfx.h>
 #include <bx/math.h>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -1361,8 +1362,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       return;
     int count = 0;
     auto ids = SDL_GetGamepads(&count);
-    if (count) {
-      pad = SDL_OpenGamepad(ids[0]);
+    if (ids && count > 0) {
+      for (int i = 0; i < count && !pad; ++i)
+        pad = SDL_OpenGamepad(ids[i]);
       diagnostics.event("device_open",
                         {{"available", count}, {"success", pad != nullptr}});
     }
@@ -1623,11 +1625,15 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         double(keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_DOWN]),
         double(keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT]) -
             double(keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT])};
-    if (input.throttle || input.brake || input.steer)
+    const bool keyboardActive = input.throttle || input.brake || input.steer;
+    if (keyboardActive)
       padActive = false;
-    if (pad) {
+    // An explicit keyboard command owns the whole input for this frame; an
+    // idle/drifting pad must not replace W/S or an emergency keyboard brake.
+    if (pad && !keyboardActive) {
       auto p = racer::gamepadInput(pad);
-      if (p.throttle > .05 || p.brake > .05 || p.steer != 0) {
+      // gamepadInput already applies continuous stick/trigger deadzones.
+      if (p.throttle > 0 || p.brake > 0 || p.steer != 0) {
         input = p;
         padActive = true;
       }
@@ -2583,16 +2589,16 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         }
       }
       if (!vehicles.empty()) {
-        const auto &g = vehicles[activeVehicle].geometry;
         float wheel[16];
-        const auto spin =
-            racer::wheelSpinAfterTravel(0, shown.travel, g.wheels[0].radius);
+        // These values must describe the physical wheel used by wheelMatrix,
+        // including wheelspin, lockup and Ackermann steering.
+        const auto &wheelState = shown.wheels[0];
         wheelMatrix(wheel, 0);
         diagnostics.event("wheel_pose",
                           {{"frame", frameId},
                            {"wheel", 0},
-                           {"spin", spin},
-                           {"steering", shown.steering},
+                           {"spin", wheelState.rotation},
+                           {"steering", wheelState.steeringAngle},
                            {"x", wheel[12]},
                            {"y", wheel[13]},
                            {"z", wheel[14]},
@@ -2610,7 +2616,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
           diagnostics.event("carrier_pose",
                             {{"frame", frameId},
                              {"wheel", 0},
-                             {"steering", shown.steering},
+                             {"steering", wheelState.steeringAngle},
                              {"x", wheel[12]},
                              {"y", wheel[13]},
                              {"z", wheel[14]},

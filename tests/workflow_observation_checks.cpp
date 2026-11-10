@@ -78,6 +78,21 @@ int main(int argc, char **argv) try {
                 text.find("\"heading\":") != std::string::npos &&
                 text.find("\"accel_long\":") != std::string::npos,
             "drive route channels missing");
+      for (const char *field : {"\"gearbox_input_rpm\":",
+                                "\"road_coupled_rpm\":",
+                                "\"clutch_slip_rpm\":", "\"clutch_torque\":",
+                                "\"shifting\":", "\"shift_remaining\":",
+                                "\"shift_cooldown\":", "\"requested_clutch\":",
+                                "\"requested_handbrake\":", "\"ground_speed\":",
+                                "\"pitch\":", "\"roll\":", "\"chassis_contact\":"})
+        check(text.find(field) != std::string::npos,
+              "drive transmission/support channels missing");
+      for (const char *wheel : {"fl", "fr", "rl", "rr"})
+        for (const char *channel : {"omega", "slip_ratio", "slip_angle",
+                                    "normal_load", "grounded"})
+          check(text.find(std::string("\"wheel_") + wheel + "_" + channel +
+                          "\":") != std::string::npos,
+                "per-wheel drive channels missing");
       usleep(150000);
       {
         Input in;

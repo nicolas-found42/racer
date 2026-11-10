@@ -51,7 +51,11 @@ bool VehicleDynamics::valid() const {
       !inRange(aeroFrontFraction, 0, 1) || !inRange(airDensity, .5, 2) ||
       !inRange(rollingResistance, 0, .1))
     return false;
-  if (!inRange(chassisFriction, 0, 2) || !inRange(chassisRestitution, 0, .5))
+  if (!inRange(chassisFriction, 0, 2) || !inRange(chassisRestitution, 0, .5) ||
+      !inRange(shiftReengagementTime, .02, 2) ||
+      !inRange(minimumGearHoldTime, .1, 5) ||
+      !inRange(shiftConfirmTime, .01, .5) ||
+      !inRange(partThrottleShiftUpRpm, engineIdleRpm + 300, shiftUpRpm))
     return false;
   for (std::size_t i = 0; i < torqueRpm.size(); ++i) {
     if (!inRange(torqueRpm[i], 0, 20000) || !inRange(torqueNm[i], 0, 3000) ||

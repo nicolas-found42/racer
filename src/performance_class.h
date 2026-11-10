@@ -15,16 +15,17 @@ struct PrototypeRating {
 // interpolated between garage steps. It is neither a recovered Juiced2 rating
 // formula nor a prediction for a car with different dynamics; re-measure the
 // table (tests/performance_class_checks.cpp fails on drift) when the model or
-// its defaults change. Re-measured 2026-11-09 after the part-throttle launch
-// fix (rpm-scaled engine braking, sqrt pedal map): times shift ~0.05 s from
-// the launch-ramp transient; full-throttle steady state is unchanged.
+// its defaults change. Re-measured 2026-11-09 after the transmission fix
+// (confirmed shift requests, gear hold, re-engagement ramp, road-coupled
+// thresholds): full-throttle times shift ~0.03-0.04 s from the earlier
+// part-throttle launch fix baseline.
 inline PrototypeRating prototypeRating(const VehicleSetup &effective) {
   if (!effective.valid())
     throw std::invalid_argument("rating_invalid_setup");
   constexpr double first = .8, spacing = .05;
-  constexpr std::array<double, 9> measured{{9.981110, 9.349068, 8.794632,
-                                            8.305135, 7.869522, 7.480605,
-                                            7.132100, 6.819413, 6.542811}};
+  constexpr std::array<double, 9> measured{{10.024454, 9.391823, 8.836819,
+                                            8.346687, 7.910369, 7.520503,
+                                            7.170671, 6.856074, 6.576538}};
   const double position = std::clamp((effective.acceleration - first) / spacing,
                                      0., double(measured.size() - 1));
   const std::size_t lower = std::min<std::size_t>(

@@ -29,14 +29,14 @@ int main() {
     const auto baseA = run(TestKind::Acceleration),
                baseB = run(TestKind::Braking);
     // Force-based model (test revision 2): the default profile measures
-    // 7.8695 s, 110.4335 m and 42.378 m. The benchmark replays the simulation
+    // 7.9104 s, 111.220 m and 42.088 m. The benchmark replays the simulation
     // to locate the 100 km/h and 0.01 m/s thresholds, so these are not
     // sample-quantized.
-    check(std::abs(baseA.seconds - 7.869522) < .005 &&
-              std::abs(baseA.distance - 110.4335) < .1,
+    check(std::abs(baseA.seconds - 7.910369) < .005 &&
+              std::abs(baseA.distance - 111.2202) < .1,
           "default acceleration measurement");
-    check(std::abs(baseB.distance - 42.3776) < .1 &&
-              std::abs(baseB.seconds - 2.9523) < .01,
+    check(std::abs(baseB.distance - 42.0883) < .1 &&
+              std::abs(baseB.seconds - 2.9137) < .01,
           "baseline braking distance");
     check(baseA.testRevision == 2 && baseB.testRevision == 2,
           "force-based test revision");
@@ -66,7 +66,7 @@ int main() {
     // The multiplier scales engine torque, so the time falls roughly in
     // proportion (8/1.2 = 6.667 s under the old kinematic model); gearing,
     // shift timing and slip decide the exact value.
-    check(std::abs(faster.seconds - 6.542811) < .01 &&
+    check(std::abs(faster.seconds - 6.576538) < .01 &&
               faster.seconds < baseA.seconds &&
               faster.seconds > baseA.seconds / 1.35,
           "acceleration multiplier effect");

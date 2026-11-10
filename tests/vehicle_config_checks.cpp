@@ -38,7 +38,7 @@ int main() try {
               std::abs(flow.session.result().seconds -
                        racer::prototypeRating(flow.effectiveSetup(0))
                            .targetSeconds) < .01 &&
-              flow.session.result().seconds < 7.869522 - .9,
+              flow.session.result().seconds < 7.910369 - .9,
           "measured upgrade effect");
   require(flow.profile.records.size() == 1 &&
               flow.profile.records[0].setup.acceleration == 1.15,

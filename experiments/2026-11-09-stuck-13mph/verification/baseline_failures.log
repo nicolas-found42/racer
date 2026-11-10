@@ -1,0 +1,16 @@
+Uploaded baseline, unchanged simulation/setup; same recovered physics dependencies and current test source.
+Compiler: g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror
+sha256 simulation.cpp f1a46c2ac213088d16f7ae08369a21451ca9f2c38ad5d23505eaae4d35d80273
+sha256 simulation.h fba69dc954eb9146b0e09d010259900a214906ea77c918c99875812923e66681
+sha256 setup.cpp ac0719349daf95a407c9adac607b947d0556cd49c00afcd6019efb3693da4ecf
+sha256 setup.h cbd38aa8a4781a559fb09cf7738d1aa4e7223d03b63c08a8bfa6f03c619e4703
+Compile exit status: 0
+
+Command: baseline_transmission_checks --isolated
+FAIL: wheelspin caused an upshift at low chassis speed (drive split 0.000000)
+Expected failure exit status: 1
+
+Command: baseline_transmission_checks --corner-only
+corner turn_seconds=2 steer=-1 recovery_speed=6.33586 m/s gear=2 shifts=25 clutch_open=5.35 s longest_open=0.441667 s
+FAIL: corner exit triggered repeated shifts with an open clutch
+Expected failure exit status: 1

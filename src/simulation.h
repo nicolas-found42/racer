@@ -35,6 +35,13 @@ struct Car {
   double engineRpm = 850, clutchEngagement = 0;
   int gear = 1; // -1 = reverse; 1..6 = forward automatic transmission.
   std::array<WheelState, 4> wheels{}; // FL, FR, RL, RR.
+  // Drivetrain diagnostics. Input RPM is measured from driven wheels; road
+  // RPM is the no-slip estimate at their contact points, through this gear.
+  // These channels distinguish wheelspin from a legitimately short gear.
+  double gearboxInputRpm = 0, roadCoupledRpm = 0;
+  double clutchSlipRpm = 0, clutchTorque = 0;
+  double shiftRemaining = 0, shiftCooldown = 0;
+  bool shifting = false; // Includes the clutch's re-engagement ramp.
 };
 
 struct RoadSample {
@@ -91,6 +98,9 @@ private:
   Car published_;
   std::array<double, 4> relaxedLongitudinal_{}, relaxedLateral_{};
   double throttle_ = 0, brake_ = 0, engineOmega_ = 0, shiftRemaining_ = 0;
+  double shiftReengagement_ = 1, gearHoldRemaining_ = 0;
+  double shiftCandidateSeconds_ = 0, roadDrivenOmega_ = 0;
+  int shiftCandidate_ = 0;
   void integrate(Input input, double dt);
   void publish();
   GeometryPoint localCenterOfMass() const;

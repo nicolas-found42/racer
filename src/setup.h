@@ -70,6 +70,13 @@ struct VehicleDynamics {
   double dragArea = .66, downforceArea = 0, aeroFrontFraction = .5;
   double airDensity = 1.225, rollingResistance = .013;
   double chassisFriction = .45, chassisRestitution = .05;
+  // Automatic transmission timing (seconds). The hold starts after the
+  // clutch has re-engaged; it cannot be consumed by the shift itself.
+  double shiftReengagementTime = .12, minimumGearHoldTime = .55;
+  double shiftConfirmTime = .06;
+  // The light-pedal upshift point blends into shiftUpRpm at high throttle.
+  // Downshift hysteresis also accounts for the actual adjacent gear ratios.
+  double partThrottleShiftUpRpm = 2800;
   bool valid() const;
   bool operator==(const VehicleDynamics &) const = default;
 };

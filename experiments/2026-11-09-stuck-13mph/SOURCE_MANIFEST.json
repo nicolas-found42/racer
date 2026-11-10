@@ -1,0 +1,84 @@
+{
+  "description": "Complete uploaded source files mapped to project paths; additional verification and documentation are listed in SHA256SUMS.txt.",
+  "supplied_source_file_count": 11,
+  "changed_source_file_count": 10,
+  "source_files": [
+    {
+      "uploaded_name": "driving_checks.cpp",
+      "archive_path": "tests/driving_checks.cpp",
+      "original_sha256": "20bd9834c6f09e2f033bf4ea50c7cfafcf45afc8286a92e909b9a41a2180b45b",
+      "updated_sha256": "20bd9834c6f09e2f033bf4ea50c7cfafcf45afc8286a92e909b9a41a2180b45b",
+      "changed": false
+    },
+    {
+      "uploaded_name": "gamepad.cpp",
+      "archive_path": "src/gamepad.cpp",
+      "original_sha256": "919a0e0a4403df05c2f99aa8f91a30ce4e092f5214237e752fd47f50b725dea9",
+      "updated_sha256": "b1111a18910805dd35a2be24ec2318c7ef85e28ccf24d17c68c289a95131331d",
+      "changed": true
+    },
+    {
+      "uploaded_name": "main.cpp",
+      "archive_path": "src/main.cpp",
+      "original_sha256": "88c878d8cc8fd882d918ee77cf4836f5eb394b9c87e8dfb2e3ad2d50487aaca8",
+      "updated_sha256": "9a5fcd8ca0dd61025c1e6c6e50550c741da97950879e24a771b96c2a1f6e984e",
+      "changed": true
+    },
+    {
+      "uploaded_name": "play_flow.cpp",
+      "archive_path": "src/play_flow.cpp",
+      "original_sha256": "d58a1d83c7cb6d5d55b80bb741d208e9b5800afd10ef83ba1d7be39f3ddfa7a5",
+      "updated_sha256": "2e79afc5cbc0f892ae5c8ea4af22e77b0fd0a8ab66575b5f3293bca47aaa5315",
+      "changed": true
+    },
+    {
+      "uploaded_name": "play_flow.h",
+      "archive_path": "src/play_flow.h",
+      "original_sha256": "bffd0e9ba6c3b9c29d0fc9ebf8e810ef1a67cb77d688b638bb5d78102b04709d",
+      "updated_sha256": "b2b8f0c4750e83c2970a440d82eb31b5aa6b73813268b2835cbda3e48224522d",
+      "changed": true
+    },
+    {
+      "uploaded_name": "probe.cpp",
+      "archive_path": "experiments/2026-11-09-partial-throttle-stall/probe.cpp",
+      "original_sha256": "2dcace8b8c12a14ad6b7e47ff004ba7039b2b5ab62854c332b5e3251bee74770",
+      "updated_sha256": "19b909f8c8f65dd33e939b0d1d3b9c74ec7cd6068f56d40e3e8336485e0f0c74",
+      "changed": true
+    },
+    {
+      "uploaded_name": "setup(1).cpp",
+      "archive_path": "src/setup.cpp",
+      "original_sha256": "ac0719349daf95a407c9adac607b947d0556cd49c00afcd6019efb3693da4ecf",
+      "updated_sha256": "3a157f0072f59722fbe06dff10f3503953b8e987fecd233ff19f28d70a3832c4",
+      "changed": true
+    },
+    {
+      "uploaded_name": "setup(1).h",
+      "archive_path": "src/setup.h",
+      "original_sha256": "cbd38aa8a4781a559fb09cf7738d1aa4e7223d03b63c08a8bfa6f03c619e4703",
+      "updated_sha256": "9ab4627c8053f207cb4d304fcd175be061bf32978c9945554f492a717d45a9ea",
+      "changed": true
+    },
+    {
+      "uploaded_name": "simulation(1).cpp",
+      "archive_path": "src/simulation.cpp",
+      "original_sha256": "f1a46c2ac213088d16f7ae08369a21451ca9f2c38ad5d23505eaae4d35d80273",
+      "updated_sha256": "ad4fe3e954488b568a2abe021edc6b503c500a779383f46bb4fc64fbb6c7dd6b",
+      "changed": true
+    },
+    {
+      "uploaded_name": "simulation(1).h",
+      "archive_path": "src/simulation.h",
+      "original_sha256": "fba69dc954eb9146b0e09d010259900a214906ea77c918c99875812923e66681",
+      "updated_sha256": "083dc2a07cd87317495d7cd65fbd373d60b91e17f284a0f61215115579b24a24",
+      "changed": true
+    },
+    {
+      "uploaded_name": "workflow_observation_checks.cpp",
+      "archive_path": "tests/workflow_observation_checks.cpp",
+      "original_sha256": "064713e6eaf09f64c6dbc6df3aaeac0b48a987e30f02117ce7fc41573a7ec2e6",
+      "updated_sha256": "7a36084bc6139d1cee8ba4f8f7fd794d8870f07a73c7c60e2c6a64324e200928",
+      "changed": true
+    }
+  ]
+}
