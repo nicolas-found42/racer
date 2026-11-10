@@ -264,104 +264,117 @@ inline void signBoard(std::vector<AssetVertex> &m, Point a, Point b, Point c,
     m[first + vertex].ty = uv[vertex][1];
   }
 }
-inline void building(std::vector<AssetVertex> &m, float x, float z, float w,
-                     float d, int floors, unsigned style) {
+// Small deterministic LCG for authored block variation (same pattern as the
+// street-tree scatter); identical seeds rebuild identical blocks.
+struct CityRng {
+  unsigned state;
+  explicit CityRng(unsigned seed) : state(seed * 2654435761u + 12345u) {}
+  float next() {
+    state = state * 1664525u + 1013904223u;
+    return float((state >> 8) & 0xffff) / 65535.f;
+  }
+  float range(float lo, float hi) { return lo + (hi - lo) * next(); }
+  int span(int lo, int hi) {
+    return lo + int(next() * float(hi - lo + 1)) % (hi - lo + 1);
+  }
+};
+// Street-wall parcel of the console-density re-bake: one attached row building
+// fronting a block edge. Parcels share party planes (no side setbacks), so an
+// edge reads as the continuous facade wall the MCLA/GT4 reference crops show.
+// All wall art comes from the qualified facade atlas: window-grid sheets
+// (ids 11/12, one 3.15 m storey per shader row) at three storeys and up,
+// siding/concrete below, the storefront band (id 9) or shop glazing (id 14) at
+// street level and a backlit sign board (id 13) on some fronts. Authored
+// layout; native city placement remains unknown.
+inline void streetParcel(std::vector<AssetVertex> &m, float x, float z, float w,
+                         float d, int floors, unsigned style, bool alongX,
+                         float frontDir) {
   const float h = 3.9f + float(floors) * 3.15f;
   const std::array<uint32_t, 6> walls{rgb(174, 157, 132), rgb(144, 143, 133),
                                       rgb(185, 174, 154), rgb(130, 124, 113),
                                       rgb(162, 137, 117), rgb(190, 182, 163)};
-  const auto wall = walls[style % walls.size()], trim = rgb(117, 115, 106),
-             glass = rgb(54 + style % 13, 77 + style % 15, 86 + style % 17);
-  // Mid/high-rise walls use the SLRR window-grid sheets (one storey per 3.15 m
-  // in the shader) with the curtain grid on alternating styles; low-rise keeps
-  // the stone / siding / concrete atlas tiles.
+  const auto wall = walls[style % walls.size()], trim = rgb(117, 115, 106);
   const bool windowGrid = floors >= 3;
-  box(m, x, .16f, z, w, h, d, wall, .9f,
+  box(m, x, .16f, z, alongX ? w : d, h, alongX ? d : w, wall, .9f,
       windowGrid ? (style % 2 == 0 ? 11.f : 12.f)
-                 : (style % 3 == 0 ? 3.f : (style % 3 == 1 ? 8.f : 10.f)));
-  box(m, x, .16f, z, w + .35f, .55f, d + .35f, rgb(110, 108, 99));
-  box(m, x, h + .16f, z, w + .6f, .32f, d + .6f, trim);
-  box(m, x, h + .48f, z, w - .9f, .14f, d - .9f, rgb(94, 96, 92));
-  for (int roof = 0; roof < 2; ++roof) {
-    const float rx = x + (float(roof) - .5f) * w * .35f;
-    box(m, rx, h + .62f, z, 2.6f, .75f, 1.9f, rgb(130, 135, 132));
-    for (int slat = 0; slat < 3; ++slat)
-      box(m, rx - .8f + float(slat) * .65f, h + 1.38f, z, .25f, .03f, 1.5f,
-          rgb(76, 84, 85));
+                 : (style % 3 == 0 ? 8.f : 10.f));
+  // Cornice plus one rooftop unit: silhouette variation without per-floor
+  // geometry, the wall sheets already carry the window rows.
+  box(m, x, h + .16f, z, (alongX ? w : d) + .5f, .3f, (alongX ? d : w) + .5f,
+      trim);
+  if (style % 3 == 0)
+    box(m, x + float(style % 5 - 2) * 2.f, h + .46f,
+        z + (alongX ? float(style % 3 - 1) * 3.f : 0.f), alongX ? 3.f : 2.2f,
+        1.2f, alongX ? 2.2f : 3.f, rgb(130, 135, 132));
+  // Street-level band on the front face only; the rear stays a blank party
+  // wall like the reference row blocks.
+  const float front =
+      (alongX ? z : x) + frontDir * ((alongX ? d : w) * .5f + .045f);
+  const float bandW = (alongX ? w : d) * .8f;
+  if (alongX)
+    box(m, x, .8f, front, bandW, 2.5f, .08f, rgb(45, 66, 71), .18f,
+        style % 4 == 3 ? 14.f : 9.f);
+  else
+    box(m, front, .8f, z, .08f, 2.5f, bandW, rgb(45, 66, 71), .18f,
+        style % 4 == 3 ? 14.f : 9.f);
+  if (style % 3 == 1) { // sun shade over the band
+    if (alongX)
+      box(m, x, 3.45f, front + frontDir * .55f, bandW * .9f, .14f, 1.1f,
+          style % 2 ? rgb(155, 114, 77) : rgb(87, 115, 102));
+    else
+      box(m, front + frontDir * .55f, 3.45f, z, 1.1f, .14f, bandW * .9f,
+          style % 2 ? rgb(155, 114, 77) : rgb(87, 115, 102));
   }
-  // Windows are inset panels with one projecting sill per bay, rather than
-  // freestanding luminous cubes; opaque glass keeps the single world pass
-  // simple. Window-grid facades skip them: the wall sheet already carries the
-  // glazing and the shader lights hashed cells at night.
-  for (int floor = 0; floor < floors && !windowGrid; ++floor) {
-    const float y = 4.7f + float(floor) * 3.15f;
-    const int columns = std::clamp(int(w / 4.1f), 2, 6),
-              rows = std::clamp(int(d / 4.1f), 2, 6);
-    for (int i = 0; i < columns; ++i) {
-      const float wx = x - w * .5f + (float(i) + .5f) * w / float(columns),
-                  ww = std::min(2.25f, w / float(columns) - .7f);
-      for (float side : {-1.f, 1.f}) {
-        const float front = z + side * (d * .5f + .035f);
-        const Point a{wx - ww * .5f, y, front}, b{wx + ww * .5f, y, front},
-            c{wx + ww * .5f, y + 1.65f, front},
-            e{wx - ww * .5f, y + 1.65f, front};
-        if (side > 0)
-          quad(m, a, b, c, e, glass, .14f, 5);
-        else
-          quad(m, b, a, e, c, glass, .14f, 5);
-        quad(m, {wx - ww * .5f - .1f, y, front - .16f},
-             {wx - ww * .5f - .1f, y, front + .16f},
-             {wx + ww * .5f + .1f, y, front + .16f},
-             {wx + ww * .5f + .1f, y, front - .16f}, trim);
-      }
-    }
-    for (int i = 0; i < rows; ++i) {
-      const float wz = z - d * .5f + (float(i) + .5f) * d / float(rows),
-                  ww = std::min(2.25f, d / float(rows) - .7f);
-      for (float side : {-1.f, 1.f}) {
-        const float front = x + side * (w * .5f + .035f);
-        const Point a{front, y, wz - ww * .5f},
-            b{front, y + 1.65f, wz - ww * .5f},
-            c{front, y + 1.65f, wz + ww * .5f}, e{front, y, wz + ww * .5f};
-        if (side > 0)
-          quad(m, a, b, c, e, glass, .14f, 5);
-        else
-          quad(m, b, a, e, c, glass, .14f, 5);
-        quad(m, {front - .16f, y, wz - ww * .5f - .1f},
-             {front - .16f, y, wz + ww * .5f + .1f},
-             {front + .16f, y, wz + ww * .5f + .1f},
-             {front + .16f, y, wz - ww * .5f - .1f}, trim);
-      }
-    }
-  }
-  // Street-level shop glazing, recessed door and sun shades on both fronts.
-  for (float side : {-1.f, 1.f}) {
-    const float front = z + side * (d * .5f + .045f);
-    box(m, x, .8f, front, w * .76f, 2.15f, .08f, rgb(45, 66, 71), .18f,
-        windowGrid && style % 2 == 1
-            ? 14.f
-            : 9.f); // storefront atlas tile, or the SLRR kirakat shop window
-    for (int i = -1; i <= 1; ++i)
-      box(m, x + float(i) * w * .25f, .6f, front + side * .065f, .12f, 2.45f,
-          .12f, trim);
-    box(m, x, 3.05f, front, w * .86f, .6f, .16f,
-        (style % 2) ? rgb(114, 66, 46) : rgb(59, 88, 79));
-    box(m, x, 2.9f, front + side * .6f, w * .9f, .12f, 1.35f,
-        (style % 2) ? rgb(155, 114, 77) : rgb(87, 115, 102));
-    // Backlit shop sign board above the awning on wide enough fronts.
-    if (style % 3 == 1 && w >= 6) {
-      const float signW = std::min(w * .62f, 7.2f), signH = signW / 16.f,
-                  signY = 3.75f;
-      const Point a{x - signW * .5f, signY, front},
-          b{x + signW * .5f, signY, front},
-          c{x + signW * .5f, signY + signH, front},
-          e{x - signW * .5f, signY + signH, front};
-      if (side > 0)
+  if (style % 3 == 2 && (alongX ? w : d) >= 9) { // backlit board above the band
+    const float signW = std::min((alongX ? w : d) * .55f, 6.5f),
+                signH = signW / 16.f, signY = 3.85f;
+    if (alongX) {
+      const float sx = x - signW * .5f;
+      const Point a{sx, signY, front}, b{sx + signW, signY, front},
+          c{sx + signW, signY + signH, front}, e{sx, signY + signH, front};
+      if (frontDir > 0)
         signBoard(m, a, b, c, e);
       else
         signBoard(m, b, a, e, c);
+    } else {
+      const float sz = z - signW * .5f;
+      const Point a{front, signY, sz}, b{front, signY, sz + signW},
+          c{front, signY + signH, sz + signW}, e{front, signY + signH, sz};
+      if (frontDir > 0)
+        signBoard(m, b, a, e, c);
+      else
+        signBoard(m, a, b, c, e);
     }
   }
+}
+// Interior volume behind the street walls: a mid-rise core on most blocks, a
+// low courtyard podium on the rest. Window-grid walls, concrete penthouse.
+inline void blockCore(std::vector<AssetVertex> &m, float x, float z, float w,
+                      float d, int floors, unsigned style) {
+  const float h = 3.9f + float(floors) * 3.15f;
+  box(m, x, .16f, z, w, h, d, rgb(144, 143, 133), .9f,
+      style % 2 == 1 ? 12.f : 11.f);
+  box(m, x, h + .16f, z, w + .5f, .3f, d + .5f, rgb(117, 115, 106));
+  box(m, x, h + .46f, z, w * .45f, 2.2f, d * .45f, rgb(130, 135, 132));
+  if (style % 3 == 0)
+    pole(m, {x, h + 2.66f, z}, {x, h + 6.f, z}, .12f, rgb(94, 96, 92), 5);
+}
+// Horizon tower: window-grid walls only (the sheets carry the window rows),
+// varied crowns so the skyline band reads as mixed construction. Authored
+// placement inside the road grid, heights bounded by the world extent.
+inline void ringTower(std::vector<AssetVertex> &m, float x, float z, float w,
+                      float d, float h, unsigned style) {
+  box(m, x, .05f, z, w, h, d,
+      rgb(127 + unsigned(style % 3) * 13, 135 + unsigned(style % 4) * 6,
+          135 + unsigned(style % 2) * 10),
+      .9f, style % 2 == 0 ? 11.f : 12.f);
+  box(m, x, h, z, w + 1, .5f, d + 1, rgb(109, 119, 121));
+  if (style % 3 == 0)
+    box(m, x, h + .5f, z, w * .5f, 2.6f, d * .5f, rgb(113, 124, 126));
+  else if (style % 3 == 1)
+    box(m, x, h + .5f, z, w * .3f, h * .25f, d * .3f, rgb(109, 119, 121));
+  if (style % 4 == 0)
+    pole(m, {x, h + .5f, z}, {x, h + 4.5f, z}, .12f, rgb(94, 96, 92), 5);
 }
 inline float terrainNoise(float x, float z) {
   const int ix = int(std::floor(x)), iz = int(std::floor(z));
@@ -451,7 +464,7 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
                                                size_t *lampFirst = nullptr,
                                                size_t *lampCount = nullptr) {
   std::vector<AssetVertex> m;
-  m.reserve(190000);
+  m.reserve(200000);
   using namespace city;
   // Four by four varied blocks form the detailed central district. Every block
   // begins beyond 7m from either road centre; roads remain 12m wide at 100m
@@ -495,17 +508,43 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
               rgb(128, 127, 117));
         }
       }
-      // Four unequal footprints leave a shared rear service court and side
-      // passages.
-      if (authoredBuildings)
-        for (int lot = 0; lot < 4; ++lot) {
+      // Console-density block (measured against the MCLA/GT4 facade crops):
+      // a continuous party-walled frontage -- four corner parcels plus two
+      // mid parcels per edge, fronts at 36 m from the block centre (14 m
+      // clear of the road) -- around one interior mid-rise core or low
+      // podium. Authored layout; source runtime placement is unknown.
+      if (authoredBuildings) {
+        CityRng rng(seed * 97u + 13u);
+        for (int lot = 0; lot < 4; ++lot) { // corner parcels
           const float sx = (lot & 1) ? 1.f : -1.f, sz = (lot & 2) ? 1.f : -1.f;
-          const float w = 23 + float((seed + unsigned(lot) * 3) % 7),
-                      d = 25 + float((seed + unsigned(lot) * 5) % 7);
-          const int floors = 1 + int((seed + unsigned(lot) * 7) % 4);
-          building(m, x + sx * 23, z + sz * 23, w, d, floors,
-                   seed + unsigned(lot));
+          const unsigned style = seed * 7u + unsigned(lot) * 5u + 1u;
+          const bool alongX = (seed + unsigned(lot)) % 2 == 0;
+          streetParcel(m, x + sx * 27.5f, z + sz * 27.5f, 18.f, 18.f,
+                       rng.span(2, 6), style, alongX, alongX ? sz : sx);
         }
+        for (int lot = 0; lot < 4; ++lot) { // two mid parcels per edge
+          const bool alongX = (lot & 1) == 0;
+          const float sign = (lot & 2) ? 1.f : -1.f;
+          const float depth = rng.range(14.f, 17.f);
+          for (int p = 0; p < 2; ++p) {
+            const float uc = p == 0 ? -9.25f : 9.25f;
+            const unsigned style =
+                seed * 11u + unsigned(lot) * 5u + unsigned(p) * 3u;
+            if (alongX)
+              streetParcel(m, x + uc, z + sign * (36.f - depth * .5f), 18.5f,
+                           depth, rng.span(2, 7), style, true, sign);
+            else
+              streetParcel(m, x + sign * (36.f - depth * .5f), z + uc, 18.5f,
+                           depth, rng.span(2, 7), style, false, sign);
+          }
+        }
+        if (seed % 5 != 3) // mid-rise core behind the frontage
+          blockCore(m, x + rng.range(-1.5f, 1.5f), z + rng.range(-1.5f, 1.5f),
+                    rng.range(22.f, 30.f), rng.range(22.f, 30.f),
+                    rng.span(8, 13), seed * 3u + 7u);
+        else // low courtyard podium fills the interior instead
+          blockCore(m, x, z, 30.f, 26.f, 2, seed * 3u + 7u);
+      }
       // Street trees on the block sidewalks, spaced clear of lamps, benches and
       // palms.
       for (float side : {-1.f, 1.f})
@@ -535,30 +574,30 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
             rgb(70, 82, 72));
       }
     }
-  // Secondary skyline uses varied setbacks and roof silhouettes; it stays well
-  // inside unoccupied block interiors and never crosses the existing grid
-  // roads.
-  for (int i = 0; i < 30; ++i) {
-    const int gx = (i % 10) - 5, gz = (i < 10 ? -4 : (i < 20 ? 3 : 4));
-    const float x = float(gx) * 100 + 45, z = float(gz) * 100 + 48;
-    const float h = 18 + float((i * 13) % 49), w = 21 + float(i % 4) * 4,
-                d = 25 + float(i % 3) * 5;
-    // Tower walls sample the SLRR window-grid sheets world-space (the shader
-    // lights hashed glass cells at night), alternating the dense and curtain
-    // grids so the far district reads as mixed construction.
-    box(m, x, .05f, z, w, h, d,
-        rgb(127 + unsigned(i % 3) * 13, 135 + unsigned(i % 4) * 6,
-            135 + unsigned(i % 2) * 10),
-        .9f, i % 2 == 0 ? 11.f : 12.f);
-    box(m, x, h, z, w + 1, .5f, d + 1, rgb(109, 119, 121));
-    box(m, x, h + .5f, z, w * .48f, 2.5f, d * .48f, rgb(113, 124, 126));
-    for (int f = 0; f < int(h / 4); ++f) {
-      const float y = 2 + float(f) * 3.7f;
-      box(m, x, y, z - d * .5f - .03f, w * .85f, 1.05f, .06f, rgb(63, 85, 96),
-          .22f, 5);
-      box(m, x, y, z + d * .5f + .03f, w * .85f, 1.05f, .06f, rgb(63, 85, 96),
-          .22f, 5);
+  // Skyline band: window-grid towers on the four horizon rows plus east/west
+  // flank columns, filling the horizon the way the reference skyline crops do.
+  // Walls sample the SLRR window-grid sheets world-space (the shader lights
+  // hashed glass cells at night); the far rows run taller so the silhouette
+  // steps up away from the district. Authored placement, never crossing the
+  // grid roads or the world boundary.
+  for (int i = 0; i < 48; ++i) {
+    const bool flank = i >= 40;
+    int gx, gz;
+    if (flank) {
+      static const int fx[4] = {-4, -3, 3, 4};
+      gx = fx[(i - 40) % 4];
+      gz = (i - 40) / 4 == 0 ? -1 : 0;
+    } else {
+      gx = (i % 10) - 5;
+      const int row = i / 10; // rows -4,-3,3,4
+      gz = row < 2 ? (row == 0 ? -4 : -3) : (row == 2 ? 3 : 4);
     }
+    const float x = float(gx) * 100 + 45, z = float(gz) * 100 + 45;
+    CityRng rng(unsigned(i) * 4u + 17u);
+    const float far = flank || gz == -3 || gz == 3;
+    const float h = far ? rng.range(18.f, 44.f) : rng.range(30.f, 64.f);
+    ringTower(m, x, z, rng.range(20.f, 30.f), rng.range(22.f, 32.f), h,
+              unsigned(i) * 7u + 3u);
   }
   // Foothills on the three other sides (the original +z patch is added below by
   // terrain(m)).

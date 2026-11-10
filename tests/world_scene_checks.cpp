@@ -30,7 +30,8 @@ std::pair<int, int> block(const racer::AssetVertex &v) {
   return {int(std::floor(v.x / racer::worldScale::blockSpacing)),
           int(std::floor(v.z / racer::worldScale::blockSpacing))};
 }
-void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured) {
+void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured,
+                  bool district) {
   mode = textured ? "textured palms" : "authored fallback";
   check(!scene.empty(), "city contains rendered geometry");
   // Budget raised 200000->300000: street trees (~22k vertices) and night lamp
@@ -101,8 +102,19 @@ void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured) {
   check(normalsAgree, "surface normals agree with triangle winding");
   check(clear, "all in-world vertices preserve 7m road clearance");
   check(noRoadBridges, "no scenery face bridges a road or the world boundary");
-  check(occupiedBlocks.size() >= 16 && tallest >= 15,
-        "district contains distributed buildings and a skyline");
+  check(occupiedBlocks.size() >= 60 && tallest >= 30,
+        "district and skyline ring fill the map with mid-rise or taller "
+        "buildings");
+  if (district) {
+    // Re-bake pin: the window-grid facade sheets carry the street walls across
+    // the district and the horizon ring, not just a few standalone towers.
+    std::set<std::pair<int, int>> gridBlocks;
+    for (const auto &v : scene)
+      if (v.y > 8 && v.v > 10.5f && v.v < 12.5f && insideWorld(v))
+        gridBlocks.insert(block(v));
+    check(gridBlocks.size() >= 55,
+          "window-grid frontage spans the district and skyline ring");
+  }
   check(facadeDomain, "facade vertices use only the atlas surface ids 8-15");
   check(foliageDomain,
         "foliage vertices use the dedicated complete-image UV domain");
@@ -129,11 +141,11 @@ int main() {
             std::equal(fallback.begin(), fallback.end(),
                        explicitFallback.begin(), sameVertex),
         "default scene preserves the optional-texture fallback contract");
-  inspectScene(fallback, false);
+  inspectScene(fallback, false, true);
   const auto textured = racer::buildCityScene(true);
-  inspectScene(textured, true);
+  inspectScene(textured, true, true);
   const auto shell = racer::buildCityScene(true, false);
-  inspectScene(shell, true);
+  inspectScene(shell, true, false);
   bool fallbackRoof = false;
   for (size_t i = 0; i < shell.size(); i += 3) {
     const auto &a = shell[i], &b = shell[i + 1], &c = shell[i + 2];
