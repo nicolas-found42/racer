@@ -10,16 +10,22 @@ measured frame statistics toward the 162-frame console reference set?
   `output/base/racer` sha256 `0e2bb092…` (models/shaders copied beside it); after build
   `build/racer` sha256 `9348d3a8…`.
 - Qualified facade atlas (kept, not re-made): `assets/visual-local/v4/surfaces.rgba`,
-  sha256 `e61d6c16…`, 16 tiles `RCRSURF4` — window grids in tiles 8-15. Re-generated for this
-  record from the pinned SLRR sources and byte-identical:
-  `python3 scripts/prepare_world_surfaces.py --source /Users/nicolas/Documents/github/reverse-engineering/games/raw/slrr-231/maps/textures --output assets/visual-local/v4`.
+  sha256 `e61d6c16…`, 16 tiles `RCRSURF4` — window grids in tiles 8-15. Idempotence proven
+  without overwriting the atlas the frames used: generated to `/tmp/atlas-check` with
+  `python3 scripts/prepare_world_surfaces.py --source /Users/nicolas/Documents/github/reverse-engineering/games/raw/slrr-231/maps/textures --output /tmp/atlas-check`
+  and the output sha256 equals the retained file's.
   Re-bake uses only existing surface ids 8-15; the shader/atlas domain pins are unchanged.
-- Console set: `references/web2/` — a fresh 162-crop MCLA/GT4 gather with
+- Console set: `references/web2/` — a fresh 162-crop MCLA/GT4 gather (GT4 82, MCLA 80) with
   `manifest.json` (source URL, sha256, dimensions, category, pixel-derived description per
-  file; 17 MiB retained). Note on provenance: the 2026-11-07 comparison-matrix catalog was
-  262 images across MCLA/GT4/MC3/Juiced 2/SLRR and is no longer retained; facade-v4's "162
-  console pairs" were pairs drawn from that catalog. This round re-gathered a two-game
-  (MCLA/GT4) set of exactly 162 crops to match the requested set size and game scope.
+  file; 17 MiB retained). Selection rule: category quotas copied from facade-v4's
+  `CATEGORY_FRAMES` (buildings_facade 32, night_street 28, day_street 26, skyline_horizon 18,
+  headlights_lamps 12, wet_road 10, smoke_skid 10, crowd_props 9, other 17), choosing
+  street-level driving screenshots with visible building fabric, and reporting the honest
+  actual count rather than padding. Note on provenance: the 2026-11-07 comparison-matrix
+  catalog was 262 images across MCLA/GT4/MC3/Juiced 2/SLRR and is no longer retained;
+  facade-v4's "162 console pairs" were pairs drawn from that catalog. This round re-gathered
+  a two-game (MCLA/GT4) set of exactly 162 crops to match the requested set size and game
+  scope; hashes are new, so it is not provenance-identical to the old catalog.
 
 ## Density classification (jevify)
 Rubric frozen in constants before data loaded: two questions per frame — `density`
@@ -29,7 +35,8 @@ description (written from the pixels by the cataloguing pass) and read the frame
 contradicted. All 162 judged, 0 failures: **canyon 31, dense_open 46, lowrise 25, no_street 60**
 — 48 % of the set is urban street fabric, 46 frames are explicit density targets. 72 verdicts
 were below 0.7 and all were reconciled by description; 6 were overturned where the
-description plainly contradicts the label (`jevify-density.json` records each override).
+description plainly contradicts the label (the committed `jevify-density.json` at the
+experiment root records every per-frame verdict and each override).
 Consequence: console streets are dominantly dense — the pre-bake Racer low-rise grid had no
 console counterpart.
 
@@ -95,8 +102,10 @@ the day mean darkens).
   frame only for set completeness and excluded from the density statistics.
 
 ## Retention
-`output/` 190 MiB (37+37 frames, 67 grids, triples, both indexes, both pair files, jevify
-JSON, stats) + `references/` 17 MiB = 207 MiB total, under the 256 MiB experiment cap.
+`output/` 190 MiB (37+37 frames, 67 grids, triples, both indexes, both pair files, stats) +
+`references/` 17 MiB = 207 MiB total, under the 512 MiB experiment cap
+(`storage-policy.json: experiment_output_bytes 536870912`). The jevify verdicts are committed
+at the experiment root because `output/` is gitignored and re-judging is not free.
 Canonical inputs (frozen binary, atlas) and the console crops preserved; all sheets are
 re-derivable from the frames + `references/web2`.
 
@@ -104,4 +113,8 @@ re-derivable from the frames + `references/web2`.
 Attribute the night sky-band gap with a matched-pitch capture (+6° camera) against the same
 console night crops; if it survives, raise night facade wall height/window emission rather
 than crop framing. Then continue the facade-v4 residual list (Juiced 2/MC3 numeric effect
-defaults).
+defaults). Optional source-geometry upgrade: the MCLA extraction helpers survive in
+`experiments/2026-11-05-mcla-vehicle/output/references/` (`mcla_lzx.py`, `mcla_resource.py`,
+`mcla_model.py`), so `inspect_world_resources.py` can pilot one city sector and replace
+crop-derived density targets with measured street-wall coverage, floor heights and block
+widths.

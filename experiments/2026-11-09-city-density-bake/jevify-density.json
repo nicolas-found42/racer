@@ -1,0 +1,1003 @@
+{
+ "rubric": {
+  "questions": [
+   "density",
+   "bake_target"
+  ],
+  "cap": 24000,
+  "escalation": {
+   "low_confidence": 0.7,
+   "read_if": "density in {canyon, dense_open} with bake_target false, low confidence, or any error"
+  }
+ },
+ "counts": {
+  "lowrise": 25,
+  "canyon": 31,
+  "dense_open": 46,
+  "no_street": 60
+ },
+ "bake_targets": 46,
+ "overrides": {
+  "gt4/gt4_089_buildings_facade.jpg": "canyon",
+  "gt4/gt4_091_buildings_facade.jpg": "dense_open",
+  "gt4/gt4_104_day_street.jpg": "dense_open",
+  "gt4/gt4_106_day_street.jpg": "dense_open",
+  "gt4/gt4_112_night_street.jpg": "dense_open",
+  "mcla/mcla_029_day_street.jpg": "dense_open"
+ },
+ "failures": 0,
+ "verdicts": {
+  "mcla/mcla_022_day_street.jpg": {
+   "density": "lowrise",
+   "p": 0.83,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_015_day_street.jpg": {
+   "density": "lowrise",
+   "p": 1,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_008_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.85,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_011_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 1,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_013_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.53,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_006_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.46,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_030_day_street.jpg": {
+   "density": "canyon",
+   "p": 0.44,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_007_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.82,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_027_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.47,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_026_day_street.jpg": {
+   "density": "lowrise",
+   "p": 0.78,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_019_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.42,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_016_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.85,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_002_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.88,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_028_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.51,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_024_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.59,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_003_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.52,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_020_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.83,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_014_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.91,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_010_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.38,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_001_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.75,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_009_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.79,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_023_day_street.jpg": {
+   "density": "lowrise",
+   "p": 0.75,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_021_day_street.jpg": {
+   "density": "canyon",
+   "p": 0.85,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_031_day_street.jpg": {
+   "density": "lowrise",
+   "p": 0.73,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_004_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.55,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_012_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.77,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_025_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.75,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_018_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.57,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_033_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.6,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_038_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.45,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_036_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.63,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_034_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.68,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_039_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.39,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_045_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_043_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.86,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_049_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_037_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.51,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_047_skyline_horizon.jpg": {
+   "density": "lowrise",
+   "p": 0.5,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_035_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.69,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_041_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.96,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_051_crowd_props.jpg": {
+   "density": "no_street",
+   "p": 0.46,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_061_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.63,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_044_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_050_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_040_night_street.jpg": {
+   "density": "lowrise",
+   "p": 0.46,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_048_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.97,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_053_crowd_props.jpg": {
+   "density": "dense_open",
+   "p": 0.4,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_054_crowd_props.jpg": {
+   "density": "no_street",
+   "p": 0.71,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_056_wet_road.jpg": {
+   "density": "canyon",
+   "p": 0.43,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_046_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.75,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_057_wet_road.jpg": {
+   "density": "lowrise",
+   "p": 0.63,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_062_headlights_lamps.jpg": {
+   "density": "lowrise",
+   "p": 0.49,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_052_crowd_props.jpg": {
+   "density": "lowrise",
+   "p": 0.88,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_055_wet_road.jpg": {
+   "density": "no_street",
+   "p": 0.58,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_060_wet_road.jpg": {
+   "density": "no_street",
+   "p": 0.5,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_058_wet_road.jpg": {
+   "density": "canyon",
+   "p": 0.3,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_064_headlights_lamps.jpg": {
+   "density": "dense_open",
+   "p": 0.29,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_065_headlights_lamps.jpg": {
+   "density": "dense_open",
+   "p": 0.49,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_063_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.93,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_066_headlights_lamps.jpg": {
+   "density": "canyon",
+   "p": 0.57,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_067_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.68,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_071_smoke_skid.jpg": {
+   "density": "lowrise",
+   "p": 0.74,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_072_smoke_skid.jpg": {
+   "density": "dense_open",
+   "p": 0.45,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_042_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.97,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_073_smoke_skid.jpg": {
+   "density": "lowrise",
+   "p": 0.65,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_074_smoke_skid.jpg": {
+   "density": "dense_open",
+   "p": 0.51,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_076_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_081_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.93,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_070_smoke_skid.jpg": {
+   "density": "no_street",
+   "p": 0.74,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_079_other.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_088_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.57,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_077_other.jpg": {
+   "density": "no_street",
+   "p": 0.78,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_087_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.98,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_084_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.99,
+   "bake_target": true,
+   "overridden": false
+  },
+  "mcla/mcla_080_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_082_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.91,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_075_smoke_skid.jpg": {
+   "density": "lowrise",
+   "p": 0.69,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_083_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.59,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_086_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.6,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_089_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 1.0,
+   "bake_target": true,
+   "overridden": true
+  },
+  "mcla/mcla_078_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_085_buildings_facade.jpg": {
+   "density": "no_street",
+   "p": 0.67,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_068_headlights_lamps.jpg": {
+   "density": "dense_open",
+   "p": 0.55,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_092_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.65,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_096_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.89,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_095_buildings_facade.jpg": {
+   "density": "canyon",
+   "p": 0.66,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_103_day_street.jpg": {
+   "density": "canyon",
+   "p": 0.63,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_106_day_street.jpg": {
+   "density": "dense_open",
+   "p": 1.0,
+   "bake_target": true,
+   "overridden": true
+  },
+  "gt4/gt4_110_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.71,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_090_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.86,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_105_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.42,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_093_buildings_facade.jpg": {
+   "density": "no_street",
+   "p": 0.87,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_112_night_street.jpg": {
+   "density": "dense_open",
+   "p": 1.0,
+   "bake_target": false,
+   "overridden": true
+  },
+  "gt4/gt4_102_day_street.jpg": {
+   "density": "no_street",
+   "p": 0.63,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_091_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 1.0,
+   "bake_target": true,
+   "overridden": true
+  },
+  "gt4/gt4_111_night_street.jpg": {
+   "density": "no_street",
+   "p": 0.69,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_107_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.36,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_109_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.75,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_097_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.87,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_115_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.79,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_094_buildings_facade.jpg": {
+   "density": "lowrise",
+   "p": 0.97,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_100_day_street.jpg": {
+   "density": "canyon",
+   "p": 0.91,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_101_day_street.jpg": {
+   "density": "lowrise",
+   "p": 1,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_113_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.65,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_098_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.79,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_108_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.55,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_114_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.56,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_104_day_street.jpg": {
+   "density": "dense_open",
+   "p": 1.0,
+   "bake_target": true,
+   "overridden": true
+  },
+  "gt4/gt4_099_day_street.jpg": {
+   "density": "canyon",
+   "p": 0.91,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_116_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.9,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_122_night_street.jpg": {
+   "density": "no_street",
+   "p": 0.79,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_118_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.77,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_133_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.96,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_117_night_street.jpg": {
+   "density": "dense_open",
+   "p": 0.7,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_124_night_street.jpg": {
+   "density": "lowrise",
+   "p": 0.94,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_134_skyline_horizon.jpg": {
+   "density": "dense_open",
+   "p": 0.64,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_132_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.96,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_130_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.86,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_120_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.6,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_135_crowd_props.jpg": {
+   "density": "lowrise",
+   "p": 0.54,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_121_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.52,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_129_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_128_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.97,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_127_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_136_crowd_props.jpg": {
+   "density": "lowrise",
+   "p": 0.59,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_137_crowd_props.jpg": {
+   "density": "no_street",
+   "p": 0.85,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_139_crowd_props.jpg": {
+   "density": "no_street",
+   "p": 0.91,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_119_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.34,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_123_night_street.jpg": {
+   "density": "lowrise",
+   "p": 0.45,
+   "bake_target": true,
+   "overridden": false
+  },
+  "gt4/gt4_126_night_street.jpg": {
+   "density": "no_street",
+   "p": 0.73,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_143_wet_road.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_138_crowd_props.jpg": {
+   "density": "canyon",
+   "p": 0.46,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_142_wet_road.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_146_headlights_lamps.jpg": {
+   "density": "canyon",
+   "p": 0.59,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_147_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.87,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_148_smoke_skid.jpg": {
+   "density": "no_street",
+   "p": 0.93,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_140_wet_road.jpg": {
+   "density": "canyon",
+   "p": 0.59,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_153_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_029_day_street.jpg": {
+   "density": "dense_open",
+   "p": 1.0,
+   "bake_target": true,
+   "overridden": true
+  },
+  "gt4/gt4_149_smoke_skid.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_131_skyline_horizon.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_151_other.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_144_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.95,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_152_other.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_161_other.jpg": {
+   "density": "no_street",
+   "p": 0.74,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_156_other.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_159_other.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_155_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_145_headlights_lamps.jpg": {
+   "density": "no_street",
+   "p": 0.92,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_160_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_150_smoke_skid.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_157_other.jpg": {
+   "density": "no_street",
+   "p": 0.99,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_162_other.jpg": {
+   "density": "no_street",
+   "p": 0.98,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_059_wet_road.jpg": {
+   "density": "lowrise",
+   "p": 0.8,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_158_other.jpg": {
+   "density": "no_street",
+   "p": 1,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_017_day_street.jpg": {
+   "density": "no_street",
+   "p": 0.77,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_154_other.jpg": {
+   "density": "no_street",
+   "p": 0.93,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_141_wet_road.jpg": {
+   "density": "no_street",
+   "p": 0.66,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_005_buildings_facade.jpg": {
+   "density": "dense_open",
+   "p": 0.54,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_032_day_street.jpg": {
+   "density": "dense_open",
+   "p": 0.81,
+   "bake_target": false,
+   "overridden": false
+  },
+  "mcla/mcla_069_smoke_skid.jpg": {
+   "density": "no_street",
+   "p": 0.44,
+   "bake_target": false,
+   "overridden": false
+  },
+  "gt4/gt4_125_night_street.jpg": {
+   "density": "canyon",
+   "p": 0.51,
+   "bake_target": false,
+   "overridden": false
+  }
+ }
+}
