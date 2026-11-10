@@ -40,7 +40,9 @@ struct Car {
   // These channels distinguish wheelspin from a legitimately short gear.
   double gearboxInputRpm = 0, roadCoupledRpm = 0;
   double clutchSlipRpm = 0, clutchTorque = 0;
-  double shiftRemaining = 0, shiftCooldown = 0;
+  double shiftRemaining = 0, shiftCooldown = 0; // Cooldown is the remaining
+  // minimum-gear-hold time (the gearHoldRemaining_ governor state), not a
+  // generic transmission timer.
   bool shifting = false; // Includes the clutch's re-engagement ramp.
 };
 
@@ -64,7 +66,9 @@ public:
   const VehicleSetup &setup() const { return setup_; }
   bool setGeometry(const VehicleGeometry &geometry);
   double wheelbase() const { return geometry_ ? geometry_->wheelbase() : 2.7; }
-  const VehicleGeometry *geometry() const { return geometry_ ? &*geometry_ : nullptr; }
+  const VehicleGeometry *geometry() const {
+    return geometry_ ? &*geometry_ : nullptr;
+  }
   bool setDynamics(const VehicleDynamics &dynamics);
   const VehicleDynamics &dynamics() const { return dynamics_; }
   // An empty callback restores the legacy flat world at Y=0. Installing a
@@ -78,7 +82,8 @@ public:
   // Exact dynamic transforms. Use these instead of the visual fit() plane
   // and travel/radius spin when displaying suspension, slides or wheelspin.
   std::array<float, 16> bodyTransform() const;
-  std::array<float, 16> wheelTransform(std::size_t wheel, bool rolling = true) const;
+  std::array<float, 16> wheelTransform(std::size_t wheel,
+                                       bool rolling = true) const;
   // Invalid/non-finite dt, dt<0 or dt>1 is a no-op. dt==0 only synchronizes
   // external pose edits and pedal latches. All elapsed time is substepped.
   void tick(Input in, double dt = step);
@@ -101,11 +106,12 @@ private:
   double shiftReengagement_ = 1, gearHoldRemaining_ = 0;
   double shiftCandidateSeconds_ = 0, roadDrivenOmega_ = 0;
   int shiftCandidate_ = 0;
+  void clearShiftState();
   void integrate(Input input, double dt);
   void publish();
   GeometryPoint localCenterOfMass() const;
   const VehicleGeometry &effectiveGeometry() const;
   std::optional<RoadSample> sampleRoad(double x, double z, double maxHeight,
-                                        double maxDrop) const;
+                                       double maxDrop) const;
 };
 } // namespace racer
