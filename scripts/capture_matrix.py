@@ -87,6 +87,8 @@ for i, s in enumerate(scenarios, 1):
     # accepts it); both sides of a before/after must use the same setting.
     if os.environ.get("HIDE_GUIDES"):
         argv += ["--hide-guides"]
+    if os.environ.get("CAMERA_PITCH"):
+        argv += ["--camera-pitch", os.environ["CAMERA_PITCH"]]
     argv += ["--sky-mesh", str(base / "models/sky.glb")] + s["args"]
     # NO_SCENERY=1 renders the procedural authored city (buildCityScene) instead of the baked
     # models/city.glb: without it the authored building() geometry and its facade ids never draw.

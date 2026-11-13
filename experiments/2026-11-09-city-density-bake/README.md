@@ -110,11 +110,4 @@ Canonical inputs (frozen binary, atlas) and the console crops preserved; all she
 re-derivable from the frames + `references/web2`.
 
 ## Next
-Attribute the night sky-band gap with a matched-pitch capture (+6° camera) against the same
-console night crops; if it survives, raise night facade wall height/window emission rather
-than crop framing. Then continue the facade-v4 residual list (Juiced 2/MC3 numeric effect
-defaults). Optional source-geometry upgrade: the MCLA extraction helpers survive in
-`experiments/2026-11-05-mcla-vehicle/output/references/` (`mcla_lzx.py`, `mcla_resource.py`,
-`mcla_model.py`), so `inspect_world_resources.py` can pilot one city sector and replace
-crop-derived density targets with measured street-wall coverage, floor heights and block
-widths.
+Follow-up recorded in [2026-11-12-night-sky-attribution](../2026-11-12-night-sky-attribution/README.md): matched upward camera pitch (`0°`, `-1°`, `-6°`) **increased** `sky_upper` (`.603 -> .662 -> .677 -> .739`), showing the night sky-band gap was not a pitch artifact alone. Raising minimum corner/mid parcel floors (`4..8`/`3..8`), filling all 74 outer-ring blocks (`90` occupied blocks, `173,082` fallback vertices), and adding per-bay window hashing + night-only warm facade bounce lowered all 17 night frames `sky_upper` `.503 -> .309` and `night_street` (9 frames) `.440 -> .263` vs console `.172` (an improvement, not parity; post-hoc central-6 subset `.269 -> .177`; individual contributions of the four edits and `_sky_rule` false-positive reduction are not ablation-separated; day shader math is untouched while `loc-a-day` moved `sky .123 -> .035`, `R 107 -> 97` under the new `gx=2` ring towers). Next residual: Juiced 2 / MC3 numeric effect defaults or tail-light mesh sections. Optional source-geometry upgrade: the MCLA extraction helpers survive in `experiments/2026-11-05-mcla-vehicle/output/references/` (`mcla_lzx.py`, `mcla_resource.py`, `mcla_model.py`), so `inspect_world_resources.py` can pilot one city sector and replace crop-derived density targets with measured street-wall coverage, floor heights and block widths.

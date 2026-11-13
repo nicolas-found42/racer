@@ -102,7 +102,7 @@ void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured,
   check(normalsAgree, "surface normals agree with triangle winding");
   check(clear, "all in-world vertices preserve 7m road clearance");
   check(noRoadBridges, "no scenery face bridges a road or the world boundary");
-  check(occupiedBlocks.size() >= 60 && tallest >= 30,
+  check(occupiedBlocks.size() >= 85 && tallest >= 30,
         "district and skyline ring fill the map with mid-rise or taller "
         "buildings");
   if (district) {
@@ -112,7 +112,7 @@ void inspectScene(const std::vector<racer::AssetVertex> &scene, bool textured,
     for (const auto &v : scene)
       if (v.y > 8 && v.v > 10.5f && v.v < 12.5f && insideWorld(v))
         gridBlocks.insert(block(v));
-    check(gridBlocks.size() >= 55,
+    check(gridBlocks.size() >= 80,
           "window-grid frontage spans the district and skyline ring");
   }
   check(facadeDomain, "facade vertices use only the atlas surface ids 8-15");

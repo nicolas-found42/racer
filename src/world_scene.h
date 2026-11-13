@@ -520,7 +520,7 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
           const unsigned style = seed * 7u + unsigned(lot) * 5u + 1u;
           const bool alongX = (seed + unsigned(lot)) % 2 == 0;
           streetParcel(m, x + sx * 27.5f, z + sz * 27.5f, 18.f, 18.f,
-                       rng.span(2, 6), style, alongX, alongX ? sz : sx);
+                       rng.span(4, 8), style, alongX, alongX ? sz : sx);
         }
         for (int lot = 0; lot < 4; ++lot) { // two mid parcels per edge
           const bool alongX = (lot & 1) == 0;
@@ -532,18 +532,18 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
                 seed * 11u + unsigned(lot) * 5u + unsigned(p) * 3u;
             if (alongX)
               streetParcel(m, x + uc, z + sign * (36.f - depth * .5f), 18.5f,
-                           depth, rng.span(2, 7), style, true, sign);
+                           depth, rng.span(3, 8), style, true, sign);
             else
               streetParcel(m, x + sign * (36.f - depth * .5f), z + uc, 18.5f,
-                           depth, rng.span(2, 7), style, false, sign);
+                           depth, rng.span(3, 8), style, false, sign);
           }
         }
         if (seed % 5 != 3) // mid-rise core behind the frontage
           blockCore(m, x + rng.range(-1.5f, 1.5f), z + rng.range(-1.5f, 1.5f),
                     rng.range(22.f, 30.f), rng.range(22.f, 30.f),
-                    rng.span(8, 13), seed * 3u + 7u);
+                    rng.span(10, 15), seed * 3u + 7u);
         else // low courtyard podium fills the interior instead
-          blockCore(m, x, z, 30.f, 26.f, 2, seed * 3u + 7u);
+          blockCore(m, x, z, 30.f, 26.f, 3, seed * 3u + 7u);
       }
       // Street trees on the block sidewalks, spaced clear of lamps, benches and
       // palms.
@@ -580,24 +580,19 @@ inline std::vector<AssetVertex> buildCityScene(bool texturedPalms = false,
   // hashed glass cells at night); the far rows run taller so the silhouette
   // steps up away from the district. Authored placement, never crossing the
   // grid roads or the world boundary.
-  for (int i = 0; i < 48; ++i) {
-    const bool flank = i >= 40;
-    int gx, gz;
-    if (flank) {
-      static const int fx[4] = {-4, -3, 3, 4};
-      gx = fx[(i - 40) % 4];
-      gz = (i - 40) / 4 == 0 ? -1 : 0;
-    } else {
-      gx = (i % 10) - 5;
-      const int row = i / 10; // rows -4,-3,3,4
-      gz = row < 2 ? (row == 0 ? -4 : -3) : (row == 2 ? 3 : 4);
+  unsigned towerIndex = 0;
+  for (int gx = -5; gx <= 4; ++gx) {
+    for (int gz = -4; gz <= 4; ++gz) {
+      if (gx >= -2 && gx <= 1 && gz >= -2 && gz <= 1)
+        continue;
+      const float x = float(gx) * 100.f + 50.f, z = float(gz) * 100.f + 50.f;
+      CityRng rng(towerIndex * 4u + 17u);
+      const bool innerRing = gx >= -3 && gx <= 2 && gz >= -3 && gz <= 2;
+      const float h = innerRing ? rng.range(24.f, 52.f) : rng.range(36.f, 72.f);
+      ringTower(m, x, z, rng.range(28.f, 44.f), rng.range(28.f, 44.f), h,
+                towerIndex * 7u + 3u);
+      ++towerIndex;
     }
-    const float x = float(gx) * 100 + 45, z = float(gz) * 100 + 45;
-    CityRng rng(unsigned(i) * 4u + 17u);
-    const float far = flank || gz == -3 || gz == 3;
-    const float h = far ? rng.range(18.f, 44.f) : rng.range(30.f, 64.f);
-    ringTower(m, x, z, rng.range(20.f, 30.f), rng.range(22.f, 32.f), h,
-              unsigned(i) * 7u + 3u);
   }
   // Foothills on the three other sides (the original +z patch is added below by
   // terrain(m)).

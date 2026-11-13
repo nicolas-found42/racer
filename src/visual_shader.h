@@ -362,8 +362,9 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    albedo=mix(albedo,textured,.9);
    if(!top) {
     float glass=clamp(1.0-max(textured.r,max(textured.g,textured.b))*3.2,0.0,1.0);
-    float lit=step(.46,hash(floor(uv)+float2(surface*7.0,3.0)));
-    facadeGlow=float3(1.0,.74,.45)*lit*glass*.9;
+    float2 cell=surface<11.5?uv*float2(3.0,1.0):uv*float2(6.0,6.0);
+    float lit=step(.42,hash(floor(cell)+float2(surface*7.0,3.0)));
+    facadeGlow=float3(1.0,.76,.46)*glass*(lit*.95+.06);
    }
   }
   // Wall sign boards (id 13): the SLRR long sign sheet placed with the board's own tangent UV so the
@@ -497,6 +498,8 @@ fragment Output xlatMtlMain(Varying in [[stage_in]], constant Globals& _mtl_u [[
    lit+=night*float3(1.0,.75,.42)*(hash(cell)>.42?1.6:0.0);
   }
   lit+=night*facadeGlow*1.15; // lit shop windows (storefront texture as emission)
+  if(mode>.5 && round(in.uv.y)>7.5 && round(in.uv.y)<15.5 && abs(n.y)<.5)
+   lit+=night*albedo*float3(.045,.030,.018)*clamp(in.occlusion,0.0,1.0);
   lit+=night*reflector*float3(1.0,.85,.5)*1.8; // road stud reflectors
  }
  if(mode<.5 && _mtl_u.u_visualCoat.x>0) {

@@ -14,6 +14,13 @@ cases = {
     "start_at_far": (["--start-at", "5000", "0", "0"], "--start-at x and z must be within 600 m"),
     "start_at_missing_values": (["--start-at", "1", "2"], None),
     "camera_view_unknown": (["--camera-view", "cockpit"], None),
+    "camera_pitch_too_low": (["--camera-pitch", "-15.1"], "--camera-pitch must be within [-15,30] degrees"),
+    "camera_pitch_too_high": (["--camera-pitch", "30.1"], "--camera-pitch must be within [-15,30] degrees"),
+    "camera_pitch_not_numeric": (["--camera-pitch", "up"], "--camera-pitch must be within [-15,30] degrees"),
+    "camera_pitch_nan": (["--camera-pitch", "nan"], "--camera-pitch must be within [-15,30] degrees"),
+    "camera_pitch_missing_value": (["--camera-pitch"], None),
+    "camera_pitch_accept_neg15": (["--camera-pitch", "-15", "--screenshot", "/nonexistent-dir-for-racer-check/never.ppm"], "--screenshot parent directory does not exist"),
+    "camera_pitch_accept_30": (["--camera-pitch", "30", "--screenshot", "/nonexistent-dir-for-racer-check/never.ppm"], "--screenshot parent directory does not exist"),
     "screenshot_parent_missing": (["--screenshot", "/nonexistent-dir-for-racer-check/never.ppm"], "--screenshot parent directory does not exist"),
 }
 for name, (extra, message) in cases.items():

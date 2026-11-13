@@ -218,8 +218,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   std::string cameraView = "rear";
   // Chase camera pitch below the horizon, degrees. Authored from the measured
   // reference cameras (Assetto Corsa community presets of the Forza/Gran Turismo
-  // chase views: 3.4-10 degrees); the previous aim-at-the-body camera sat near 11.
+  // chase views: 3.4-10 degrees; negative angles pitch above the horizon).
   double chasePitch = 5;
+  bool chasePitchExplicit = false;
   bool startAtGiven = false, startAtApplied = false;
   double startAt[3] = {0, 0, 0}; // x, z (metres), heading (degrees)
   float worldOrigin[3] = {0, 0, 0};
@@ -361,9 +362,19 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     else if (a == "--camera-view" && i + 1 < argc)
       cameraView = argv[++i];
     else if (a == "--camera-pitch" && i + 1 < argc) {
-      chasePitch = std::stod(argv[++i]);
-      if (!(chasePitch >= 0 && chasePitch <= 30))
-        throw std::runtime_error("camera_pitch_bounds");
+      const std::string value = argv[++i];
+      size_t used = 0;
+      try {
+        chasePitch = std::stod(value, &used);
+      } catch (const std::exception &) {
+        used = 0;
+      }
+      if (used != value.size() || !std::isfinite(chasePitch) ||
+          chasePitch < -15 || chasePitch > 30) {
+        std::cerr << "--camera-pitch must be within [-15,30] degrees\n";
+        return 1;
+      }
+      chasePitchExplicit = true;
     }
     else if (a == "--start-at" && i + 3 < argc) {
       startAtGiven = true;
@@ -436,7 +447,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                    "[--profile path] [--capture-loop directory] [--scene "
                    "garage|course|scale] [--camera-view "
                    "rear|front|left|right|elevated|hood] [--camera-pitch "
-                   "0..30] [--start-at x z "
+                   "-15..30] [--start-at x z "
                    "heading_degrees] [--screenshot path.ppm "
                    "[--screenshot-delay 2..30]] [--window width height] "
                    "[--review-script path] [--course-driver] "
@@ -2280,8 +2291,8 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
     // framing of the reference chase cameras, see the camera experiment). The
     // other review views keep aiming at the body.
     float lookY = float(bodyElevation + lookHeight());
-    if (cameraView == "rear" && !showroom && inspectionDistance <= 0 &&
-        scene != "scale") {
+    if (cameraView == "rear" && !showroom &&
+        (inspectionDistance <= 0 || chasePitchExplicit) && scene != "scale") {
       const double run = std::hypot(lookX - cameraX, lookZ - cameraZ);
       lookY = float(cameraY - std::tan(chasePitch * 3.14159265358979323846 /
                                        180.0) *
