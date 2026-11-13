@@ -62,6 +62,10 @@ public:
   static constexpr int accentCount=5;
   void setAccent(int index);
   int accentIndex() const;
+  // Verification aid (--hud-repaint-audit): repaint each drive frame a second
+  // time without the dirty windows and report any pixel the incremental path
+  // missed. Off in normal play.
+  void setRepaintAudit(bool on);
   void cycleAccent(){setAccent((accentIndex()+1)%accentCount);}
 private:
   struct Impl;

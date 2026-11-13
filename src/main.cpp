@@ -228,6 +228,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
   double inspectionDistance = 0;
   bool postNeutral = false;
   bool hideHud = false, followGround = false, hideGuides = false;
+  bool repaintAudit = false;
   int hudAccent = 0;
   bool hudAccentExplicit = false;
   int windowWidth = 1920, windowHeight = 1080;
@@ -313,7 +314,9 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
         std::cerr << "--hud-accent must be cyan, green, violet, magenta or ice\n";
         return 1;
       }
-    } else if (a == "--hide-hud")
+    } else if (a == "--hud-repaint-audit")
+      repaintAudit = true;
+    else if (a == "--hide-hud")
       hideHud = true;
     else if (a == "--follow-ground")
       followGround = true;
@@ -468,7 +471,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       std::cerr << "Capture/automation: [--background] [--shader-dir path] "
                    "[--autodrive-left]\n";
       std::cerr << "Optical calibration: [--post-neutral]\n";
-      std::cerr << "Asset inspection: [--hide-hud] [--hud-accent cyan|green|violet|magenta|ice]\n";
+      std::cerr << "Asset inspection: [--hide-hud] [--hud-accent cyan|green|violet|magenta|ice] [--hud-repaint-audit]\n";
       return 1;
     }
   }
@@ -514,6 +517,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
                     {"scale_fixture", scene == "scale"},
                     {"world_metres_per_unit", racer::worldScale::metersPerUnit},
                     {"background", background},
+                    {"hud_repaint_audit", repaintAudit},
                     {"benchmark", benchmark},
                     {"asset_preview", !previewMesh.empty()},
                     {"autodrive", autoDrive},
@@ -591,6 +595,7 @@ int run(int argc, char **argv, racer::Diagnostics &diagnostics) {
       hudAccent = saved;
   }
   driveHud.setAccent(hudAccent);
+  driveHud.setRepaintAudit(repaintAudit);
   std::cout << "Renderer: " << bgfx::getRendererName(bgfx::getRendererType())
             << " | " << width << 'x' << height << '\n';
   diagnostics.event(

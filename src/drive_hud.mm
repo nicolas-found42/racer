@@ -1,5 +1,6 @@
 #include "drive_hud.h"
 #include "hud_layout.h"
+#include "hud_repaint.h"
 #include "ui_model.h"
 #include "ui_paint.h"
 #include "world_scale.h"
@@ -14,6 +15,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -233,16 +235,58 @@ void controls(CGContextRef c,const DriveState& s) {
   CGContextRestoreGState(c);
 }
 // Floating waypoint: diamond over the target when visible; edge arrow when not.
-bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float windowWidth,float windowHeight) {
-  if(!s.markerActive) return false;
-  float lx=(s.markerX-fit.x)/std::max(1.f,float(fit.width))*fit.logicalWidth,
-        ly=(s.markerY-fit.y)/std::max(1.f,float(fit.height))*fit.logicalHeight;
-  (void)windowWidth;(void)windowHeight;
-  const float w=fit.logicalWidth,h=fit.logicalHeight;
-  const CGFloat inset=70;
-  const bool inside=!s.markerBehind&&lx>inset&&lx<w-inset&&ly>inset+10&&ly<h-inset-60;
-  const std::string label=upper(s.markerLabel)+"  ·  "+rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
-  if(inside) {
+// Shared marker geometry: the painter and the incremental repaint both read it,
+// so the dirty window always matches the drawn ink (the plate width comes from
+// the same CoreText measurement the painter uses).
+struct MarkerDraw {
+  bool visible=false,inside=false,behind=false;
+  float w=0,h=0,lx=0,ly=0,ex=0,ey=0,dx=0,dy=0;
+  std::string label;CGFloat tw=0;
+};
+MarkerDraw markerDraw(const DriveState& s,const HudLayout& fit) {
+  MarkerDraw m;
+  if(!s.markerActive) return m;
+  m.visible=true;m.w=fit.logicalWidth;m.h=fit.logicalHeight;
+  const float w=m.w,h=m.h,inset=70;
+  m.lx=(s.markerX-fit.x)/std::max(1.f,float(fit.width))*w;
+  m.ly=(s.markerY-fit.y)/std::max(1.f,float(fit.height))*h;
+  m.behind=s.markerBehind;
+  m.inside=!s.markerBehind&&m.lx>inset&&m.lx<w-inset&&m.ly>inset+10&&m.ly<h-inset-60;
+  m.label=upper(s.markerLabel)+"  ·  "+rangeText(int(std::clamp(std::round(s.markerDistance/10)*10,0.,1e8)));
+  m.tw=measure(kLabel,13,m.label,1.6)+24;
+  if(!m.inside) {
+    m.dx=m.lx-w/2;m.dy=m.ly-h/2;
+    if(s.markerBehind){m.dx=-m.dx;m.dy=-m.dy;if(std::abs(m.dx)<1&&std::abs(m.dy)<1)m.dy=1;}
+    const float scale=std::min((w/2-inset)/std::max(std::abs(m.dx),1e-3f),(h/2-inset-30)/std::max(std::abs(m.dy),1e-3f));
+    m.ex=w/2+m.dx*scale;m.ey=h/2+m.dy*scale;
+  }
+  return m;
+}
+// Canvas window the marker paints into: beacon column plus the 14 px diamond
+// shadow above, plate plus its 12 px shadow below.
+HudRect markerInkBounds(const MarkerDraw& m) {
+  if(!m.visible) return {};
+  // Shadow tails: 14 px diamond blur -> 32 px radius, 12 px plate blur ->
+  // 18 px around the plate.
+  if(m.inside) {
+    const CGFloat half=std::max<CGFloat>(34,m.tw/2+20);
+    return {int(std::floor(m.lx-half)),int(std::floor(m.ly-172)),
+            int(std::ceil(2*half))+1,172+84};
+  }
+  const CGFloat half=m.tw/2+18;
+  const CGFloat chipX=std::clamp<CGFloat>(m.ex,half,m.w-half),chipY=m.ey+(m.dy>0?-48:22);
+  const CGFloat leftEdge=std::min<CGFloat>(m.ex-34,chipX-half),
+                topEdge=std::min<CGFloat>(m.ey-34,chipY-18),
+                rightEdge=std::max<CGFloat>(m.ex+34,chipX+half),
+                bottomEdge=std::max<CGFloat>(m.ey+34,chipY+24+18);
+  const int left=int(std::floor(leftEdge)),top=int(std::floor(topEdge)),
+            right=int(std::ceil(rightEdge)),bottom=int(std::ceil(bottomEdge));
+  return {left,top,right-left,bottom-top};
+}
+void worldMarker(CGContextRef c,const MarkerDraw& m) {
+  if(!m.visible) return;
+  const float lx=m.lx,ly=m.ly;
+  if(m.inside) {
     // Soft beacon column above the marker (objective visibility at distance).
     gradientRect(c,CGRectMake(lx-5,std::max<CGFloat>(0,ly-170),10,std::min<CGFloat>(ly,170)),{amber.r,amber.g,amber.b,0},{amber.r,amber.g,amber.b,.35},false,5);
     CGContextSaveGState(c);
@@ -252,24 +296,19 @@ bool worldMarker(CGContextRef c,const DriveState& s,const HudLayout& fit,float w
     diamond(c,{lx,ly},5,Ink{.02,.035,.048,1});
     setStroke(c,{amber.r,amber.g,amber.b,.55});CGContextSetLineWidth(c,1.5);
     CGContextBeginPath(c);CGContextMoveToPoint(c,lx,ly+14);CGContextAddLineToPoint(c,lx,ly+40);CGContextStrokePath(c);
-    const CGFloat tw=measure(kLabel,13,label,1.6)+24;
-    plate(c,CGRectMake(lx-tw/2,ly+42,tw,24),4,1);
-    text(c,kLabel,13,label,lx,ly+59,white,320,Align::Center,1.6);
-    return true;
-  } else {
-    const float cx=w/2,cy=h/2;float dx=lx-cx,dy=ly-cy;
-    if(s.markerBehind){dx=-dx;dy=-dy;if(std::abs(dx)<1&&std::abs(dy)<1)dy=1;}
-    const float scale=std::min((w/2-inset)/std::max(std::abs(dx),1e-3f),(h/2-inset-30)/std::max(std::abs(dy),1e-3f));
-    const float ex=cx+dx*scale,ey=cy+dy*scale;
-    CGContextSaveGState(c);
-    CGContextSetShadowWithColor(c,{0,0},12,shade(1,.7,.25,.9));
-    triangleArrow(c,{ex,ey},14,std::atan2(dx,-dy),amber);
-    CGContextRestoreGState(c);
-    const CGFloat tw=measure(kLabel,13,label,1.6)+24,chipX=std::clamp<CGFloat>(ex,tw/2+12,w-tw/2-12),chipY=ey+(dy>0?-48:22);
-    plate(c,CGRectMake(chipX-tw/2,chipY,tw,24),4,1);
-    text(c,kLabel,13,label,chipX,chipY+17,white,320,Align::Center,1.6);
+    plate(c,CGRectMake(lx-m.tw/2,ly+42,m.tw,24),4,1);
+    text(c,kLabel,13,m.label,lx,ly+59,white,320,Align::Center,1.6);
+    return;
   }
-  return false;
+  CGContextSaveGState(c);
+  CGContextSetShadowWithColor(c,{0,0},12,shade(1,.7,.25,.9));
+  triangleArrow(c,{m.ex,m.ey},14,std::atan2(m.dx,-m.dy),amber);
+  CGContextRestoreGState(c);
+  const CGFloat half=m.tw/2+12,
+                chipX=std::clamp<CGFloat>(m.ex,half,m.w-half),
+                chipY=m.ey+(m.dy>0?-48:22);
+  plate(c,CGRectMake(chipX-m.tw/2,chipY,m.tw,24),4,1);
+  text(c,kLabel,13,m.label,chipX,chipY+17,white,320,Align::Center,1.6);
 }
 
 // Announcement banner: slides in with a two-step echo, holds, then fades (cf. console
@@ -290,6 +329,24 @@ void banner(CGContextRef c,const std::string& title,const std::string& sub,doubl
     }
     CGContextRestoreGState(c);
   }
+}
+// Canvas window the banner paints into for one phase (empty when idle).
+HudRect bannerInkBounds(const std::string& title,const std::string& sub,double phase) {
+  if(phase<0||phase>=1) return {};
+  const double in=std::clamp(phase/.12,0.,1.),ease=1-(1-in)*(1-in);
+  const CGFloat w=std::max<CGFloat>(300,measure(kHeavy,46,title,3)+90);
+  // Echo layers trail the leading slab by up to 32 px; the skewed slab leans
+  // 16 px right at its top edge, so the widest ink is the leading layer's top
+  // right corner and the narrowest is the last echo's bottom left corner.
+  const CGFloat lead=-(1-ease)*220,trail=lead-32;
+  const int left=int(std::floor(640-w/2+trail))-8,
+            right=int(std::ceil(640+w/2+lead+16))+8;
+  HudRect slab{left,int(std::floor(236-w*.03))-8,right-left,int(std::ceil(64+w*.06))+16};
+  if(sub.empty()) return slab;
+  // Sub caption baseline is y+h+22 on the leading layer (13 px type, 1.5 px
+  // offset, 4 px blur).
+  const HudRect caption{int(std::floor(640-w/2+lead+8))-8,236+64+8,int(std::ceil(w))+16,36};
+  return hudUnion(slab,caption);
 }
 void testHud(CGContextRef c,const DriveState& s) {
   const auto& t=*s.test;
@@ -345,8 +402,20 @@ struct DriveHud::Impl {
   bool previousActiveTest=false;
   bool compact=false;
   double scale=1;
-  std::string driveKey;
   HudLayout lastFit;
+  // Incremental repaint: the sanitised state and banner phase of the last
+  // painted frame, plus the ink windows last drawn by the measured widgets.
+  DriveState previousState;
+  HudDriveFrame frame;
+  MarkerDraw markerNow;
+  HudRect markerInk,lastMarker,bannerInk,lastBanner;
+  std::vector<uint8_t> pack;
+  std::vector<uint8_t> auditPixels;
+  CGContextRef auditContext=nullptr;
+  bool repaintAudit=false;
+  uint64_t auditFrames=0,auditFailing=0,auditDiff=0,auditOverSlack=0;
+  int64_t auditMaxDelta=0;
+  HudRect auditWorst;
   int accentIndex=0;
   double panelAnimStart=-10;
   // Announcement banner state (set from draw() on test events).
@@ -354,24 +423,66 @@ struct DriveHud::Impl {
   bool wasCountdown=false;int lastGate=0;
   static double now(){using namespace std::chrono;return duration<double>(steady_clock::now().time_since_epoch()).count();}
   ~Impl() {
+    if(repaintAudit)
+      std::cout<<"HUD_REPAINT_AUDIT frames="<<auditFrames<<" diff_pixels="<<auditDiff
+               <<" failing_frames="<<auditFailing<<" over_slack="<<auditOverSlack
+               <<" max_delta="<<auditMaxDelta<<" worst="<<auditWorst.x<<','<<auditWorst.y<<' '
+               <<auditWorst.w<<'x'<<auditWorst.h<<'\n';
+    if(auditContext) CGContextRelease(auditContext);
     if(bgfx::isValid(texture)) bgfx::destroy(texture);
     if(bgfx::isValid(program)) bgfx::destroy(program);
     if(bgfx::isValid(sampler)) bgfx::destroy(sampler);
     if(context) CGContextRelease(context);
   }
-  void begin(CGContextRef& c) {
-    std::memset(pixels.data(),0,pixels.size());c=context;
+  static void prepare(CGContextRef c) {
     CGContextSaveGState(c);CGContextTranslateCTM(c,0,canvasHeight);CGContextScaleCTM(c,1,-1);
     CGContextSetAllowsAntialiasing(c,true);CGContextSetShouldAntialias(c,true);
     CGContextSetAllowsFontSmoothing(c,false);
   }
-  void end(CGContextRef c) {CGContextRestoreGState(c);upload();}
-  void upload() {
-    bgfx::updateTexture2D(texture,0,0,0,0,canvasWidth,canvasHeight,
-                         bgfx::copy(pixels.data(),uint32_t(pixels.size())));
+  void begin(CGContextRef& c) {
+    std::memset(pixels.data(),0,pixels.size());c=context;prepare(c);
   }
-  void paintCompact(const DriveState& s) {
-    CGContextRef c;begin(c);gTypeScale=1;
+  // Partial repaint: clear and clip to the dirty windows, then run the whole
+  // paint pipeline into them. Inside a window the result is identical to a full
+  // repaint; outside it the previous pixels are still current because no input
+  // they depend on changed.
+  void begin(CGContextRef& c,const HudDirty& dirty) {
+    if(dirty.full) {begin(c);return;}
+    c=context;prepare(c);
+    // ClearRect resets the current path, so every window is cleared first and
+    // the clip path is built afterwards.
+    for(int i=0;i<dirty.count;++i) {
+      const auto& r=dirty.rects[i];
+      CGContextClearRect(c,CGRectMake(r.x,r.y,r.w,r.h));
+    }
+    for(int i=0;i<dirty.count;++i) {
+      const auto& r=dirty.rects[i];
+      CGContextAddRect(c,CGRectMake(r.x,r.y,r.w,r.h));
+    }
+    CGContextClip(c);
+  }
+  void end(CGContextRef c) {CGContextRestoreGState(c);}
+  void upload(const HudDirty& dirty) {
+    if(dirty.full) {
+      bgfx::updateTexture2D(texture,0,0,0,0,canvasWidth,canvasHeight,
+                           bgfx::copy(pixels.data(),uint32_t(pixels.size())));
+      return;
+    }
+    // Pack each window row by row so the upload moves only what changed.
+    for(int i=0;i<dirty.count;++i) {
+      const auto& r=dirty.rects[i];
+      const size_t row=size_t(r.w)*4;
+      pack.resize(row*size_t(r.h));
+      for(int y=0;y<r.h;++y)
+        std::memcpy(pack.data()+size_t(y)*row,
+                    pixels.data()+(size_t(r.y+y)*canvasWidth+r.x)*4,row);
+      bgfx::updateTexture2D(texture,0,0,uint16_t(r.x),uint16_t(r.y),uint16_t(r.w),
+                            uint16_t(r.h),bgfx::copy(pack.data(),uint32_t(pack.size())));
+    }
+  }
+  void uploadFull(){HudDirty dirty;dirty.full=true;upload(dirty);}
+  void paintCompactBody(CGContextRef c,const DriveState& s) {
+    gTypeScale=1;
     const int metres=int(std::clamp(std::round(s.distance/10)*10,0.,1e8));
     if(s.test) {
       const auto& t=*s.test;
@@ -390,28 +501,89 @@ struct DriveHud::Impl {
     CGFloat x=22;
     auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,442,26,white)+6;x+=text(c,kLabel,19,upper(action),x,461,muted,200,Align::Left,1.2,true)+16;};
     chip("WASD","DRIVE");chip("R","RESET");chip("ESC","MENU");
-    end(c);mode=Mode::Drive;
   }
-  void paintDrive(const DriveState& s,const HudLayout& fit,uint16_t width,uint16_t height) {
+  // The whole drive paint, ordered exactly as a full repaint. `clip` is the
+  // dirty set of the incremental path (null when auditing): a widget whose ink
+  // window cannot reach the clip is skipped, which draws the same pixels as
+  // running it, because its ink lands entirely outside the clip. Clipping alone
+  // would already hide those pixels but still pay each draw's setup work
+  // (CoreText runs, gradient and shadow state).
+  void paintDriveBody(CGContextRef c,const DriveState& s,const HudLayout& fit,double bannerPhase,
+                      const HudDirty* clip) {
+    if(compact) {paintCompactBody(c,s);return;}
+    const auto wanted=[&](const HudRect& ink) {
+      if(!clip||clip->full) return true;
+      for(int i=0;i<clip->count;++i)
+        if(!hudIntersect(ink,clip->rects[i]).empty()) return true;
+      return false;
+    };
     gTypeScale=scale<.9?1.2:1;
-    if(compact){gTypeScale=1;paintCompact(s);return;}
-    CGContextRef c;begin(c);
-    if(s.test) {
+    if(!s.test) {
+      if(wanted(hudIdentityWindow)) identity(c,s);
+    } else if(wanted(s.test->countdown?hudCountdownWindow:hudTestCardWindow)) {
       testHud(c,s);
       if(s.test->kind==2||s.test->kind==0||s.test->kind==1) {
         const CGRect note=CGRectMake(0,0,0,0);(void)note;
         if(!s.test->countdown&&s.test->kind!=2) text(c,kLabel,12.5,upper(s.test->note),640,142,white.withAlpha(.8),500,Align::Center,2,true);
       }
-    } else {
-      identity(c,s);
     }
-    worldMarker(c,s,fit,width,height);
-    const double bannerPhase=(now()-bannerStart)/1.9;
-    if(bannerPhase>=0&&bannerPhase<1) banner(c,bannerTitle,bannerSub,bannerPhase,amber);
-    controls(c,s);
-    radar(c,s,{122,590});
-    speedometer(c,s,{1096,578});
-    end(c);mode=Mode::Drive;
+    if(wanted(markerInk)) worldMarker(c,markerNow);
+    if(bannerPhase>=0&&bannerPhase<1&&wanted(bannerInk))
+      banner(c,bannerTitle,bannerSub,bannerPhase,amber);
+    if(wanted(hudControlsWindow)) controls(c,s);
+    if(wanted(hudRadarWindow)) radar(c,s,{122,590});
+    if(wanted(hudSpeedometerWindow)) speedometer(c,s,{1096,578});
+  }
+  void paintDrive(const DriveState& s,const HudLayout& fit,const HudDirty& dirty,double bannerPhase) {
+    CGContextRef c;begin(c,dirty);
+    paintDriveBody(c,s,fit,bannerPhase,&dirty);
+    end(c);upload(dirty);
+    lastMarker=markerInk;lastBanner=bannerInk;mode=Mode::Drive;
+    if(repaintAudit&&!dirty.full&&!compact) auditDrive(s,fit,bannerPhase);
+  }
+  // Audit mode (--hud-repaint-audit): paint the same frame into a scratch
+  // canvas with no clip and compare. CoreGraphics applies the clip mask to
+  // gradient dithering and to glyph/edge antialiasing, so a clipped repaint can
+  // differ by up to two 8-bit steps on a handful of pixels. A larger difference
+  // means an unmapped input or a window that is too small: stale HUD pixels.
+  void auditDrive(const DriveState& s,const HudLayout& fit,double bannerPhase) {
+    if(!auditContext) {
+      auditPixels.assign(pixels.size(),0);
+      CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+      auditContext=CGBitmapContextCreate(auditPixels.data(),canvasWidth,canvasHeight,8,
+          size_t(canvasWidth)*4,space,
+          CGBitmapInfo(kCGImageAlphaPremultipliedLast)|CGBitmapInfo(kCGBitmapByteOrder32Big));
+      CGColorSpaceRelease(space);
+      if(!auditContext) {repaintAudit=false;return;}
+    }
+    std::memset(auditPixels.data(),0,auditPixels.size());
+    prepare(auditContext);
+    paintDriveBody(auditContext,s,fit,bannerPhase,nullptr);
+    CGContextRestoreGState(auditContext);
+    ++auditFrames;
+    size_t differing=0,failing=0;int worstDelta=0;
+    int x0=canvasWidth,y0=canvasHeight,x1=-1,y1=-1;
+    for(int y=0;y<canvasHeight;++y)
+      for(int x=0;x<canvasWidth;++x) {
+        const size_t i=(size_t(y)*canvasWidth+x)*4;
+        int delta=0;
+        for(int k=0;k<4;++k)
+          delta=std::max(delta,std::abs(int(pixels[i+k])-int(auditPixels[i+k])));
+        if(!delta) continue;
+        ++differing;
+        worstDelta=std::max(worstDelta,delta);
+        if(delta<=racer::hudRepaintSlack) continue;
+        ++failing;
+        x0=std::min(x0,x);y0=std::min(y0,y);x1=std::max(x1,x);y1=std::max(y1,y);
+      }
+    auditDiff+=differing;
+    auditMaxDelta=std::max<int64_t>(auditMaxDelta,worstDelta);
+    if(!failing) return;
+    ++auditFailing;auditOverSlack+=failing;
+    const HudRect box{x0,y0,x1-x0+1,y1-y0+1};
+    auditWorst=hudUnion(auditWorst,box);
+    std::cout<<"HUD_REPAINT_AUDIT mismatch pixels="<<failing<<" max_delta="<<worstDelta
+             <<" bbox="<<box.x<<','<<box.y<<' '<<box.w<<'x'<<box.h<<'\n';
   }
   // ---- menus ------------------------------------------------------------
   struct Block {
@@ -680,7 +852,7 @@ struct DriveHud::Impl {
       size_t at=0;for(size_t i=0;i<menu.size();++i) if(panel.rows[menu[i]].selected) at=i+1;
       if(at) text(c,kLabel,13,std::to_string(at)+" OF "+std::to_string(menu.size()),1216,687,muted,200,Align::Right,2.4,true);
     }
-    end(c);mode=Mode::Panel;
+    end(c);uploadFull();mode=Mode::Panel;
   }
   // Compact menus (windows below 0.75 scale): 640x480 canvas, 24-unit type, a scrolling
   // window of menu rows around the selection, warnings kept visible, one hint line.
@@ -733,7 +905,7 @@ struct DriveHud::Impl {
     auto chip=[&](const std::string& key,const std::string& action){x+=keycap(c,key,x,444,26,white)+6;x+=text(c,kLabel,19,upper(action),x,463,muted,200,Align::Left,1.2)+16;};
     if(activeTest){chip("WASD","DRIVE");chip("ESC","PAUSE");}
     else{chip("↑↓","SELECT");chip("ENTER","OK");chip("ESC","BACK");}
-    end(c);mode=Mode::Panel;
+    end(c);uploadFull();mode=Mode::Panel;
   }
   void paintPanel(const std::vector<std::string>& lines,bool activeTest,int optionCount,const PanelMap& map,const std::string& mapKey) {
     if(compact) paintCompactPanel(lines,activeTest,optionCount);
@@ -797,9 +969,10 @@ void DriveHud::setAccent(int index) {
   static constexpr Ink palette[DriveHud::accentCount]{cyan,{.42,.93,.62,1},{.66,.58,1,1},{.96,.42,.80,1},{.84,.92,1,1}};
   index=((index%accentCount)+accentCount)%accentCount;
   gAccent=palette[index];impl->accentIndex=index;
-  impl->mode=Impl::Mode::None;impl->driveKey.clear();impl->previousPanel.clear();
+  impl->mode=Impl::Mode::None;impl->previousPanel.clear();
 }
 int DriveHud::accentIndex() const {return impl->accentIndex;}
+void DriveHud::setRepaintAudit(bool on) { impl->repaintAudit = on; }
 void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
   if(!width||!height) return;
   DriveState s=input;
@@ -826,20 +999,46 @@ void DriveHud::draw(uint16_t width,uint16_t height,const DriveState& input) {
     if(s.test->kind==2&&p.lastGate>0&&s.test->gate>p.lastGate){p.bannerTitle="GATE "+std::to_string(p.lastGate)+" CLEARED";p.bannerSub=std::to_string(s.test->gates-p.lastGate)+" TO GO";p.bannerStart=Impl::now();}
     p.wasCountdown=s.test->countdown;p.lastGate=s.test->gate;
   } else {p.wasCountdown=false;p.lastGate=0;}
-  const double bannerPhase=(Impl::now()-p.bannerStart)/1.9;
-  const int bannerStep=bannerPhase>=0&&bannerPhase<1?int(bannerPhase*90)+1:0;
-  std::ostringstream out;
-  out<<bannerStep<<'#'<<int(s.mph)<<'|'<<s.reverse<<'|'<<s.throttle<<'|'<<s.brake<<'|'<<s.hasDestination<<'|'<<s.vehicle<<'|'<<s.destination<<'|'
-     <<s.distance<<'|'<<s.bearing<<'|'<<s.bearingRadians<<'|'<<s.markerActive<<s.markerBehind<<'|'<<s.markerX<<','<<s.markerY<<'|'
-     <<s.markerLabel<<'|'<<s.markerDistance<<'|'<<s.heading<<'|'<<s.carX<<','<<s.carZ;
-  for(const auto& b:s.blips) out<<'|'<<b.kind<<','<<b.bearing<<','<<b.distance;
-  out<<'|'<<compact<<'|'<<width<<'x'<<height;
-  if(s.test){const auto& t=*s.test;
-    out<<"|T"<<t.kind<<'|'<<t.name<<'|'<<t.note<<'|'<<t.countdown<<t.measuring<<t.automatic<<'|'<<t.countdownSeconds<<'|'<<t.elapsed<<'|'
-       <<t.distance<<'|'<<t.speedKmh<<'|'<<t.gate<<'/'<<t.gates<<'|'<<t.gateDistance<<'|'<<t.bearing<<'|'<<t.turn;}
-  const std::string signature=out.str();
+  const double bannerElapsed=(Impl::now()-p.bannerStart)/1.9;
+  const int bannerStep=bannerElapsed>=0&&bannerElapsed<1?int(bannerElapsed*90)+1:0;
+  // The banner is drawn at the midpoint of its quantised step, so every window
+  // that repaints (marker, dial, radar) draws the same banner frame the rest of
+  // the canvas already holds. Painting the continuous phase instead would leave
+  // a patchwork of slightly different banner positions.
+  const double bannerPhase=bannerStep?(bannerStep-.5)/90.:-1.;
   if(p.compact!=compact){p.compact=compact;p.mode=Impl::Mode::None;}
-  if(p.mode!=Impl::Mode::Drive||signature!=p.driveKey){p.paintDrive(s,fit,width,height);p.driveKey=signature;}
+  const HudDriveFrame next{&s,bannerStep,compact,width,height};
+  HudDirty dirty;
+  const HudChanges changes=p.mode!=Impl::Mode::Drive?HudChanges{.full=true}:hudDriveChanges(p.frame,next);
+  if(changes.full) dirty.full=true;
+  // The waypoint and banner ink windows are measured once per frame and reused
+  // by the paint and by the audit; when their inputs did not change, the canvas
+  // still holds the window measured when they were drawn.
+  if(changes.full||changes.marker) {
+    p.markerNow=markerDraw(s,fit);
+    p.markerInk=markerInkBounds(p.markerNow);
+  }
+  if(changes.full||changes.banner)
+    p.bannerInk=bannerInkBounds(p.bannerTitle,p.bannerSub,bannerPhase);
+  if(!changes.full&&changes.any()) {
+    if(changes.speed) dirty.add(hudSpeedometerWindow);
+    if(changes.controls) dirty.add(hudControlsWindow);
+    if(changes.radar) dirty.add(hudRadarWindow);
+    if(changes.identity) dirty.add(hudIdentityWindow);
+    if(changes.test) dirty.add(hudTestCardWindow);
+    if(changes.countdown) dirty.add(hudCountdownWindow);
+    if(changes.marker) {
+      dirty.add(p.lastMarker);
+      dirty.add(p.markerInk);
+    }
+    if(changes.banner) {
+      dirty.add(p.lastBanner);
+      dirty.add(p.bannerInk);
+    }
+  }
+  if(!dirty.empty()) p.paintDrive(s,fit,dirty,bannerPhase);
+  p.previousState=s;
+  p.frame=HudDriveFrame{&p.previousState,bannerStep,compact,width,height};
   p.submit(width,height);
 }
 void DriveHud::drawPanel(uint16_t width,uint16_t height,
